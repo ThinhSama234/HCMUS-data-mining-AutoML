@@ -1,0 +1,18 @@
+# AMLB constraint definitions (the 3rd CLI arg). Applied IDENTICALLY to every runner
+# on a given task — this is what makes the comparison fair (FR-003, SC-002).
+# Confirm key names against AMLB's resources/constraints.yaml at first setup.
+
+smoke:            # MVP smoke test — fastest first result
+  folds: 1
+  max_runtime_seconds: 60
+  cores: 4
+
+1h:               # primary thesis budget (paper's primary setting)
+  folds: 10
+  max_runtime_seconds: 3600
+  cores: 8
+
+4h:               # optional, to study the effect of budget (FR-004)
+  folds: 10
+  max_runtime_seconds: 14400
+  cores: 8

@@ -1,0 +1,16 @@
+# User-dir config so `-u amlb_userdir` makes AMLB load OUR custom definitions on top
+# of its built-ins: benchmarks/mvp.yaml, constraints.yaml (smoke/1h/4h), frameworks.yaml.
+# Mirrors automlbenchmark/examples/custom/config.yaml. {root}=AMLB repo, {user}=this dir.
+---
+frameworks:
+  definition_file:
+    - '{root}/resources/frameworks.yaml'
+    - '{user}/frameworks.yaml'
+
+benchmarks:
+  definition_dir:
+    - '{user}/benchmarks'
+    - '{root}/resources/benchmarks'
+  constraints_file:
+    - '{root}/resources/constraints.yaml'
+    - '{user}/constraints.yaml'

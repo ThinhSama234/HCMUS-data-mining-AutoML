@@ -1,0 +1,12 @@
+framework,task,fold,type,result,metric,training_duration,predict_duration,models_count,seed,info
+constantpredictor,credit-g,0,binary,0.500,auc,1,0.01,1,42,
+flaml,credit-g,0,binary,0.770,auc,600,0.10,8,42,
+H2OAutoML,credit-g,0,binary,0.780,auc,600,0.20,20,42,
+AutoGluon,credit-g,0,binary,0.790,auc,600,0.50,12,42,
+constantpredictor,vehicle,0,multiclass,-1.386,neg_logloss,1,0.01,1,42,
+flaml,vehicle,0,multiclass,-0.450,neg_logloss,600,0.10,8,42,
+AutoGluon,vehicle,0,multiclass,-0.300,neg_logloss,600,0.50,12,42,
+flaml,Moneyball,0,regression,-0.660,neg_rmse,600,0.10,7,42,
+H2OAutoML,Moneyball,0,regression,-0.700,neg_rmse,600,0.20,18,42,
+AutoGluon,Moneyball,0,regression,-0.620,neg_rmse,600,0.40,10,42,
+H2OAutoML,big-imbalanced,0,binary,,auc,3600,,,42,OutOfMemoryError: Java heap space

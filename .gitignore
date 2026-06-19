@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.DS_Store
+
+# Benchmark raw outputs — keep curated summaries only, not the raw AMLB dumps
+results/*
+!results/.gitkeep

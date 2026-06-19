@@ -1,0 +1,12 @@
+# MVP smoke suite — one small dataset per task type. Task IDs reused from the
+# AMLB OpenML suites (paper Appendix A) so identity, splits and licensing are known.
+# See research.md D3.
+
+- name: credit-g            # binary classification (n=1000, p=21)
+  openml_task_id: 168757
+
+- name: vehicle             # multiclass, 4 classes (n=846)
+  openml_task_id: 190146
+
+- name: Moneyball           # regression (n=1232)
+  openml_task_id: 167210

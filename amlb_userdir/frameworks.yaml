@@ -1,0 +1,5 @@
+# AMLB already ships every runner we use in resources/frameworks.yaml:
+#   AutoGluon, AutoGluon_bestquality, H2OAutoML, flaml,
+#   constantpredictor, RandomForest, TunedRandomForest.
+# So NO custom framework definition is needed — empty mapping avoids duplicate-name errors.
+{}

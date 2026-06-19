@@ -1,0 +1,7 @@
+# Analysis layer only. The AMLB orchestration tool + the AutoML frameworks
+# (AutoGluon, H2O[needs Java], FLAML) are installed separately — see README.md —
+# because they are heavy and AMLB manages each framework's own environment.
+pandas>=2.0
+matplotlib>=3.7
+seaborn>=0.13
+pytest>=7.4
