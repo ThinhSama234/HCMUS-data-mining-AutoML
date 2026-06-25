@@ -37,7 +37,17 @@ python -m storage.migrate results/results.csv      # optional
 
 # 4. Run the console
 streamlit run console/app.py                        # → http://localhost:8501
+
+# 5. To run a benchmark (all from the UI — no AMLB install):
+#    Methods → Integrate a framework   (this is the `docker pull`)
+#    Training → pick datasets + budget → Launch   (this is the `docker run`)
 ```
+
+> **No `automlbenchmark` clone needed.** AMLB is **bundled inside each `automlbenchmark/<framework>`
+> Docker image** — "downloading a framework" = clicking **Integrate** on the Methods page (a
+> `docker pull`). You only need Docker, not a local AMLB checkout. (The legacy `scripts/run_mvp.sh`
+> *local* mode is the exception — it needs a local AMLB clone + pip-installed frameworks.)
+> See [docs/docker.md](docs/docker.md) and [docs/automl-benchmark.md](docs/automl-benchmark.md).
 
 No Docker? Skip steps 2–3 — the app falls back to **SQLite + a local object store**, so browsing,
 upload, and OpenML ingest work without containers (only benchmark *runs* need Docker). See
