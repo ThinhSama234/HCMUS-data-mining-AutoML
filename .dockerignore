@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+console.db
+.objectstore/
+.git/
+specs/
+report/
+tests/
+amlb_userdir/
+scripts/
+*.md
+results/backup/
+results/*.smoke.*/

@@ -1,0 +1,43 @@
+# AutoML Console backend (US7/US8): Postgres + MinIO + the Streamlit console.
+# Postgres & MinIO are multi-arch (native arm64 on Apple Silicon — fast, no emulation).
+#   docker-compose up -d
+#   docker-compose run --rm console python -m storage.migrate results/results.csv
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: amlb
+      POSTGRES_USER: amlb
+      POSTGRES_PASSWORD: amlb
+    volumes: [pgdata:/var/lib/postgresql/data]
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U amlb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: amlb
+      MINIO_ROOT_PASSWORD: amlb12345
+    volumes: [miniodata:/data]
+    ports: ["9000:9000", "9001:9001"]   # S3 API · web console
+
+  console:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg2://amlb:amlb@postgres:5432/amlb
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: amlb
+      S3_SECRET_KEY: amlb12345
+    depends_on:
+      postgres: { condition: service_healthy }
+      minio: { condition: service_started }
+    ports: ["8501:8501"]
+
+volumes:
+  pgdata: {}
+  miniodata: {}

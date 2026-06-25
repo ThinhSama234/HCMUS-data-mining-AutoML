@@ -8,6 +8,15 @@
 
 **Input**: User description: "Reproducible, fair benchmark comparing three open-source AutoML frameworks — H2O AutoML, FLAML, AutoGluon — on tabular supervised-learning tasks, applying the methodology and best practices from *AMLB: an AutoML Benchmark* (Gijsbers et al., JMLR 2024) to avoid common benchmarking pitfalls. Thesis-grade deliverable: reproducible experiment code, recorded results, analysis, and a written report citing the paper. Compute available: GPU/cloud."
 
+## Clarifications
+
+### Session 2026-06-22
+
+- Q: Results visualization — what is the primary output form for turning raw result records into meaningful visuals? → A: An interactive dashboard (Python; e.g., Streamlit/Plotly) that reads the recorded results data; static report figures remain a secondary export.
+- Q: The "integrate any framework into the harness" capability — what form is the deliverable? → A: A Claude Code skill (speckit-style) that scaffolds and validates a harness framework module from a given source framework.
+- Q: Where does that integration skill sit in scope, given the benchmark fixes exactly three frameworks under test (FR-001)? → A: A separate developer-tooling user story; it does not change the three-frameworks-under-test scientific comparison.
+- Q: What input source code is the integration skill required to support? → A: A Python, pip-installable framework that exposes a fit/predict (scikit-learn-style) interface.
+
 ## User Scenarios & Testing *(mandatory)*
 
 The "user" here is the **student/researcher** running the comparison and the **thesis readers** who must trust the results. Each story is an independently demonstrable slice; US1 alone is a viable MVP (a defensible head-to-head comparison).
@@ -89,6 +98,38 @@ A documented configuration/command re-runs the benchmark (or a defined subset) a
 
 ---
 
+### User Story 6 - Interactive dashboard to explore the results (Priority: P3)
+
+The researcher loads the recorded results into an interactive dashboard that turns the raw result records into meaningful, navigable visuals — overall ranking, the accuracy-versus-inference-time trade-off, and ranking grouped by data characteristic — with filtering by framework, task type, dataset, and budget, without re-running any experiment.
+
+**Why this priority**: The recorded CSV is hard to read directly; an interactive view makes the findings legible and lets the researcher (and thesis examiners) probe how results change by framework/task/characteristic. It is presentation of already-produced data, so it depends on US1–US4 but adds no new experimental risk.
+
+**Independent Test**: Point the dashboard at an existing results CSV and confirm it renders the ranking, trade-off, and by-characteristic views, and that filtering by framework/task type/budget updates the views — all from recorded data, with no benchmark run triggered.
+
+**Acceptance Scenarios**:
+
+1. **Given** a recorded results CSV, **When** the dashboard is launched, **Then** it displays the overall ranking, the accuracy/inference-time trade-off, and ranking-by-characteristic views derived from that data.
+2. **Given** the dashboard is open, **When** the user filters by framework, task type, dataset, or budget, **Then** the visuals update to the selected subset without re-running the benchmark.
+3. **Given** the same recorded data, **When** a static export is requested, **Then** the headline figures can be saved for inclusion in the written report.
+
+---
+
+### User Story 7 - One skill to integrate a new framework into the harness (Priority: P3, developer tooling)
+
+A developer points a Claude Code skill at a source framework and the skill scaffolds a complete, valid harness framework module (the integration files plus the registry entry) following documented integration rules, then verifies the new module end-to-end on the smoke suite. This is reusable tooling for adding frameworks; it does not change which frameworks are under scientific test (FR-001).
+
+**Why this priority**: Hand-writing an integration is error-prone and repeats the same contract every time. A guided, rule-checked skill makes adding a framework repeatable and verifiable. It is independent of the three-way comparison and can ship after the MVP.
+
+**Independent Test**: Run the skill against a Python, pip-installable framework that exposes a fit/predict interface; confirm it produces the scaffolded module + registry entry, the documented preconditions/rules are enforced (rejected with a clear reason when unmet), and the generated module runs on the smoke suite and yields scored predictions.
+
+**Acceptance Scenarios**:
+
+1. **Given** a source framework that meets the documented preconditions (Python, pip-installable, exposes fit/predict), **When** the skill is run, **Then** it generates the integration module files and the registry entry, and a smoke-suite run of the new module produces scored predictions.
+2. **Given** a source framework that does NOT meet a precondition (e.g., no installable package, or no fit/predict surface), **When** the skill is run, **Then** it stops and reports which integration rule/precondition failed, without producing a half-written module.
+3. **Given** a generated module, **When** it is run under the identical protocol, **Then** it only produces predictions (the harness performs scoring), preserving the fairness guarantees in FR-003/FR-014.
+
+---
+
 ### Edge Cases
 
 - **Out of memory / time exceeded** on large datasets → recorded as a memory/time failure with context; excluded from that task's score aggregate but counted in coverage.
@@ -119,6 +160,8 @@ A documented configuration/command re-runs the benchmark (or a defined subset) a
 - **FR-013**: The benchmark MUST keep comparisons fair by running each framework with its intended preset(s) and NOT hand-tuning the frameworks' own configuration beyond documented settings that are applied equally to all.
 - **FR-014**: The benchmark MUST guarantee no data leakage — test/validation partitions MUST never be used for training or model selection, and the partitioning MUST be identical across all frameworks for a given task.
 - **FR-015**: Training duration per run MUST be recorded so that each framework's adherence to the specified time budget can be reported.
+- **FR-016**: The system MUST provide an interactive dashboard that reads the recorded results and presents the overall ranking, the accuracy-versus-inference-time trade-off, and ranking-by-characteristic, with filtering by framework, task type, dataset, and budget; the dashboard MUST operate purely on recorded data and MUST NOT trigger a benchmark run, and MUST allow the headline figures to be exported for the written report.
+- **FR-017**: The system MUST provide a guided framework-integration capability (a Claude Code skill) that, given a source framework meeting documented preconditions (a Python, pip-installable framework exposing a fit/predict interface), scaffolds a complete harness framework module plus its registry entry, enforces the documented integration rules (rejecting non-conforming sources with a clear reason rather than emitting a partial module), and verifies the generated module on the smoke suite. This capability is developer tooling and MUST NOT change the set of frameworks under test defined in FR-001 nor the fairness guarantees in FR-003/FR-014 (the generated module produces predictions only; the harness performs scoring).
 
 ### Key Entities *(include if feature involves data)*
 
@@ -130,6 +173,8 @@ A documented configuration/command re-runs the benchmark (or a defined subset) a
 - **Result record**: the aggregation per (framework × task) — mean/std score, completed-fold count, and coverage.
 - **Failure**: a recorded unsuccessful run — category (memory / time / data / implementation), message, and context.
 - **Report & artifacts**: the produced outputs — result tables, plots (overall ranking, accuracy/inference-time trade-off, ranking-by-characteristic), the reproducibility guide, and the written report.
+- **Results dashboard**: the interactive view over recorded results — its data source (results CSV/tidy frame), the views it renders (ranking, trade-off, by-characteristic), the filters it exposes (framework, task type, dataset, budget), and the figures it can export.
+- **Integration skill**: the framework-integration tooling — its input contract (Python, pip-installable, fit/predict), the integration rules/preconditions it enforces, the module artifacts it emits (the harness framework files plus registry entry), and its verification step (smoke-suite run yielding scored predictions).
 
 ## Success Criteria *(mandatory)*
 
@@ -142,6 +187,8 @@ A documented configuration/command re-runs the benchmark (or a defined subset) a
 - **SC-005**: The analysis answers all three core questions — which framework is best overall, how the ranking shifts by data characteristics, and the accuracy/inference-time trade-off — each supported by the recorded numbers.
 - **SC-006**: The report identifies at least the four pitfall classes highlighted by the paper (unequal time budgets, inconsistent metrics, ignored failures, no environment isolation) and documents how each was avoided.
 - **SC-007**: Per-framework coverage (fraction of successful runs) is reported for all three frameworks and both baselines.
+- **SC-008**: From an existing results dataset alone (no benchmark re-run), the interactive dashboard renders the overall ranking, the accuracy/inference-time trade-off, and ranking-by-characteristic, and filtering by framework/task type/dataset/budget updates every view consistently with the underlying records.
+- **SC-009**: Given a source framework meeting the documented preconditions, the integration capability produces a module that runs end-to-end on the smoke suite and yields scored predictions; given a source that violates a precondition, it is rejected with a stated reason and no partial module is left behind.
 
 ## Assumptions
 
@@ -151,5 +198,7 @@ A documented configuration/command re-runs the benchmark (or a defined subset) a
 - Cross-validation uses a fixed number of folds (default 10, matching the paper) applied identically to all frameworks.
 - Some AutoML frameworks are not fully deterministic even with a fixed seed; repeated folds capture variance and this limitation is documented rather than eliminated.
 - The specific orchestration tooling and environment-isolation mechanism (whether to adopt an existing open-source benchmark runner or build a custom harness, the containerization approach, and the languages/libraries used) is an implementation decision deferred to the planning phase.
-- Scope is tabular supervised learning only; unstructured data (images, text), Neural Architecture Search, building or modifying an AutoML framework, production deployment/serving, and an end-user application UI are explicitly out of scope.
+- Scope is tabular supervised learning only; unstructured data (images, text), Neural Architecture Search, building or modifying an AutoML framework, and production deployment/serving are explicitly out of scope. An end-user application UI for the AutoML systems themselves is out of scope; an internal, read-only results-exploration dashboard over recorded benchmark data (US6) is in scope. The framework-integration skill (US7) *wraps* an existing framework into a harness module and does not modify the framework's own code, so it does not contradict the "building or modifying an AutoML framework" exclusion.
+- Results visualization (US6) is delivered as an interactive dashboard built on a Python visualization stack (e.g., Streamlit or Plotly Dash) that reads the recorded results data; the exact library is a planning-phase decision. Static report figures (matplotlib/seaborn) are a secondary export from the same recorded data.
+- The framework-integration capability (US7) is a Claude Code skill targeting Python, pip-installable frameworks that expose a fit/predict (scikit-learn-style) interface; non-Python or non-installable sources are out of its documented support and are rejected with a stated reason. It is developer tooling and is independent of the three-frameworks-under-test comparison.
 - The project's governing principles of reproducibility, no data leakage, evaluation-against-baseline, and simplicity (constitution principles II–V) apply directly; the medical-safety principle (I) and medical-specific technical constraints do not apply to this benchmark feature and should be scoped out or addressed via a feature-specific constitution during planning.

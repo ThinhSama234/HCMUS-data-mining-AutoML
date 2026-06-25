@@ -1,71 +1,94 @@
-# AutoML Framework Benchmark (AMLB-style)
+# AutoML Bench Console
 
-A reproducible, fair benchmark of three AutoML frameworks — **H2O AutoML, FLAML, AutoGluon** — plus baselines, on tabular OpenML tasks, following *AMLB: an AutoML Benchmark* (Gijsbers et al., JMLR 2024).
+A **Streamlit console** for benchmarking AutoML frameworks the AMLB way — fairly, reproducibly,
+and on real data. Add datasets, integrate frameworks as Docker images, launch benchmark runs, and
+explore the results — all backed by **PostgreSQL** (metadata + results) and **MinIO** (files).
 
-Spec & plan: [`specs/002-automl-benchmark/`](specs/002-automl-benchmark/).
+Built on the *[AutoML Benchmark](https://github.com/openml/automlbenchmark)* (Gijsbers et al., JMLR
+2024): identical folds / time budgets / metrics / resources across every framework, failures
+captured not hidden. The original benchmark spec lives in [`specs/002-automl-benchmark/`](specs/002-automl-benchmark/).
 
-## Approach
+![Evaluation](docs/images/evaluation.png)
 
-Reuse the official **`automlbenchmark` (AMLB)** tool as the harness (it enforces identical folds/budgets/metrics/resources and captures failures). This repo adds a thin **config layer** (`amlb_userdir/`), an **analysis layer** (`analysis/`), and the **report**.
+## What it does
+
+- **Datasets** — upload a CSV or add an OpenML task; stored in MinIO + catalogued in Postgres.
+- **Methods** — catalog of AutoML frameworks; one-click **Integrate** (`docker pull`); truthful
+  status + a per-machine **compatibility** badge; built-in **disk management**.
+- **Training** — pick a framework + datasets + budget → a real Dockerized AMLB run → results land
+  in the database (with timeout, stop, and auto-reap so jobs never hang).
+- **Evaluation** — ranking, accuracy-vs-time Pareto, and by-characteristic views over the results.
+
+## Quickstart
+
+```bash
+# 1. Clone + Python env (3.9–3.11)
+git clone https://github.com/ThinhSama234/HCMUS-data-mining-AutoML.git automl-thesis
+cd automl-thesis && python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+# 2. Backend: Postgres + MinIO (Docker)
+cp .env.example .env
+docker-compose up -d
+
+# 3. Seed the catalog (+ optionally load historical results)
+python -m storage.seed
+python -m storage.migrate results/results.csv      # optional
+
+# 4. Run the console
+streamlit run console/app.py                        # → http://localhost:8501
+```
+
+No Docker? Skip steps 2–3 — the app falls back to **SQLite + a local object store**, so browsing,
+upload, and OpenML ingest work without containers (only benchmark *runs* need Docker). See
+[docs/operations.md](docs/operations.md).
+
+> **Apple Silicon:** AMLB images are amd64. Enable **Rosetta** in Rancher/Docker Desktop
+> (`rdctl set --virtual-machine.use-rosetta=true`) — light frameworks (flaml, constantpredictor)
+> run; heavy ones (AutoGluon, autosklearn) belong on an x86_64 host. See [docs/docker.md](docs/docker.md).
+
+## Feature tour
+
+**Datasets** — upload CSV / add from OpenML; catalogued with type, source, and status.
+![Datasets](docs/images/datasets.png)
+
+**Methods** — framework catalog with integration status, compatibility badges, and Docker storage.
+![Methods](docs/images/methods-catalog.png)
+
+**Training** — launch a real AMLB run on the datasets you pick; watch jobs auto-refresh.
+![Training](docs/images/training.png)
+
+## Documentation
+
+| Doc | What |
+|---|---|
+| [architecture](docs/architecture.md) | system diagram + training-run data flow |
+| [database](docs/database.md) | the 9 tables, ER diagram, how rows get there |
+| [object-store](docs/object-store.md) | MinIO/S3, the pointer pattern, local fallback |
+| [operations](docs/operations.md) | env vars, bring-up, ports, recovery, tests |
+| [docker](docs/docker.md) | framework images, emulation/Rosetta, compatibility, disk |
+| [frameworks](docs/frameworks.md) | catalog, integration lifecycle, truthful status |
+| [automl-benchmark](docs/automl-benchmark.md) | AMLB, the mvp/smoke suite, scoring |
+| [training-and-results](docs/training-and-results.md) | ingest → launch → jobs → Evaluation |
 
 ## Layout
 
 ```
-amlb_userdir/   config.yaml + benchmarks/ (datasets) + constraints.yaml (budgets)
-scripts/        run_mvp.sh
-analysis/       load_results.py, rankings.py (+ coverage/pareto/by_characteristics later)
-tests/          unit tests + fixture for the analysis layer
-results/        AMLB output CSVs + generated tables (gitignored)
-report/         thesis writeup
+console/      Streamlit multipage app (app.py + views/)
+storage/      DB (models/db/repo/migrate/seed) · objectstore · ingest · integration · runner
+analysis/     load_results + ranking/pareto/by-characteristic
+amlb_userdir/ AMLB config layer: benchmarks/ (mvp) + constraints.yaml + frameworks.yaml
+dashboard/    earlier single-page results explorer (spec 002/003)
+tests/        storage / ingest / integration / runner / console-render tests
+docs/         this documentation set
+specs/        spec-kit specs (002 benchmark, 003 console, 004 docs) — local
 ```
 
-## Prerequisites
+## Tech stack
 
-- **Python 3.9–3.11** venv (not system Python).
-- **Java** for H2O (present: openjdk 21).
-- macOS local: **`brew install libomp`** (xgboost/FLAML need it).
-- **H2O & AutoGluon don't install locally on macOS** — their setup scripts are Linux-first. Run those via **Docker** (`-m docker`, prebuilt Linux images) or a Linux/cloud box.
+Python · Streamlit · SQLAlchemy (PostgreSQL / SQLite) · MinIO (S3, boto3) · Docker + AMLB images ·
+OpenML · pandas/plotly. Tests with pytest.
 
-## Setup
+## License
 
-```bash
-cd automl-thesis
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-# AMLB tool — cloned OUTSIDE this repo to keep git clean:
-git clone https://github.com/openml/automlbenchmark.git /Users/lap17650/workspace/automlbenchmark
-pip install -r /Users/lap17650/workspace/automlbenchmark/requirements.txt
-```
-
-`amlb_userdir/config.yaml` (already present) is what makes `-u amlb_userdir` load our custom
-`benchmarks/mvp.yaml` + `constraints.yaml`. Do **not** redefine a built-in framework
-(e.g. `AutoGluon_bestquality`) in `frameworks.yaml` — AMLB errors on duplicate names.
-
-## Run the MVP smoke
-
-```bash
-AMLB="python /Users/lap17650/workspace/automlbenchmark/runbenchmark.py"
-# baselines + flaml run locally (after `brew install libomp`):
-for fw in constantpredictor RandomForest flaml; do
-  $AMLB $fw mvp smoke -m local -u amlb_userdir -o results -s force
-done
-# H2O + AutoGluon reliably via Docker (Linux images):
-for fw in H2OAutoML AutoGluon; do
-  $AMLB $fw mvp smoke -m docker -u amlb_userdir -o results -s force
-done
-python -m analysis.rankings results/results.csv   # ranking table
-pytest                                             # validate analysis layer
-```
-
-## Status (last local run)
-
-- ✅ Pipeline proven end-to-end: AMLB → `results.csv` → `analysis/` → ranking.
-- ✅ MVP smoke ranking (local CPU, identical protocol): **flaml 1.33 > RandomForest 1.67 > constantpredictor 3.00**.
-- ✅ 6/6 analysis unit tests pass.
-- ⏳ H2O & AutoGluon: run via Docker/cloud (local macOS install fails — see `report/report.md`).
-
-## Notes
-
-- Baselines = three (`constantpredictor`, `RandomForest`, `TunedRandomForest`), per the paper. (Spec text says "two" — finding **F1**, reconcile before US5.) `TunedRandomForest` needs an older sklearn pin to run.
-- Med-VQA constitution scoping = finding **D1**; fix via `/speckit-constitution` before US5.
-- `results/_smoke_with_failures.csv` keeps the failure run — real data for the US2 failure-capture analysis.
+[MIT](LICENSE).

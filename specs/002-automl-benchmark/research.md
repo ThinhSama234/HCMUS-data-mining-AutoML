@@ -70,6 +70,18 @@ All decisions below are made to reach a **correct** MVP (User Story 1) **fastest
 - **Rationale**: A reviewer re-runs one script in a clean container and regenerates the headline tables/plots.
 - **Alternatives considered**: Manual notebook steps — rejected: not one-command reproducible.
 
+## D11 — Results visualization: interactive dashboard (US6)
+
+- **Decision**: Build the interactive explorer with **Streamlit** for the app shell + sidebar filters and **Plotly** for the charts. It reads the recorded results CSV through the existing `analysis/load_results.py` and renders ranking / Pareto / by-characteristic by calling the existing `rankings.py` / `pareto.py` / `by_characteristics.py` — no logic is duplicated. Filters: framework, task type, dataset, budget. `matplotlib`/`seaborn` stay for static headline-figure export into the report (FR-016, SC-008).
+- **Rationale**: Streamlit is the lowest-friction pure-Python path to an interactive app (no HTML/JS, no Dash callback graph); reusing the analysis modules keeps a single source of truth so the dashboard and the report can never disagree. Reads recorded data only → zero new experimental risk and no benchmark re-run.
+- **Alternatives considered**: **Plotly Dash** — more control but callback boilerplate and more code for the same result (rejected on Principle V). **Jupyter notebook** — not a navigable app and harder to keep reproducible (rejected). **AMLB's bundled visualization** — kept only as an optional cross-check (existing T033), not the cited artifact.
+
+## D12 — Framework integration as a Claude Code skill (US7)
+
+- **Decision**: Ship a repo-local Claude Code skill `.claude/skills/amlb-integrate-framework/` (a `SKILL.md` plus scaffold `templates/`). **Input contract**: a Python, pip-installable framework exposing a `fit`/`predict` (scikit-learn-style) surface. **Output**: a complete `amlb_userdir/extensions/<Name>/` module (`__init__.py`, `exec.py`, `setup.sh`, `requirements.txt`) plus the `amlb_userdir/frameworks.yaml` registry entry (`module: extensions.<Name>`) — AMLB's canonical userdir pattern, so the external clone is untouched. **Preconditions are enforced** — a non-conforming source is rejected with a stated reason and no partial module is written. **Verification**: the generated module runs on the `smoke` suite and yields scored predictions. The skill *wraps* a framework; it never modifies the framework's code, so it stays inside the "no building/modifying an AutoML framework" scope boundary.
+- **Rationale**: The AMLB integration contract is small and identical every time (4 files + 1 YAML entry); a guided, rule-checked skill makes it repeatable and verifiable, and matches exactly how AMLB itself integrates `flaml` etc. It is independent of FR-001 — the scientific comparison still tests exactly H2O/FLAML/AutoGluon.
+- **Alternatives considered**: **Standalone Python CLI generator** — usable outside Claude but less interactive guidance and another tool to maintain (rejected for the thesis's needs). **Template + checklist only** — no automation/verification, error-prone (rejected). **Any-language via CLI/Docker wrapper** — far more general but the adapter and verification become much harder; deferred as out of the documented support window (the AMLB module already provides Docker isolation per framework).
+
 ## Open items to confirm at first setup (non-blocking)
 
 - Exact AMLB install path (clone + `pip install` vs packaged `amlb`) and the precise CLI/flags for `--userdir`, `--mode`, fold/seed overrides, and the built-in short constraint name (e.g., `test`) — confirm against the tool's current docs at setup; the plan does not depend on the exact spelling.

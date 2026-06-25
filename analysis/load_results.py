@@ -51,4 +51,7 @@ def load_results(path):
         return _normalized_score(row["result_num"], metric)
 
     df["score"] = df.apply(_score, axis=1)
+    # Force float64 (the per-row helper mixes floats with NA → object dtype otherwise). This
+    # keeps numeric ops correct AND survives a SQLite round-trip as REAL, not TEXT.
+    df["score"] = pd.to_numeric(df["score"], errors="coerce")
     return df

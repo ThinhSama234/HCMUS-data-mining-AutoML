@@ -10,3 +10,25 @@ venv/
 # Benchmark raw outputs — keep curated summaries only, not the raw AMLB dumps
 results/*
 !results/.gitkeep
+/.specify
+/specs/*
+# generated dashboard/console figures
+results/figures/
+
+# Phase 0 storage
+console.db
+*.db
+
+# US8 local object-store fallback
+.objectstore/
+
+# local secrets/config (keep .env.example tracked)
+.env
+
+# US4 generated per-run AMLB benchmarks + staged upload splits
+amlb_userdir/benchmarks/_job_*.yaml
+amlb_userdir/data/_job_*/
+
+# local agent tooling
+.agents/
+skills-lock.json

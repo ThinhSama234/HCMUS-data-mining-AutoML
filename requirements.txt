@@ -1,7 +1,18 @@
 # Analysis layer only. The AMLB orchestration tool + the AutoML frameworks
 # (AutoGluon, H2O[needs Java], FLAML) are installed separately — see README.md —
 # because they are heavy and AMLB manages each framework's own environment.
-pandas>=2.0
+# pandas pinned to coexist with the AMLB harness in the same venv (AMLB pins pandas 1.5.3);
+# our analysis/console layer verified on 1.5.3.
+pandas>=1.5,<3
 matplotlib>=3.7
 seaborn>=0.13
 pytest>=7.4
+# US6 results explorer (FR-016) + product console: interactive Streamlit UI
+streamlit>=1.30
+plotly>=5.18
+# US7/US8 backend: Postgres + object store + OpenML ingest
+sqlalchemy>=2.0
+psycopg2-binary>=2.9
+boto3>=1.26
+openml>=0.13
+python-dotenv>=1.0
