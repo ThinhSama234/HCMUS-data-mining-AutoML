@@ -13,7 +13,20 @@ import sys
 from sqlalchemy import insert, select, update
 
 from storage import db
-from storage.models import compute_instances, constraints, methods
+from storage.models import compute_instances, constraints, datasets, methods
+
+# AMLB's standard "small" benchmark suite (resources/benchmarks/small.yaml) — classification tasks,
+# seeded so they're selectable on the Training page (runnable via openml_task_id). (name, task_id, type)
+OPENML_SMALL = [
+    ("Australian", 146818, "binary"), ("blood-transfusion", 10101, "binary"),
+    ("car", 146821, "multiclass"), ("christine", 168908, "binary"),
+    ("cnae-9", 9981, "multiclass"), ("credit-g", 31, "binary"),
+    ("dilbert", 168909, "multiclass"), ("fabert", 168910, "multiclass"),
+    ("jasmine", 168911, "binary"), ("kc1", 3917, "binary"),
+    ("kr-vs-kp", 3, "binary"), ("mfeat-factors", 12, "multiclass"),
+    ("phoneme", 9952, "binary"), ("segment", 146822, "multiclass"),
+    ("sylvine", 168912, "binary"), ("vehicle", 53, "multiclass"),
+]
 
 # Curated — the frameworks/baselines actually used, with real status.
 # (name, kind, version, preset, status, docker_image, image_tag, project_url)
@@ -93,8 +106,11 @@ def seed_catalog(eng=None):
         for name, vcpus, mem, gpu, ng, rate in INSTANCES:
             _upsert(conn, compute_instances, name, vcpus=vcpus, memory_gb=mem,
                     gpu_type=gpu, gpu_count=ng, rate_per_hour=rate, active=True)
+        for name, task_id, ttype in OPENML_SMALL:        # AMLB small suite → trainable datasets
+            _insert_if_absent(conn, datasets, name, source="openml", openml_task_id=task_id,
+                              task_type=ttype, status="ready")
     return {"methods": len(CURATED) + len(AVAILABLE), "constraints": len(CONSTRAINTS),
-            "instances": len(INSTANCES)}
+            "instances": len(INSTANCES), "datasets": len(OPENML_SMALL)}
 
 
 def main(argv):

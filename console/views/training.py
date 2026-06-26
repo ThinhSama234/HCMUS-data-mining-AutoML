@@ -57,14 +57,18 @@ if _cp["msg"]:
 _cat = runner.list_trainable_datasets()
 _run_ds = [d for d in _cat if d["runnable"]]
 _blocked = [d for d in _cat if not d["runnable"]]
-_label = {d["name"]: f'{d["name"]}  ·  {d.get("type") or "?"}  ·  {d.get("source") or "?"}'
-          for d in _run_ds}
+# chip label = just the dataset name (no truncation); type/source shown in the summary below
+_type = {d["name"]: (d.get("type") or "?") for d in _run_ds}
 picked = st.multiselect(
     "Datasets to train on", [d["name"] for d in _run_ds],
     default=[d["name"] for d in _run_ds],
-    format_func=lambda n: _label.get(n, n),
     help="From the Datasets catalog. Add more via the Datasets page (Upload CSV / OpenML).",
 )
+if picked:
+    from collections import Counter
+    _bd = Counter(_type[n] for n in picked)
+    _summary = " · ".join(f"{v} {k}" for k, v in sorted(_bd.items()))
+    st.caption(f"**{len(picked)}** dataset(s) selected — {_summary}")
 if _blocked:
     st.caption("Not runnable (need an OpenML task id, or an uploaded file + target column): "
                + ", ".join(d["name"] for d in _blocked))

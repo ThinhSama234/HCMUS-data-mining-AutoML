@@ -140,7 +140,7 @@ if selected and (df_all["name"] == selected).any():
     st.stop()
 
 # ===================== LIST =====================
-theme.pagehead("Methods", "Framework catalog &amp; integration — from database", kicker="Build")
+theme.pagehead("Methods", "Framework catalog &amp; integration — from database")
 st.caption(runner.host_summary())
 
 integratable = df_all.query("integration_status in ('available','failed')")["name"].tolist()

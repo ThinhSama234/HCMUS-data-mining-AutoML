@@ -85,7 +85,7 @@ def test_build_benchmark_openml_entry(seeded, tmp_path, monkeypatch):
     from storage.models import training_run_datasets
     from sqlalchemy import insert
     eng = db.init_db()
-    d1 = _add_dataset(eng, "credit-g", source="openml", openml_task_id=168757, task_type="binary")
+    d1 = _add_dataset(eng, "tbench-bin", source="openml", openml_task_id=999001, task_type="binary")
     monkeypatch.setattr(runner, "_docker_available", lambda: True)
     monkeypatch.setattr(runner.subprocess, "Popen", lambda *a, **k: None)
     tr_id, _ = runner.launch("flaml", [d1], "smoke")
@@ -94,7 +94,7 @@ def test_build_benchmark_openml_entry(seeded, tmp_path, monkeypatch):
     bench, n = runner._build_benchmark(eng, tr_id)
     assert n == 1
     text = (tmp_path / "benchmarks" / f"{bench}.yaml").read_text()
-    assert "name: credit-g" in text and "openml_task_id: 168757" in text
+    assert "name: tbench-bin" in text and "openml_task_id: 999001" in text
 
 
 def test_list_jobs_ignores_orphan_runs(seeded, monkeypatch):

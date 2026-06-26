@@ -65,8 +65,12 @@ def with_characteristics(df, meta=TASK_META):
 
 
 def grouped_rankings(df, by="size_tier", meta=TASK_META):
-    """Average rank per framework within each tier of `by`. Returns long df: [by, framework, avg_rank]."""
-    if by not in {"size_tier", "dim_tier", "balance_tier"}:
+    """Average rank per framework within each group of `by`. Returns long df: [by, framework, avg_rank].
+
+    `by` may be a derived tier (size_tier/dim_tier/balance_tier) or the raw `type` column
+    (binary/multiclass/regression) — the latter folds the old "by task type" table into this view.
+    """
+    if by not in {"size_tier", "dim_tier", "balance_tier", "type"}:
         raise ValueError(f"unknown characteristic: {by}")
     cdf = with_characteristics(df, meta)
     frames = []
