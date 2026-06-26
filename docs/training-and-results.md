@@ -3,6 +3,38 @@
 End-to-end: add datasets → launch a benchmark on the ones you pick → watch jobs → read results on
 Evaluation.
 
+## Job lifecycle
+
+A "job" is one `training_runs` row, linked to the chosen framework(s) and dataset(s); each scored
+result becomes a `runs` row. `launch()` runs in the Streamlit process and returns immediately; the
+actual benchmark runs in a **detached worker subprocess** that survives page reloads and reports
+back through the database.
+
+```mermaid
+sequenceDiagram
+  participant UI as UI · Training page
+  participant L as Launcher · launch()
+  participant DB as Postgres · training_runs
+  participant W as Worker · subprocess
+  participant DK as Docker · AMLB image
+  UI->>L: 1 · Launch (framework · datasets · constraint)
+  L->>DB: 2 · INSERT training_runs(running) + link methods/datasets
+  L-->>W: 3 · Popen detached: storage.runner --run id method constraint
+  L-->>UI: 4 · return (job_id, running) · st.rerun · Jobs poll 3s
+  Note over W: _run_job(id, method, constraint)
+  W->>W: 5 · _build_benchmark() → amlb_userdir/benchmarks/_job_{id}.yaml
+  W->>DK: 6 · docker run --rm --name amlb_job_{id} … -s auto (timeout RUN_TIMEOUT)
+  DK-->>W: 7 · results.csv (score · metric · duration)
+  W->>DB: 8 · _ingest_job() → INSERT runs(training_run_id=id)
+  W->>DB: 9 · _finish() → done | failed · last_error
+  UI->>DB: 10 · list_jobs() sees done → Evaluation reads runs
+```
+
+Resilience: a run over `AMLB_RUN_TIMEOUT` is `docker kill`ed and marked `failed`; **Stop**
+(`cancel()`) kills a running container; a job whose worker died is auto-failed by
+`reap_stale_jobs()` on the next Jobs poll. Each job gets its own `_job_{id}.yaml` + `results/job_{id}/`
+output dir, so jobs are isolated and debuggable (read `results/job_{id}/run.log`).
+
 ## 1. Add datasets (Datasets page)
 
 `storage/ingest.py` → object store + a `datasets` row ([object-store.md](object-store.md)):
@@ -22,7 +54,7 @@ A dataset is **trainable** when it has an OpenML task id, or an uploaded file + 
 3. `_build_benchmark()` generates an AMLB benchmark file for exactly those datasets:
    - OpenML dataset → `{name, openml_task_id}`.
    - Upload → downloaded from the object store, **train/test split** (AMLB needs both), staged under
-     `{user}/data/_job_<id>/`, emitted as `dataset: {train, test, target}`.
+     `{user}/data/_job_{id}/`, emitted as `dataset: {train, test, target}`.
 4. The worker runs the image (see [docker.md](docker.md)), then ingests the job's `results.csv` into
    `runs` (tagged with `training_run_id`) and sets `status=done|failed`.
 
