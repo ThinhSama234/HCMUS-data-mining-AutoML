@@ -31,9 +31,11 @@ pip install -r requirements.txt
 cp .env.example .env
 docker-compose up -d
 
-# 3. Seed the catalog (+ optionally load historical results)
+# 3. Seed the catalog (frameworks / datasets / constraints / instances)
 python -m storage.seed
-python -m storage.migrate results/results.csv      # optional
+# (optional) load a historical results.csv if you have one — a fresh clone ships none,
+# so Evaluation starts empty and fills once you run a benchmark on the Training page:
+python -m storage.migrate results/results.csv
 
 # 4. Run the console
 streamlit run console/app.py                        # → http://localhost:8501

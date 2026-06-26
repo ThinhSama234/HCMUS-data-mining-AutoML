@@ -9,6 +9,7 @@ CLI:  python -m storage.migrate [results.csv]
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import pandas as pd
@@ -99,6 +100,13 @@ def migrate(csv_path=None, eng=None):
 
 def main(argv):
     csv = argv[1] if len(argv) > 1 else db.DEFAULT_CSV
+    if not os.path.exists(csv):
+        # a fresh clone ships no results.csv — seed the catalog and skip (not an error)
+        from storage.seed import seed_catalog
+        seed_catalog()
+        print(f"no results CSV at {csv} — catalog seeded, runs left empty. "
+              "Launch a benchmark on the Training page to populate Evaluation.")
+        return 0
     n = migrate(csv)
     print(f"ingested {n} rows: {csv} → {db.database_url()} (relational: runs + catalog)")
     return 0
