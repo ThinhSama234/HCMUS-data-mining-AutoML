@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
 
 import streamlit as st  # noqa: E402
 
-from console import theme  # noqa: E402
+from console import onboarding, theme  # noqa: E402
 
 st.set_page_config(page_title="AutoML Bench Console", page_icon="🧪", layout="wide")
 theme.inject()
@@ -41,4 +41,5 @@ nav = st.navigation(
     }
 )
 theme.sidebar_footer()
+onboarding.maybe_show()   # one-time welcome dialog (first visit per session)
 nav.run()

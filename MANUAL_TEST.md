@@ -1,108 +1,124 @@
 # Manual UI Test — AutoML Console
 
-Hướng dẫn test tay giao diện console (spec 003). Vừa làm vừa tick `[ ]` → `[x]`.
+Hướng dẫn test tay giao diện console (spec 003 + runner US4 + Cost). Vừa làm vừa tick `[ ]` → `[x]`.
 
-> **Live** = nối DB/object-store thật · **Mock** = UI shell (chưa nối backend).
+> Cập nhật theo app hiện tại: Training **chạy thật** (Docker), Cost là **estimator thật**,
+> catalog có **~19 methods + 18 datasets**, Evaluation có leaderboard/rank-score/tooltip.
 
 ---
 
 ## 0. Chuẩn bị
 
-- Stack chạy: `docker compose ps` → `postgres (healthy)`, `minio`, đều Up.
-- Console: **http://localhost:8501** (nếu chưa chạy: `streamlit run console/app.py`).
-- File mẫu để upload (dialog trỏ tới thư mục này):
+- Stack: `docker compose ps` → `postgres (healthy)`, `minio` đều Up.
+- Seed + (tuỳ chọn) nạp kết quả cũ: `python -m storage.seed` · `python -m storage.migrate results/results.csv`
+- Console: **http://localhost:8501** (`streamlit run console/app.py`).
+- File mẫu upload: `/Users/lap17650/workspace/automl-thesis/sample_data/`
 
-  ```
-  /Users/lap17650/workspace/automl-thesis/sample_data/
-  ```
-
-| File | Loại | Target | Dùng để |
-|------|------|--------|---------|
+| File | Loại | Target | Dùng |
+|------|------|--------|------|
 | `loan_binary.csv` | binary | `approved` | upload OK |
 | `flower_multiclass.csv` | multiclass | `species` | upload OK |
 | `house_regression.csv` | regression | `price` | upload OK |
-| `bad_single_column.csv` | — | (không có) | test **bị từ chối** |
+| `bad_single_column.csv` | — | — | test **bị từ chối** |
 
-- OpenML task id: **`59`** (iris, multiclass) — đã verify chạy được.
+- OpenML task id để Add-from-OpenML: **`59`** (iris).
+- Sidebar 3 nhóm: **Analyze** (Evaluation) · **Build** (Datasets, Methods, Training) · **Operate** (Cost, Deploy).
 
----
-
-## ① Evaluation  *(Live)*
-
-- [ ] Mở section **Evaluation** ở sidebar.
-- [ ] Caption hiện `data source: **db**`.
-- [ ] Thấy 3 view: **Ranking** (bar), **Accuracy vs inference time** (Pareto), **By data characteristic**.
-- [ ] Đổi filter **Framework / Task type / Dataset** → các view cập nhật theo.
-- [ ] Bấm **Export headline figures** → báo "Wrote: results/figures/…".
-
-**Kỳ vọng:** flaml ~1.33 > RandomForest ~1.67 > constantpredictor 3.0.
+> ⚠️ **Apple Silicon:** chỉ **flaml / constantpredictor** chạy được benchmark thật (verified).
+> AutoGluon/autosklearn quá nặng → dùng để test *đường fail/chặn*, đừng đợi nó xong.
 
 ---
 
-## ② Datasets  *(Live — phần US8 chính)*
+## ① Evaluation
+
+- [ ] Caption `data source: **db**`.
+- [ ] **KPI** (4 ô) có tooltip ⓘ khi hover: Best overall / Datasets / Runs / Coverage.
+- [ ] **Overall leaderboard**: bảng cột 🥇🥈🥉 giảm dần (flaml #1), tooltip ⓘ giải thích.
+- [ ] **Accuracy vs inference time** (Pareto): điểm amber = Pareto-optimal, tooltip ⓘ.
+- [ ] **Ranking by data characteristic**: dropdown **Group datasets by** đổi được (Task type / Dataset size / #features / Class balance). Đoạn giải thích dài nằm trong tooltip ⓘ, **không** hiện inline.
+  - [ ] Chọn **Task type** → bar ngang rank-score (bar dài = tốt), **không lỗi** "unknown characteristic".
+- [ ] Đổi filter Framework/Task type/Dataset → mọi view cập nhật.
+- [ ] **Export headline figures** → "Wrote: results/figures/…".
+
+---
+
+## ② Datasets
 
 ### Upload CSV
-- [ ] Chọn `loan_binary.csv` → **Ingest upload** → ✅ "Ingested … dataset_id N".
-- [ ] Bảng dưới thêm dòng: `source=upload`, `task_type=binary`, `n_instances=60`, `n_features=3`.
-- [ ] Lặp với `flower_multiclass.csv` → `task_type=multiclass`.
-- [ ] Lặp với `house_regression.csv` → `task_type=regression`.
+- [ ] `loan_binary.csv` → ✅ toast "Ingested … dataset_id N"; bảng có dòng `source=upload`, `binary`, `n_instances=60`.
+- [ ] `flower_multiclass.csv` → `multiclass`; `house_regression.csv` → `regression`.
+- [ ] Cột **status** = `ready`; cột **File** có icon ⬇ (presigned download).
 
-### Test từ chối (rejection)
-- [ ] Upload `bad_single_column.csv` → ❌ báo đỏ "needs at least one feature plus a target".
-- [ ] **Không** có dòng mới nào được tạo.
+### Test từ chối
+- [ ] `bad_single_column.csv` → ❌ "needs at least one feature plus a target", **không** tạo dòng mới.
 
 ### Add from OpenML
-- [ ] Nhập `59` → **Add from OpenML** → ✅ "iris … dataset_id N" (multiclass).
-- [ ] Nhập `59` lần nữa → trả về **cùng dataset_id** (idempotent, không nhân đôi).
+- [ ] Nhập `59` → ✅ "iris … dataset_id N".
+- [ ] Nhập `59` lần nữa → **cùng dataset_id** (idempotent).
 
-> Lưu ý: tên dataset là **UNIQUE** — upload trùng tên file hoặc OpenML trùng tên → báo lỗi unique (đúng thiết kế).
-
----
-
-## ③ Methods  *(Live)*
-
-- [ ] 6 method hiện từ DB: flaml, H2OAutoML, AutoGluon, RandomForest, TunedRandomForest, constantpredictor.
-- [ ] Pill trạng thái đúng: flaml/RandomForest/constantpredictor = `integrated`, H2OAutoML = `setup_pending`, TunedRandomForest = `failed`.
-- [ ] Có card nét đứt **"+ Integrate new framework"** (US7 skill).
+> Tên dataset **UNIQUE** — trùng tên → báo lỗi unique (đúng thiết kế).
 
 ---
 
-## ④ Training  *(Mock)*
+## ③ Methods
 
-- [ ] Form chọn được: Datasets / Frameworks (chip), Budget (smoke/1h/4h), Folds, Mode.
-- [ ] Nút **Launch run** + bảng **Jobs** hiển thị (tĩnh — chưa nối orchestration thật).
-
----
-
-## ⑤ Compute & Pricing  *(Live instances + estimator)*
-
-- [ ] 3 instance từ DB: CPU 8-core, GPU T4, GPU A100 (giá/hr).
-- [ ] Chỉnh **Runs / Budget / Instance / Parallelism** → 3 ô (compute-hours, wall-clock, cost) cập nhật.
+- [ ] Caption **Host:** … (arch · Rosetta/qemu · VM RAM/cores).
+- [ ] ~19 cards; mỗi card có **status pill** + **compat badge** (vd flaml `Runs here` xanh, AutoGluon `Failed here` đỏ, autosklearn `Heavy · emulated` vàng).
+- [ ] Nút **↻ Re-check** → toast "Re-checked …" (đồng bộ status với image thật).
+- [ ] Expander **💾 Docker storage** → bảng `docker system df` + nút **🧹 Reclaim space**.
+- [ ] Click 1 card → trang detail (`?m=…`): bảng field (Kind/Version/Resource class/Image size…), tooltip; nếu integrated + image có → nút **🗑 Remove image (free X GB)**; nếu đang có job chạy → nút **⏹ Stop job**.
+- [ ] **Integrate**: chọn 1 framework `available` (vd `gama`) → **Integrate** → pill `integrating` → (chờ pull) → `integrated` (cần Docker + mạng).
 
 ---
 
-## ⑥ Deploy  *(Mock)*
+## ④ Training  *(LIVE — chạy Docker thật)*
 
-- [ ] Bảng endpoints + form deploy hiển thị (UI shell, ngoài scope thesis).
+- [ ] Caption **Host:** hiện như Methods.
+- [ ] **Framework**: chỉ liệt kê framework `integrated`. Chọn **flaml**.
+- [ ] **Datasets to train on**: multiselect ~18 dataset, **chip chỉ hiện tên** (không cụt), dưới có dòng tóm tắt "N selected — X binary · Y multiclass · Z regression".
+- [ ] **Constraint** = smoke; caption hiện budget/fold/cores.
+- [ ] Bỏ bớt chỉ chừa **1 dataset nhỏ** (vd credit-g) cho nhanh → **🚀 Launch on 1 dataset(s)**.
+- [ ] Bảng **Jobs**: job mới `running`, KPI Running/Done/Failed cập nhật, auto-refresh 3s.
+- [ ] Chờ ~1–3 phút → job `done`, cột **Runs** ≥1; mở **Evaluation** thấy kết quả flaml mới.
+- [ ] **Test đường chặn:** chọn **AutoGluon** → hiện cảnh báo đỏ "Failed here" + **checkbox "Run anyway"**, nút Launch **bị khoá** đến khi tích.
+- [ ] (tuỳ) Launch rồi bấm **⏹ Stop** → job `cancelled`.
 
 ---
 
-## Đối chiếu backend (tin là thật, không phải mock)
+## ⑤ Cost  *(estimator thật)*
+
+- [ ] Chọn **Constraint / Datasets / Frameworks** → 3 KPI: Total runs, Compute (worst case) h, Budget/run.
+- [ ] Bảng **Estimated cost by instance**: CPU/T4/A100 với cost = giờ × rate.
+- [ ] Hàng GPU có nhãn ⚠ "no speed-up modelled"; hộp giải thích ghi rõ rate là minh hoạ, upper-bound.
+
+---
+
+## ⑥ Deploy  *(Coming soon)*
+
+- [ ] Hiện placeholder 🚧 "Coming soon" (badge **Preview**, chưa có backend) — đúng thiết kế.
+
+---
+
+## Đối chiếu backend (tin là thật)
 
 ```bash
 # datasets vừa upload nằm trong Postgres:
 docker compose exec -T postgres psql -U amlb -d amlb -c \
-  "SELECT dataset_id,name,source,task_type,n_instances,storage_uri FROM datasets ORDER BY dataset_id;"
+  "SELECT dataset_id,name,source,task_type,storage_uri FROM datasets ORDER BY dataset_id DESC LIMIT 10;"
+# job + kết quả vừa chạy:
+docker compose exec -T postgres psql -U amlb -d amlb -c \
+  "SELECT training_run_id,status,finished_at FROM training_runs ORDER BY training_run_id DESC LIMIT 5;"
 ```
-- [ ] Thấy các dòng `upload` / `openml` với `storage_uri = s3://datasets/...`.
-- [ ] MinIO web http://localhost:9001 (amlb / amlb12345) → bucket **datasets/** có file.
+- [ ] Dòng `upload`/`openml` có `storage_uri = s3://datasets/...`.
+- [ ] MinIO web **http://localhost:9001** (`amlb` / `amlb12345`) → bucket **datasets/** có file.
+- [ ] `results/job_<id>/run.log` của job vừa chạy có log AMLB.
 
 ---
 
 ## Dọn dẹp
 
 ```bash
-lsof -ti tcp:8501 | xargs kill     # dừng console
-docker compose down                # dừng stack (giữ data)
-docker compose down -v             # xoá sạch (test lại từ đầu) → rồi: docker compose up -d && python -m storage.migrate
+lsof -ti tcp:8501 | xargs kill -9        # dừng console
+docker compose down                      # dừng stack (giữ data)
+docker compose down -v                   # xoá sạch → rồi: docker compose up -d && python -m storage.seed
 ```
