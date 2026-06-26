@@ -13,6 +13,7 @@ from __future__ import annotations
 import io
 import os
 import platform
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -37,6 +38,55 @@ EMULATED = platform.system() == "Darwin" and platform.machine() == "arm64"
 # Confirmed to complete under emulation on this Mac. flaml works once Rosetta is enabled
 # (plain qemu segfaults on it); constantpredictor works even under qemu.
 VERIFIED_LOCAL = {"constantpredictor", "flaml"}
+
+# Community AMLB images bundle WIDELY different AMLB vintages, but we send them all the same modern
+# CLI. Two version differences break a run, so we probe each image's bundled AMLB once and adapt:
+#   * constraint     — older images' runbenchmark.py has NO `constraint` positional (e.g. *:stable);
+#                      passing one fails with "unrecognized arguments: <constraint>". Can't run here.
+#   * file_datasets  — mid-vintage images (e.g. *-v2.1.3) read `task_def.openml_task_id` un-guarded
+#                      in BenchmarkTask.__init__, so an uploaded/file dataset (which has no
+#                      openml_task_id) raises AttributeError and aborts the WHOLE job. Newer AMLB
+#                      uses dict access with a default and tolerates file datasets.
+# Detection is a cheap grep of the image's source (the image is already pulled). Results cache per
+# image ref. On any probe failure we stay permissive (all caps True) so a modern image is never
+# falsely blocked.
+_CAPS: dict[str, dict] = {}
+_PROBE_SH = r"""
+c=$(grep -c "add_argument('constraint'" /bench/runbenchmark.py 2>/dev/null)
+f=$(grep -c "openml_task_id=task_def\.openml_task_id" /bench/amlb/benchmark.py 2>/dev/null)
+echo "CON=${c:-0} FILEUNSAFE=${f:-0}"
+"""
+
+
+def _probe_caps(image):
+    """AMLB capabilities of a (pulled) image: {"constraint", "file_datasets", "probed"}. Cached."""
+    if not image:
+        return {"constraint": True, "file_datasets": True, "probed": False}
+    if image in _CAPS:
+        return _CAPS[image]
+    caps = {"constraint": True, "file_datasets": True, "probed": False}
+    try:
+        r = subprocess.run(
+            [_container_cli(), "run", "--rm", "--platform", "linux/amd64",
+             "--entrypoint", "bash", image, "-c", _PROBE_SH],
+            capture_output=True, text=True, timeout=60,
+        )
+        m = re.search(r"CON=(\d+)\s+FILEUNSAFE=(\d+)", r.stdout or "")
+        if m:
+            caps = {"constraint": int(m.group(1)) > 0,
+                    "file_datasets": int(m.group(2)) == 0, "probed": True}
+            _CAPS[image] = caps          # only cache a real probe — retry next time if Docker was down
+    except Exception:
+        pass
+    return caps
+
+
+def framework_caps(name, eng=None):
+    """AMLB capabilities of a framework's integrated image (see `_probe_caps` / `_CAPS` notes)."""
+    eng = db.init_db(eng)
+    with eng.connect() as c:
+        image = c.execute(select(methods.c.docker_image).where(methods.c.name == name)).scalar()
+    return _probe_caps(image)
 
 
 def run_advice(name, eng=None):
@@ -226,8 +276,9 @@ def launch(method, dataset_ids=None, constraint=DEFAULT_CONSTRAINT, eng=None):
     Returns (training_run_id, status).
     """
     eng = db.init_db(eng)
+    runnable = {d["dataset_id"]: d for d in list_trainable_datasets(eng) if d["runnable"]}
     if not dataset_ids:
-        dataset_ids = [d["dataset_id"] for d in list_trainable_datasets(eng) if d["runnable"]]
+        dataset_ids = list(runnable)
     with eng.connect() as c:
         m = c.execute(select(methods.c.method_id, methods.c.docker_image,
                              methods.c.integration_status)
@@ -236,6 +287,13 @@ def launch(method, dataset_ids=None, constraint=DEFAULT_CONSTRAINT, eng=None):
                         .where(constraints.c.name == constraint)).scalar()
     if not m or not m[1] or m[2] != "integrated":
         return None, "failed"                           # only an integrated (pulled) image runs
+    caps = _probe_caps(m[1])
+    if not caps["constraint"]:
+        return None, "no_constraint"                    # image's AMLB predates constraints — can't run
+    if not caps["file_datasets"]:                       # old image can't run uploads (no openml_task_id)
+        dataset_ids = [i for i in dataset_ids if runnable.get(i) and runnable[i]["task_id"]]
+    if not dataset_ids:
+        return None, "no_datasets"                      # nothing left this image can actually run
     docker_ok = _docker_available()
     with eng.begin() as c:
         tr_id = c.execute(insert(training_runs).values(

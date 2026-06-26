@@ -50,6 +50,9 @@ if not st.session_state.get("_reconciled"):
     integration.reconcile()
     st.session_state["_reconciled"] = True
 
+# Docker availability gates Integrate up front — no point pulling a multi-GB image when it's down.
+_docker_up = integration._docker_available()
+
 df_all = repo.list_methods()
 if df_all.empty:
     theme.pagehead("Methods", "Framework catalog &amp; integration")
@@ -100,14 +103,28 @@ if selected and (df_all["name"] == selected).any():
             st.error(f"Last error: {m['last_error']}")
         if status in ("available", "failed"):
             if st.button("↻ Retry integration" if status == "failed" else "Integrate",
-                         type="primary", key=f"int_{selected}"):
+                         type="primary", key=f"int_{selected}", disabled=not _docker_up):
                 _kick(selected)
                 st.rerun()
+            if not _docker_up:
+                st.caption("⚠️ Docker engine isn't running — start Docker/Rancher to integrate.")
         elif status == "integrating":
             st.info("Pulling image… this view auto-refreshes.")
         elif status == "integrated":
             if integration.image_present(m.get("docker_image")):
-                st.success("Image present — runnable on the Training page.")
+                # the image's bundled AMLB version decides what it can actually run here — surface
+                # the limitation NOW (post-pull) instead of letting it fail/skip at launch time
+                caps = runner.framework_caps(selected)
+                if not caps["constraint"]:
+                    st.error("⚠️ Image is present, but its bundled **AMLB has no constraint support** "
+                             "(typical of `:stable` tags) — it **can't be launched one-click** on the "
+                             "Training page. Integrate a newer image tag to run it here.")
+                elif not caps["file_datasets"]:
+                    st.warning("Image present. Its bundled AMLB is **too old to run uploaded/file "
+                               "datasets** (no OpenML task id) — only OpenML datasets run; uploads are "
+                               "auto-excluded at launch.")
+                else:
+                    st.success("Image present — runnable on the Training page.")
                 _sz = integration.image_size_bytes(m.get("docker_image"))
                 _free = f" (free {_sz / 1e9:.1f} GB)" if _sz else ""
                 if st.button(f"🗑 Remove image{_free}", key=f"rmi_{selected}"):
@@ -149,9 +166,12 @@ cc = st.columns([7, 1.5])
 pick = cc[0].selectbox("Available or failed (pull its AMLB Docker image)",
                        integratable or ["— none —"], label_visibility="collapsed",
                        disabled=not integratable)
-if integratable and cc[1].button("Integrate", type="primary", use_container_width=True):
+if cc[1].button("Integrate", type="primary", use_container_width=True,
+                disabled=not (integratable and _docker_up)):
     _kick(pick)
     st.rerun()
+if integratable and not _docker_up:
+    st.caption("⚠️ Docker engine isn't running — start Docker/Rancher to integrate (pull) images.")
 
 # status is only a label — the truth is whether `docker image inspect` finds the image.
 # After a Docker restart/crash an 'integrated' label can go stale; re-check re-syncs it.

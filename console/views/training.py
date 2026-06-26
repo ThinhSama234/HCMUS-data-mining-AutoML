@@ -47,6 +47,14 @@ cons = runner.list_constraints() or [runner.DEFAULT_CONSTRAINT]
 ci = cons.index(runner.DEFAULT_CONSTRAINT) if runner.DEFAULT_CONSTRAINT in cons else 0
 con = c2.selectbox("Constraint", cons, index=ci)
 
+# what the framework's bundled AMLB image can actually do (community images vary by AMLB version)
+_caps = runner.framework_caps(fw)
+if not _caps["constraint"]:
+    st.error(f"**{fw}**'s Docker image bundles an AMLB version with **no constraint support** "
+             f"(typical of `:stable` tags), so passing `{con}` fails with *unrecognized arguments*. "
+             f"It can't be run one-click here — integrate a newer image tag for {fw} on the "
+             "**Methods** page.")
+
 # compatibility of the chosen framework on THIS machine (empirical history + emulation heuristic)
 _cp = runner.compat(fw, (repo.get_method(fw) or {}).get("kind"), runner.run_history())
 if _cp["msg"]:
@@ -57,6 +65,11 @@ if _cp["msg"]:
 _cat = runner.list_trainable_datasets()
 _run_ds = [d for d in _cat if d["runnable"]]
 _blocked = [d for d in _cat if not d["runnable"]]
+# this framework's image may be too old to run uploaded/file datasets (no OpenML task id) — exclude
+# them up front so one incompatible upload can't crash the whole job (mirrors runner.launch).
+_incompat = [d for d in _run_ds if not _caps["file_datasets"] and not d["task_id"]]
+if _incompat:
+    _run_ds = [d for d in _run_ds if d["task_id"]]
 # chip label = just the dataset name (no truncation); type/source shown in the summary below
 _type = {d["name"]: (d.get("type") or "?") for d in _run_ds}
 picked = st.multiselect(
@@ -72,6 +85,10 @@ if picked:
 if _blocked:
     st.caption("Not runnable (need an OpenML task id, or an uploaded file + target column): "
                + ", ".join(d["name"] for d in _blocked))
+if _incompat:
+    st.caption(f"⚠️ Excluded for **{fw}**: " + ", ".join(d["name"] for d in _incompat)
+               + " — its AMLB image is too old to run uploaded/file datasets (no OpenML task id). "
+                 "Run these on a framework with a current image, or integrate a newer tag.")
 
 _c = runner.constraint_info(con)
 if _c:
@@ -88,11 +105,14 @@ if _blocked:
     _override = st.checkbox(f"Run **{fw}** anyway — it failed on this machine before "
                             "(likely to fail/hang again)", value=False)
 if st.button(f"🚀 Launch on {len(_ids)} dataset(s)", type="primary",
-             disabled=(not _ids) or (_blocked and not _override)):
+             disabled=(not _ids) or (_blocked and not _override) or (not _caps["constraint"])):
     with st.spinner(f"Starting {fw}…"):
         tr_id, status = runner.launch(fw, _ids, con)
-    if status == "failed":
-        st.toast(f"Could not start {fw} — is Docker running?", icon="⚠️")
+    _err = {"failed": f"Could not start {fw} — is Docker running?",
+            "no_constraint": f"{fw}'s image has no constraint support — can't run it here.",
+            "no_datasets": f"No datasets {fw}'s image can run — pick OpenML datasets."}
+    if status in _err:
+        st.toast(_err[status], icon="⚠️")
     else:
         st.session_state["_job"] = tr_id
         st.toast(f"Launched job #{tr_id} · {fw} on {len(_ids)} dataset(s)", icon="🚀")
