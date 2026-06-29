@@ -10,15 +10,17 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest          # runner amd64 → image amd64, khớp VPS amd64 (Tầng 3)
+    runs-on: ubuntu-latest          # runner amd64; build multi-arch (amd64+arm64) qua QEMU cho VPS ARM
     permissions:
       contents: read
       packages: write               # 🔑 cấp cho GITHUB_TOKEN quyền ĐẨY lên GHCR
     steps:
       - uses: actions/checkout@v4
 
-      # buildx với driver `docker-container` — BẮT BUỘC để cache `type=gha` hoạt động.
-      # Driver `docker` mặc định KHÔNG export cache ra backend ngoài → chính là lỗi build vừa rồi.
+      # QEMU — cho runner amd64 build được cả arm64 (emulate). Cần cho multi-arch.
+      - uses: docker/setup-qemu-action@v3
+
+      # buildx driver `docker-container` — BẮT BUỘC cho cache `type=gha` VÀ build multi-arch.
       - uses: docker/setup-buildx-action@v3
 
       # Sinh nhãn (tags) + labels cho image một cách tự động.
@@ -40,6 +42,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .                                           # build theo Dockerfile ở gốc repo (+ .dockerignore)
+          platforms: linux/amd64,linux/arm64                   # multi-arch: chạy trên VPS ARM (Oracle Free) lẫn Mac/amd64
           push: ${{ github.event_name != 'pull_request' }}     # PR: build-only · main/tag: build + push
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
