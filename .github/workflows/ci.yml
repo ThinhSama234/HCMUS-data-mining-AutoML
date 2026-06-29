@@ -1,0 +1,36 @@
+name: CI
+
+# Khi nào chạy:
+#   - push lên main        → kiểm tra code đã merge
+#   - pull_request vào main → kiểm tra TRƯỚC khi merge (đây là giá trị review-as-code)
+#   - workflow_dispatch     → cho phép bấm "Run workflow" thủ công trên tab Actions
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest          # máy ảo GitHub cấp: 2 vCPU / 7GB, amd64, miễn phí (repo public)
+    strategy:
+      fail-fast: false              # 3.9 fail thì vẫn chạy 3.11 → thấy cả hai kết quả
+      matrix:
+        python-version: ["3.9", "3.11"]   # khớp "Python 3.9–3.11" trong README
+
+    steps:
+      - uses: actions/checkout@v4   # kéo code repo về runner
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip                # cache wheel theo requirements.txt → lần sau cài nhanh
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest -q              # 10 file test hermetic: SQLite tạm + Docker mock, không cần service
