@@ -17,7 +17,7 @@ datasets = Table(
     "datasets", metadata,
     Column("dataset_id", BigInteger().with_variant(Integer(), "sqlite"), primary_key=True, autoincrement=True),
     Column("name", Text, nullable=False),
-    Column("source", Text, nullable=False),            # upload | openml | import
+    Column("source", Text, nullable=False),            # upload | openml | import | kaggle
     Column("openml_task_id", Integer),
     Column("task_type", Text),                         # binary | multiclass | regression
     Column("target_column", Text),
