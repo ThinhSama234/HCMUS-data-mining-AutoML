@@ -31,3 +31,7 @@ Tổng 20 dataset. mỗi thành viên chuẩn bị 5 datasets (public trên kagg
 - Thời gian chạy, resource
 - Metrics: AUC
 
+
+## Resources:
+
+- https://github.com/hyunjoonbok/Python-Projects/blob/master/H2O/Complete%20guide%20to%20Machine%20Learning%20with%20H2O%20(AutoML).ipynb

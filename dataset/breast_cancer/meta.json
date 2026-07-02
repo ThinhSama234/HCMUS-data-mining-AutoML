@@ -1,0 +1,6 @@
+{
+  "label": "target",
+  "task": "classification",
+  "metric": "auc",
+  "drop_cols": []
+}
