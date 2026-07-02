@@ -18,3 +18,5 @@ openml>=0.13
 python-dotenv>=1.0
 autogluon
 
+# 006 Kaggle dataset import (public link) — official API client; authenticates via token
+kaggle>=1.6

@@ -12,7 +12,7 @@ captured not hidden. The original benchmark spec lives in [`specs/002-automl-ben
 
 ## What it does
 
-- **Datasets** — upload a CSV or add an OpenML task; stored in MinIO + catalogued in Postgres.
+- **Datasets** — upload a CSV, add an OpenML task, or import a public Kaggle link (rule-gated); stored in MinIO + catalogued in Postgres.
 - **Methods** — catalog of AutoML frameworks; one-click **Integrate** (`docker pull`); truthful
   status + a per-machine **compatibility** badge; built-in **disk management**.
 - **Training** — pick a framework + datasets + budget → a real Dockerized AMLB run → results land
@@ -61,7 +61,7 @@ upload, and OpenML ingest work without containers (only benchmark *runs* need Do
 
 ## Feature tour
 
-**Datasets** — upload CSV / add from OpenML; catalogued with type, source, and status.
+**Datasets** — upload CSV / add from OpenML / import a public Kaggle link (rule-gated); catalogued with type, source, and status.
 ![Datasets](docs/images/datasets.png)
 
 **Methods** — framework catalog with integration status, compatibility badges, and Docker storage.
