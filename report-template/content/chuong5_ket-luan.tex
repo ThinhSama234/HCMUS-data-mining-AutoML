@@ -1,0 +1,48 @@
+% ======================================================================
+%  CHƯƠNG 5 — KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN TƯƠNG LAI
+%  Yêu cầu (mục 2.6): tóm tắt đóng góp; nêu giới hạn trung thực; đề xuất >= 2--3
+%  hướng phát triển cụ thể, có luận điểm rõ ràng.
+%  Độ dài tham khảo: 3--7 trang.
+% ======================================================================
+\chapter{Kết luận và hướng phát triển tương lai}
+\label{ch:ketluan}
+
+\section{Kết luận}
+\label{sec:ketluan}
+Đồ án đã trình bày lại một cách hệ thống giao thức đánh giá AutoML công bằng theo
+chuẩn AMLB và hiện thực hoá giao thức đó bằng hệ thống \textit{AutoML Bench
+Console}: một công cụ end-to-end cho phép nạp dữ liệu từ nhiều nguồn (CSV,
+OpenML, Kaggle công khai), tích hợp thư viện AutoML dưới dạng ảnh Docker cô lập,
+chạy đánh giá theo cùng một giao thức (fold, ngân sách, độ đo, tài nguyên) và
+trực quan hoá kết quả. Nhóm đã kiểm chứng toàn bộ quy trình từ chạy đến xếp hạng
+trên một lần chạy sơ bộ với ba thư viện FLAML, H2O~AutoML và AutoGluon, đồng thời
+phân tích các lần thất bại để bảo đảm tính trung thực khoa học. Các kết quả này
+đáp ứng mục tiêu đặt ra ở Chương~\ref{ch:gioithieu}: một quy trình so sánh AutoML
+công bằng và tái lập được trên dữ liệu thực.
+
+\section{Giới hạn}
+\label{sec:hanche}
+Nhóm thẳng thắn nêu các giới hạn hiện tại. Thứ nhất, kết quả trình bày mới ở mức
+\emph{sơ bộ} (ba bộ dữ liệu, ngân sách 30 giây); lần chạy đầy đủ trên 20 bộ dữ
+liệu với các mức ngân sách lớn hơn cần môi trường Linux/đám mây và chưa được hoàn
+tất. Thứ hai, các thư viện nặng (AutoGluon, auto-sklearn) khó chạy trên máy cục
+bộ (đặc biệt trên Apple Silicon), nên độ bao phủ thư viện còn phụ thuộc hạ tầng.
+Thứ ba, phạm vi mới giới hạn ở dữ liệu bảng cho phân lớp và hồi quy.
+
+\section{Hướng phát triển tương lai}
+\label{sec:huongphattrien}
+\begin{enumerate}
+    \item \textbf{Hoàn tất lần chạy đầy đủ và phân tích theo đặc trưng dữ liệu.}
+    Chạy toàn bộ 20 bộ dữ liệu ở các mức ngân sách \texttt{1h}/\texttt{4h} trên
+    môi trường Linux/đám mây, sau đó phân tích thứ hạng theo đặc trưng bộ dữ liệu
+    (kích thước, số lớp, tỉ lệ mất cân bằng) để rút ra khuyến nghị chọn thư viện
+    theo từng nhóm bài toán, thay vì một kết luận chung chung.
+    \item \textbf{Mở rộng tập thư viện và bổ sung phân tích thống kê.} Tích hợp
+    thêm auto-sklearn và TPOT, đồng thời áp dụng kiểm định thống kê (ví dụ kiểm
+    định Friedman kèm hậu kiểm Nemenyi) để khẳng định các khác biệt về thứ hạng là
+    có ý nghĩa thống kê chứ không do ngẫu nhiên.
+    \item \textbf{Phân tích đánh đổi chất lượng -- chi phí một cách định lượng.}
+    Xây dựng đường Pareto giữa chất lượng và thời gian/bộ nhớ cho từng thư viện,
+    giúp người dùng chọn thư viện phù hợp khi tài nguyên bị giới hạn --- một tình
+    huống phổ biến trong thực tế triển khai.
+\end{enumerate}

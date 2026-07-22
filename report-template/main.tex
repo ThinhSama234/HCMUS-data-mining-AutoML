@@ -1,0 +1,125 @@
+% ======================================================================
+%  TEMPLATE LUẬN VĂN THẠC SĨ / BÁO CÁO MÔN HỌC (Tiếng Việt)
+%  ---------------------------------------------------------------------
+%  Trình biên dịch khuyến nghị: pdfLaTeX  (Overleaf: Menu -> Compiler -> pdfLaTeX)
+%  Nếu BẮT BUỘC dùng đúng font Times New Roman: xem hướng dẫn XeLaTeX trong README.md
+%
+%  Trình tự biên dịch thủ công:
+%     pdflatex main  ->  bibtex main  ->  pdflatex main  ->  pdflatex main
+%
+%  Quy ước điền nội dung: mọi chỗ đánh dấu  [ ... ]  là phần cần thay.
+%  Mục tiêu độ dài: mỗi chương nội dung >= 10 trang (Chương 1 và Chương cuối
+%  có thể ngắn hơn). Dùng các môi trường Định nghĩa / Định lý / Ví dụ để
+%  trình bày chặt chẽ và có ví dụ tính toán minh hoạ.
+% ======================================================================
+\documentclass[12pt,a4paper,oneside]{extreport}
+
+% ------------------------- Tiếng Việt ---------------------------------
+\usepackage[utf8]{vietnam}   % Bật Tiếng Việt: Chương, Hình, Bảng, Mục lục, Tài liệu tham khảo...
+
+% ------------------------- Trình bày trang ----------------------------
+% Lề theo yêu cầu đồ án MTH055: trên/dưới 2.5cm, trái 3cm (gáy), phải 2.5cm.
+\usepackage[top=2.5cm, bottom=2.5cm, left=3.0cm, right=2.5cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing                 % Giãn dòng 1.5
+\usepackage{indentfirst}        % Thụt đầu dòng cho cả đoạn đầu tiên của mỗi mục
+\setlength{\parindent}{1cm}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+% ------------------------- Toán học & môi trường định lý ----------------
+\usepackage{amsmath,amssymb,amsthm,amsfonts,mathtools}
+\theoremstyle{definition}
+\newtheorem{dinhnghia}{Định nghĩa}[chapter]
+\newtheorem{vidu}{Ví dụ}[chapter]
+\newtheorem{nhanxet}{Nhận xét}[chapter]
+\theoremstyle{plain}
+\newtheorem{dinhly}{Định lý}[chapter]
+\newtheorem{menhde}{Mệnh đề}[chapter]
+\newtheorem{bode}{Bổ đề}[chapter]
+
+% ------------------------- Hình & bảng --------------------------------
+\usepackage{graphicx}
+\graphicspath{{image/}}
+\usepackage{float}
+\usepackage{booktabs,tabularx,array,multirow,makecell,longtable}
+\usepackage{caption,subcaption}
+\captionsetup{font=small,labelfont=bf}
+
+% ------------------------- Thuật toán ---------------------------------
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\floatname{algorithm}{Thuật toán}
+\renewcommand{\listalgorithmname}{Danh mục thuật toán}
+% Việt hoá một số từ khoá thường dùng (tuỳ chọn):
+\algrenewcommand\algorithmicrequire{\textbf{Đầu vào:}}
+\algrenewcommand\algorithmicensure{\textbf{Đầu ra:}}
+\algrenewcommand\algorithmicreturn{\textbf{trả về}}
+
+% ------------------------- Mã nguồn (tuỳ chọn) ------------------------
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\footnotesize, breaklines=true, frame=single,
+        columns=fullflexible, showstringspaces=false}
+
+% ------------------------- Đồ thị (tuỳ chọn) --------------------------
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+\usepackage{tikz}
+
+% ------------------------- Màu / liên kết -----------------------------
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+
+% ------------------------- Định dạng tiêu đề chương -------------------
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+  {\normalfont\Large\bfseries\centering}
+  {\MakeUppercase{\chaptertitlename}\ \thechapter}{8pt}{\Large\MakeUppercase}
+\titlespacing*{\chapter}{0pt}{6pt}{24pt}
+
+% ======================================================================
+\begin{document}
+
+% ============================ PHẦN ĐẦU ================================
+\pagenumbering{roman}          % Đánh số i, ii, iii... cho phần đầu
+
+\input{frontmatter/00_trang-bia}
+\input{frontmatter/01_loi-cam-doan}
+\input{frontmatter/02_loi-cam-on}
+\input{frontmatter/03_tom-tat}
+
+\addcontentsline{toc}{chapter}{Mục lục}
+\tableofcontents
+
+\clearpage
+\addcontentsline{toc}{chapter}{\listfigurename}
+\listoffigures
+
+\clearpage
+\addcontentsline{toc}{chapter}{\listtablename}
+\listoftables
+
+\input{frontmatter/04_danh-muc-viet-tat}
+
+% ============================ NỘI DUNG ===============================
+\clearpage
+\pagenumbering{arabic}         % Đánh số 1, 2, 3... cho phần nội dung
+
+\include{content/chuong1_gioi-thieu}
+\include{content/chuong2_co-so-ly-thuyet}
+\include{content/chuong3_phuong-phap}
+\include{content/chuong4_thuc-nghiem}
+\include{content/chuong5_ket-luan}
+
+% ========================= TÀI LIỆU THAM KHẢO ========================
+\clearpage
+\addcontentsline{toc}{chapter}{\bibname}
+\bibliographystyle{IEEEtran}   % Kiểu trích dẫn số [1], [2]... Đổi sang plain/unsrt nếu cần.
+\bibliography{main/references}
+
+% ============================ PHỤ LỤC ================================
+\appendix
+\include{content/phu-luc}
+
+\end{document}

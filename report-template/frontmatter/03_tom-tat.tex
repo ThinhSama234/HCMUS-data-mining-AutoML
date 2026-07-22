@@ -1,0 +1,31 @@
+% ===================== TÓM TẮT ========================================
+\chapter*{Tóm tắt}
+\addcontentsline{toc}{chapter}{Tóm tắt}
+
+Học máy tự động (\textit{Automated Machine Learning}, AutoML) giúp tự động hoá
+quá trình lựa chọn thuật toán và tinh chỉnh siêu tham số, nhờ đó rút ngắn đáng
+kể công sức xây dựng mô hình. Tuy nhiên, việc so sánh các thư viện AutoML trong
+thực tế thường thiếu công bằng và khó tái lập: mỗi thư viện được chạy với ngân
+sách thời gian, cách chia dữ liệu, độ đo và tài nguyên khác nhau, đồng thời các
+lần chạy thất bại thường bị bỏ qua thay vì được ghi nhận. Điều này khiến kết quả
+so sánh dễ gây hiểu nhầm và khó kiểm chứng.
+
+Trong đồ án này, nhóm tái hiện và mở rộng phương pháp đánh giá công bằng theo
+chuẩn \textit{AutoML Benchmark} (AMLB) của Gijsbers và cộng sự, áp dụng cùng một
+giao thức thống nhất (cùng cách chia fold, cùng ngân sách thời gian, cùng độ đo
+và cùng tài nguyên) cho mọi thư viện trên mỗi tập dữ liệu, đồng thời ghi nhận
+đầy đủ các lần chạy thất bại. Nhóm xây dựng một hệ thống \textit{AutoML Bench
+Console} cho phép nạp dữ liệu (tải lên tệp CSV, lấy từ OpenML hoặc nhập liên kết
+Kaggle công khai), tích hợp thư viện AutoML dưới dạng ảnh Docker, chạy đánh giá
+và trực quan hoá kết quả, với dữ liệu được lưu trữ trên PostgreSQL và MinIO.
+
+Nhóm tiến hành thực nghiệm so sánh ba thư viện AutoML tiêu biểu là FLAML,
+H2O~AutoML và AutoGluon trên các tập dữ liệu phân lớp và hồi quy, sử dụng các độ
+đo AUC, log-loss và RMSE, và xếp hạng các thư viện theo thứ hạng trung bình. Kết
+quả sơ bộ cho thấy [tóm tắt phát hiện chính sau khi hoàn tất lần chạy đầy đủ], và
+làm rõ sự đánh đổi giữa chất lượng mô hình và chi phí thời gian/tài nguyên giữa
+các thư viện.
+
+\vspace{0.5cm}
+\noindent\textbf{Từ khoá:} học máy tự động (AutoML), đánh giá công bằng
+(benchmark), khả năng tái lập, FLAML, H2O AutoML, AutoGluon.

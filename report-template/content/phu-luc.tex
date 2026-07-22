@@ -1,0 +1,46 @@
+% ======================================================================
+%  PHỤ LỤC
+%  Theo yêu cầu đồ án: (a) ghi rõ phần có sử dụng công cụ AI; (b) mã nguồn nộp
+%  qua repository, có README hướng dẫn cài đặt và chạy.
+% ======================================================================
+\chapter{Hướng dẫn tái lập và mã nguồn}
+\label{ch:phuluc-repo}
+
+Toàn bộ mã nguồn được công bố tại kho lưu trữ:
+\begin{center}
+\url{https://github.com/ThinhSama234/HCMUS-data-mining-AutoML}
+\end{center}
+Kho chứa tệp \texttt{README.md} hướng dẫn cài đặt môi trường (Python 3.9--3.11,
+PostgreSQL và MinIO qua Docker Compose) và cách chạy hệ thống. Tóm tắt các bước:
+\begin{enumerate}
+    \item Tạo môi trường ảo và cài đặt phụ thuộc: \texttt{pip install -r requirements.txt}.
+    \item Khởi động PostgreSQL và MinIO: \texttt{docker-compose up -d}, sau đó nạp
+    danh mục bằng \texttt{python -m storage.seed}.
+    \item Chạy giao diện: \texttt{streamlit run console/app.py}.
+    \item Trên trang Methods, tích hợp thư viện (kéo ảnh Docker); trên trang
+    Training, chọn bộ dữ liệu và ngân sách rồi khởi chạy; kết quả hiển thị ở trang
+    Evaluation.
+\end{enumerate}
+
+\chapter{Ghi chú về việc sử dụng công cụ hỗ trợ (AI)}
+\label{ch:phuluc-ai}
+
+Theo quy định của đồ án, nhóm ghi chú minh bạch các phần có sử dụng công cụ trí
+tuệ nhân tạo hỗ trợ. Nhóm chịu trách nhiệm hoàn toàn về tính đúng đắn của mọi nội
+dung nộp.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Ghi chú sử dụng công cụ AI trong đồ án.}
+  \label{tab:ai-usage}
+  \renewcommand{\arraystretch}{1.25}
+  \begin{tabularx}{\linewidth}{@{}l l X@{}}
+    \toprule
+    \textbf{Hạng mục} & \textbf{Công cụ} & \textbf{Mức độ sử dụng và kiểm chứng} \\
+    \midrule
+    {[}Ví dụ: soạn thảo báo cáo{]} & {[}tên công cụ{]} & {[}mô tả: gợi ý câu chữ; nhóm đã đọc, chỉnh sửa và kiểm chứng nội dung{]} \\
+    {[}Ví dụ: hỗ trợ lập trình{]}  & {[}tên công cụ{]} & {[}mô tả: gợi ý đoạn mã; nhóm đã kiểm thử và chịu trách nhiệm{]} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}

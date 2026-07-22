@@ -1,0 +1,165 @@
+% ======================================================================
+%  CHƯƠNG 2 — KIẾN THỨC CHUẨN BỊ VÀ CÁC CÔNG TRÌNH LIÊN QUAN
+%  Yêu cầu (mục 2.3): khái niệm nền tảng; khảo sát >= 5 công trình theo hướng
+%  tiếp cận; phân tích điểm mạnh/yếu; xác định khoảng trống nghiên cứu.
+%  Độ dài tham khảo: >= 10 trang.
+% ======================================================================
+\chapter{Kiến thức chuẩn bị và các công trình liên quan}
+\label{ch:cosoly}
+
+\section{Bài toán học máy tự động}
+\label{sec:automl}
+Một quy trình học máy có giám sát trên dữ liệu dạng bảng gồm nhiều bước liên
+tiếp: tiền xử lý, trích chọn/biến đổi đặc trưng, lựa chọn thuật toán và tinh
+chỉnh siêu tham số. Học máy tự động (AutoML) nhằm tự động hoá việc \emph{tìm kiếm}
+trên không gian các cấu hình quy trình để đạt hiệu năng tốt nhất trong một ngân
+sách cho trước. Bài toán cốt lõi của AutoML thường được hình thức hoá dưới dạng
+bài toán CASH (\textit{Combined Algorithm Selection and Hyperparameter
+optimization})~\cite{feurer2015autosklearn}.
+
+\begin{dinhnghia}[Bài toán CASH]
+\label{def:cash}
+Cho tập thuật toán $\mathcal{A} = \{A^{(1)}, \dots, A^{(R)}\}$, mỗi thuật toán
+$A^{(j)}$ có không gian siêu tham số $\Lambda^{(j)}$. Cho tập huấn luyện được chia
+thành $K$ fold $\{(\mathcal{T}_i, \mathcal{V}_i)\}_{i=1}^{K}$ và một hàm mất mát
+$\mathcal{L}$. Bài toán CASH là tìm cặp (thuật toán, siêu tham số)
+\[
+    (A^{\ast}, \lambda^{\ast}) \in
+    \arg\min_{A^{(j)}\in\mathcal{A},\; \lambda\in\Lambda^{(j)}}\;
+    \frac{1}{K}\sum_{i=1}^{K}
+    \mathcal{L}\!\left(A^{(j)}_{\lambda}(\mathcal{T}_i),\; \mathcal{V}_i\right),
+\]
+trong đó $A^{(j)}_{\lambda}(\mathcal{T}_i)$ là mô hình huấn luyện trên fold
+$\mathcal{T}_i$ với siêu tham số $\lambda$, và biểu thức được đánh giá trên tập
+kiểm chứng $\mathcal{V}_i$.
+\end{dinhnghia}
+
+\begin{nhanxet}
+Không gian tìm kiếm của Định nghĩa~\ref{def:cash} vừa rời rạc (chọn thuật toán)
+vừa liên tục và có điều kiện (siêu tham số phụ thuộc thuật toán), nên rất lớn và
+gồ ghề. Đây là lý do các thư viện AutoML phải dùng các chiến lược tìm kiếm hiệu
+quả (tối ưu Bayes, đa độ phân giải, học tổ hợp\ldots) thay vì vét cạn.
+\end{nhanxet}
+
+\section{Kiểm chứng chéo và giao thức đánh giá công bằng}
+\label{sec:cv}
+Để ước lượng hiệu năng một cách không thiên lệch, dữ liệu được chia thành $K$
+fold theo phương pháp kiểm chứng chéo (\textit{cross-validation}). Một phép so
+sánh giữa các thư viện được gọi là \emph{công bằng} khi mọi thư viện được đánh
+giá trên \emph{cùng} cách chia fold, \emph{cùng} ngân sách thời gian, \emph{cùng}
+độ đo và \emph{cùng} tài nguyên tính toán~\cite{gijsbers2024amlb}. Ngoài ra, các
+lần chạy thất bại (do lỗi cài đặt, hết thời gian hoặc tràn bộ nhớ) cần được ghi
+nhận và phân loại, vì việc âm thầm loại bỏ chúng sẽ làm sai lệch kết quả theo
+hướng có lợi cho những thư viện kém ổn định.
+
+\section{Các độ đo đánh giá}
+\label{sec:dodo-lythuyet}
+Đồ án sử dụng các độ đo tiêu chuẩn theo từng loại tác vụ.
+
+\paragraph{AUC (phân lớp nhị phân).} Diện tích dưới đường cong ROC, bằng xác suất
+mô hình xếp một mẫu dương ngẫu nhiên cao hơn một mẫu âm ngẫu nhiên; giá trị càng
+gần $1$ càng tốt.
+
+\paragraph{Log-loss (phân lớp đa lớp).} Với $N$ mẫu và $C$ lớp, gọi $y_{ic}\in
+\{0,1\}$ là nhãn đúng và $\hat{p}_{ic}$ là xác suất dự đoán:
+\[
+    \text{log-loss} = -\frac{1}{N}\sum_{i=1}^{N}\sum_{c=1}^{C}
+    y_{ic}\,\log \hat{p}_{ic}.
+\]
+
+\paragraph{RMSE (hồi quy).} Với giá trị thực $y_i$ và dự đoán $\hat{y}_i$:
+\[
+    \text{RMSE} = \sqrt{\frac{1}{N}\sum_{i=1}^{N}\left(y_i - \hat{y}_i\right)^2}.
+\]
+Với AUC, giá trị lớn hơn là tốt hơn; với log-loss và RMSE, giá trị nhỏ hơn là tốt
+hơn. Để thống nhất chiều ``lớn hơn là tốt hơn'' khi xếp hạng, ta có thể lấy dấu âm
+của log-loss và RMSE.
+
+\begin{vidu}[Minh hoạ cách tính RMSE]
+\label{vd:rmse}
+Giả sử trên một tập kiểm thử gồm $N=3$ mẫu, giá trị thực là $y = (3.0,\ 5.0,\
+2.5)$ và dự đoán là $\hat{y} = (2.5,\ 5.0,\ 4.0)$. Khi đó:
+\[
+    \text{RMSE} = \sqrt{\tfrac{1}{3}\big[(3.0-2.5)^2 + (5.0-5.0)^2 + (2.5-4.0)^2\big]}
+    = \sqrt{\tfrac{1}{3}\,(0.25 + 0 + 2.25)} = \sqrt{0.8333} \approx 0.913.
+\]
+Sai số chủ yếu đến từ mẫu thứ ba (lệch $1.5$ đơn vị); điều này cho thấy RMSE
+nhạy với các sai lệch lớn do bình phương khuếch đại chúng.
+\end{vidu}
+
+\section{Các thư viện AutoML tiêu biểu}
+\label{sec:frameworks}
+\paragraph{FLAML.} Thư viện nhẹ, tập trung tối ưu tiết kiệm chi phí
+(\textit{cost-frugal optimization}) và tìm kiếm đa độ phân giải, cho phép đạt kết
+quả tốt trong ngân sách thời gian nhỏ~\cite{wang2021flaml}.
+
+\paragraph{H2O AutoML.} Tự động huấn luyện nhiều họ mô hình (GBM, GLM, mạng nơ-ron,
+rừng ngẫu nhiên\ldots) và kết hợp chúng bằng \textit{stacked ensemble}, hướng tới
+sự tiện dụng và độ chính xác cao~\cite{ledell2020h2o}.
+
+\paragraph{AutoGluon.} Đề cao chiến lược xếp chồng nhiều tầng (\textit{multi-layer
+stacking}) và kết hợp mô hình thay vì chỉ tinh chỉnh siêu tham số, thường đạt độ
+chính xác cao trên dữ liệu bảng~\cite{erickson2020autogluon}.
+
+\section{Khảo sát các công trình liên quan}
+\label{sec:conghinhlienquan}
+Nhóm khảo sát các công trình liên quan và phân loại theo hướng tiếp cận. Bảng
+\ref{tab:relatedwork} tóm tắt so sánh; phần sau phân tích chi tiết điểm mạnh và
+hạn chế của từng hướng.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Tóm tắt các công trình liên quan theo hướng tiếp cận.}
+  \label{tab:relatedwork}
+  \renewcommand{\arraystretch}{1.25}
+  \begin{tabularx}{\linewidth}{@{}l l X@{}}
+    \toprule
+    \textbf{Công trình} & \textbf{Hướng tiếp cận} & \textbf{Ý tưởng chính} \\
+    \midrule
+    auto-sklearn~\cite{feurer2015autosklearn} & Tối ưu Bayes + meta-learning & Giải CASH bằng tối ưu Bayes, khởi tạo bằng meta-learning và xây dựng ensemble. \\
+    TPOT~\cite{olson2016tpot} & Lập trình di truyền & Tiến hoá đường ống (pipeline) học máy bằng giải thuật di truyền. \\
+    FLAML~\cite{wang2021flaml} & Tối ưu tiết kiệm chi phí & Tìm kiếm đa độ phân giải, hiệu quả trong ngân sách nhỏ. \\
+    H2O AutoML~\cite{ledell2020h2o} & Học tổ hợp (stacking) & Huấn luyện nhiều họ mô hình và kết hợp bằng stacked ensemble. \\
+    AutoGluon~\cite{erickson2020autogluon} & Xếp chồng nhiều tầng & Ưu tiên kết hợp mô hình nhiều tầng hơn là tinh chỉnh siêu tham số. \\
+    AMLB~\cite{gijsbers2024amlb} & Chuẩn đánh giá & Giao thức so sánh công bằng, tái lập, ghi nhận thất bại. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Hướng tối ưu siêu tham số}
+Các phương pháp như auto-sklearn~\cite{feurer2015autosklearn} và
+FLAML~\cite{wang2021flaml} tập trung tìm kiếm hiệu quả trên không gian CASH.
+\textit{Điểm mạnh:} nền tảng lý thuyết vững, tiết kiệm chi phí (đặc biệt là
+FLAML). \textit{Hạn chế:} chất lượng phụ thuộc nhiều vào không gian tìm kiếm được
+định nghĩa trước và có thể kém hơn các phương pháp tổ hợp khi ngân sách lớn.
+
+\subsection{Hướng học tổ hợp và xếp chồng}
+H2O~AutoML~\cite{ledell2020h2o} và AutoGluon~\cite{erickson2020autogluon} nhấn
+mạnh việc kết hợp nhiều mô hình. \textit{Điểm mạnh:} thường đạt độ chính xác cao
+nhờ tận dụng tính đa dạng của các mô hình thành phần. \textit{Hạn chế:} chi phí
+huấn luyện và bộ nhớ cao hơn, mô hình kết quả khó diễn giải.
+
+\subsection{Hướng tiến hoá}
+TPOT~\cite{olson2016tpot} dùng lập trình di truyền để tiến hoá cả đường ống.
+\textit{Điểm mạnh:} linh hoạt, có thể khám phá cấu trúc pipeline bất ngờ.
+\textit{Hạn chế:} chi phí tính toán lớn và độ ổn định kết quả thấp hơn.
+
+\subsection{Hướng chuẩn hoá đánh giá}
+AMLB~\cite{gijsbers2024amlb} không đề xuất thuật toán mới mà cung cấp một
+\emph{khung đánh giá} công bằng. \textit{Điểm mạnh:} kiểm soát chặt fold, ngân
+sách, độ đo, tài nguyên và ghi nhận thất bại; là nền tảng phương pháp cho đồ án
+này. \textit{Hạn chế:} thiên về dòng lệnh, cấu hình phức tạp, chưa có giao diện
+trực quan và chưa hỗ trợ trực tiếp việc nạp dữ liệu tuỳ chọn từ các nguồn như
+Kaggle.
+
+\section{Khoảng trống nghiên cứu}
+\label{sec:khoangtrong}
+Từ khảo sát trên, nhóm nhận thấy hai khoảng trống. Thứ nhất, phần lớn nghiên cứu
+tập trung \emph{cải tiến thuật toán} AutoML, trong khi khía cạnh \emph{đánh giá
+công bằng và tái lập} ít được chú trọng ở cấp độ công cụ thực dụng. Thứ hai, AMLB
+tuy chặt chẽ về phương pháp nhưng có rào cản sử dụng: thiếu giao diện trực quan,
+chưa hỗ trợ nạp dữ liệu công khai từ Kaggle và chưa tổng hợp kết quả một cách
+thân thiện. Đồ án hướng tới lấp khoảng trống này bằng cách kế thừa giao thức công
+bằng của AMLB và bổ sung một hệ thống hỗ trợ nạp dữ liệu, chạy đánh giá trong môi
+trường cô lập và trực quan hoá kết quả (trình bày ở Chương~\ref{ch:phuongphap}).
