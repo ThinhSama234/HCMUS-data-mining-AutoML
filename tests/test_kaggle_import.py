@@ -44,6 +44,7 @@ def env(tmp_path, monkeypatch):
     """Temp SQLite + temp object store + credentials present + clean seam (reset afterward)."""
     from storage import db, objectstore
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 't.db'}")
+    monkeypatch.delenv("S3_ENDPOINT", raising=False)   # force the local object store (no MinIO)
     monkeypatch.setattr(objectstore, "_LOCAL_ROOT", str(tmp_path / "obj"))
     monkeypatch.setattr(kaggle_client, "credentials_present", lambda: True)
     db._engine = None

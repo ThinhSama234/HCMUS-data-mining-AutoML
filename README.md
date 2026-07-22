@@ -59,6 +59,13 @@ upload, and OpenML ingest work without containers (only benchmark *runs* need Do
 > (`rdctl set --virtual-machine.use-rosetta=true`) — light frameworks (flaml, constantpredictor)
 > run; heavy ones (AutoGluon, autosklearn) belong on an x86_64 host. See [docs/docker.md](docs/docker.md).
 
+## Backend API (spec 007)
+
+An additive **FastAPI** service exposes the same backend over HTTP/JSON for non-Streamlit clients
+(a future web UI, a decision assistant): `uvicorn api.main:app --port 8000` → interactive docs at
+`/api/v1/docs`. It runs beside the console (`docker-compose up api`) on the same backend — a thin
+layer over `storage/`, no logic duplicated.
+
 ## Feature tour
 
 **Datasets** — upload CSV / add from OpenML / import a public Kaggle link (rule-gated); catalogued with type, source, and status.

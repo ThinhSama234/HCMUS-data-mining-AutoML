@@ -35,6 +35,16 @@ def test_entrypoint_boots_default_page(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("page", PAGES)
-def test_page_renders(page):
+def test_page_renders(page, tmp_path, monkeypatch):
+    # Hermetic: isolate each page on a throwaway seeded SQLite + local object store, so it renders
+    # regardless of whether an ambient .env points DATABASE_URL / S3 at (possibly-down) services.
+    # (Same lesson as the entrypoint test above; test_page_renders previously relied on ambient env.)
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 't.db'}")
+    monkeypatch.delenv("S3_ENDPOINT", raising=False)
+    from storage import db, migrate, objectstore
+    monkeypatch.setattr(objectstore, "_LOCAL_ROOT", str(tmp_path / "obj"))
+    db._engine = None
+    migrate.migrate(FIXTURE)
     app = AppTest.from_file(f"console/views/{page}.py", default_timeout=60).run()
     assert not app.exception, f"{page} raised: {[str(e) for e in app.exception]}"
+    db._engine = None

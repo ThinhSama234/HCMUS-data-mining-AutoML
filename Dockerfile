@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY analysis/ ./analysis/
 COPY storage/ ./storage/
 COPY console/ ./console/
+COPY api/ ./api/
 COPY results/ ./results/
 
 EXPOSE 8501

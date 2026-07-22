@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 import streamlit as st  # noqa: E402
 
 from console import theme  # noqa: E402
-from storage import repo, runner  # noqa: E402
+from storage import cost, repo, runner  # noqa: E402
 
 theme.inject()
 theme.pagehead("Cost", "Estimate the compute cost of a benchmark run")
@@ -39,10 +39,9 @@ n_ds = c2.number_input("Datasets", 1, 200, value=_runnable,
 n_fw = c3.number_input("Frameworks", 1, 50, value=_integrated,
                        help="How many frameworks to run. Defaults to the integrated ones.")
 
-info = runner.constraint_info(con) or {"folds": 1, "seconds": 60, "cores": 4}
-folds, budget_s, cores = info["folds"] or 1, info["seconds"] or 0, info["cores"]
-total_runs = int(n_ds) * int(n_fw) * int(folds)
-compute_h = total_runs * budget_s / 3600.0
+est = cost.estimate(n_ds, n_fw, con)          # shared estimator (storage/cost.py) — also used by the API
+folds, budget_s, cores = est["folds"], est["budget_seconds"], est["cores"]
+total_runs, compute_h = est["total_runs"], est["compute_hours"]
 
 m = st.columns(3)
 m[0].metric("Total runs", f"{total_runs:,}", help="datasets × frameworks × folds")
@@ -56,14 +55,13 @@ st.subheader("Estimated cost by instance", help=(
     "compute hours by a higher rate — no GPU speed-up is modelled, so they're only meaningful for "
     "GPU-capable frameworks; CPU-only ones (flaml, sklearn baselines) gain nothing from a GPU."))
 rows = []
-for _, r in inst.sort_values("rate_per_hour").iterrows():
-    rate = float(r["rate_per_hour"] or 0)
-    is_gpu = bool(r["gpu_type"])
-    spec = f'{int(r["vcpus"])} vCPU · {int(r["memory_gb"])} GB' + (f' · {r["gpu_type"]}' if is_gpu else "")
+for r in est["by_instance"]:                     # shared estimator (storage/cost.py) — no duplication
+    rate, is_gpu = r["rate_per_hour"], bool(r["gpu_type"])
+    spec = f'{r["vcpus"]} vCPU · {r["memory_gb"]} GB' + (f' · {r["gpu_type"]}' if is_gpu else "")
     name = f'{r["name"]}' + (' <span class="note">⚠ no speed-up modelled</span>' if is_gpu else "")
     rows.append([f'<b>{name}</b>', f'<span class="mono">{spec}</span>',
                  f'<span class="mono">${rate:,.2f}/h</span>',
-                 f'<span class="mono">${compute_h * rate:,.2f}</span>'])
+                 f'<span class="mono">${r["est_cost"]:,.2f}</span>'])
 theme.table(["Instance", "Spec", "Rate (illustrative)", "Est. cost"], rows)
 
 st.markdown(

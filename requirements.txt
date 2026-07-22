@@ -18,3 +18,8 @@ openml>=0.13
 python-dotenv>=1.0
 # 006 Kaggle dataset import (public link) — official API client; authenticates via token
 kaggle>=1.6
+# 007 Backend HTTP API — FastAPI service (additive, runs beside Streamlit)
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9   # multipart/form-data for the CSV upload endpoint
+httpx>=0.26            # FastAPI TestClient (tests)
