@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+envs/venvs/
 *.egg-info/
 .pytest_cache/
 .DS_Store
@@ -32,3 +33,8 @@ amlb_userdir/data/_job_*/
 # local agent tooling
 .agents/
 skills-lock.json
+data/*
+dataset/*
+*.csv
+*.json
+envs/*
