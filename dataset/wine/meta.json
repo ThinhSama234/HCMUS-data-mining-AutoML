@@ -1,6 +1,6 @@
 {
   "label": "target",
   "task": "classification",
-  "metric": "log_loss",
+  "metric": "accuracy",
   "drop_cols": []
 }

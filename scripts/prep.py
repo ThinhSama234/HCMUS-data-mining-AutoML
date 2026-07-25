@@ -4,7 +4,7 @@ Dataset prep — reads raw Kaggle downloads, outputs train.csv + meta.json.
 1. Download the raw files listed in DATASETS below (kaggle CLI or browser)
 2. Place them in data/raw/<dataset_name>/
 3. Run:
-       python scripts/prep.py --dataset titanic
+       python scripts/prep.py --dataset telco_churn
        python scripts/prep.py --all
        python scripts/prep.py --list      # show expected files per dataset
 """
@@ -23,11 +23,6 @@ OUT_BASE = Path("dataset")
 # registry: name → (kaggle_source, expected_raw_files, notes)
 DATASETS = {
     # ── Binary Classification ──────────────────────────────────────────────
-    "titanic": (
-        "competitions/titanic",
-        ["train.csv"],
-        "Classic survival prediction. AUC ~0.86.",
-    ),
     "telco_churn": (
         "datasets/blastchar/telco-customer-churn",
         ["WA_Fn-UseC_-Telco-Customer-Churn.csv"],
@@ -39,7 +34,7 @@ DATASETS = {
         "Income prediction. AUC ~0.93. Has '?' missing markers.",
     ),
     "give_me_credit": (
-        "datasets/uciml/give-me-some-credit",
+        "competitions/GiveMeSomeCredit",
         ["cs-training.csv"],
         "Credit default. AUC ~0.87. Missing values, imbalanced.",
     ),
@@ -125,14 +120,6 @@ def _find_csv(raw: Path) -> Path:
 
 
 # ── binary classification ─────────────────────────────────────────────────────
-
-def prep_titanic(raw: Path) -> None:
-    df = pd.read_csv(raw / "train.csv")
-    _save("titanic", df, {
-        "label": "Survived", "task": "classification", "metric": "auc",
-        "drop_cols": ["PassengerId", "Name", "Ticket", "Cabin"],
-    })
-
 
 def prep_telco_churn(raw: Path) -> None:
     df = pd.read_csv(_find_csv(raw))
@@ -270,7 +257,8 @@ def prep_abalone(raw: Path) -> None:
 def prep_wine_quality(raw: Path) -> None:
     reds   = list(raw.glob("*red*.csv"))
     files  = reds if reds else sorted(raw.glob("*.csv"))
-    df     = pd.concat([pd.read_csv(f, sep=";") for f in files], ignore_index=True)
+    # Kaggle version uses commas; original UCI uses semicolons — sniff automatically
+    df     = pd.concat([pd.read_csv(f, sep=None, engine="python") for f in files], ignore_index=True)
     _save("wine_quality", df, {
         "label": "quality", "task": "regression", "metric": "rmse",
         "drop_cols": [],
@@ -302,7 +290,6 @@ def prep_allstate_claims(raw: Path) -> None:
 # ── registry ──────────────────────────────────────────────────────────────────
 
 HANDLERS: dict[str, callable] = {
-    "titanic":                  prep_titanic,
     "telco_churn":              prep_telco_churn,
     "adult_income":             prep_adult_income,
     "give_me_credit":           prep_give_me_credit,

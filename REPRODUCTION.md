@@ -42,29 +42,37 @@ chmod 600 ~/.kaggle/kaggle.json
 ## Step 2 — Download datasets
 
 ```bash
-# Binary classification
-# kaggle competitions download -c titanic                                       -p data/raw/titanic --unzip
-kaggle datasets download -d blastchar/telco-customer-churn                   -p data/raw/telco_churn --unzip
-kaggle datasets download -d uciml/adult-census-income                        -p data/raw/adult_income --unzip
-kaggle datasets download -d uciml/give-me-some-credit                        -p data/raw/give_me_credit --unzip
-kaggle competitions download -c santander-customer-satisfaction               -p data/raw/santander_satisfaction --unzip
+# Binary classification  (datasets support --unzip; competitions need manual unzip — see note below)
+kaggle datasets    download -d blastchar/telco-customer-churn                   -p data/raw/telco_churn --unzip
+kaggle datasets    download -d uciml/adult-census-income                        -p data/raw/adult_income --unzip
+kaggle competitions download -c GiveMeSomeCredit                                -p data/raw/give_me_credit
+kaggle competitions download -c santander-customer-satisfaction                  -p data/raw/santander_satisfaction
 
 # Multiclass classification
-kaggle datasets download -d muratkokludataset/dry-bean-dataset                -p data/raw/dry_bean --unzip
-kaggle datasets download -d fatemehmehrparvar/obesity-levels                  -p data/raw/obesity --unzip
-kaggle competitions download -c otto-group-product-classification-challenge   -p data/raw/otto_group --unzip
-kaggle datasets download -d uciml/forest-cover-type-dataset                  -p data/raw/forest_cover --unzip
-kaggle datasets download -d uciml/human-activity-recognition-with-smartphones -p data/raw/human_activity --unzip
+kaggle datasets    download -d muratkokludataset/dry-bean-dataset                -p data/raw/dry_bean --unzip
+kaggle datasets    download -d fatemehmehrparvar/obesity-levels                  -p data/raw/obesity --unzip
+kaggle competitions download -c otto-group-product-classification-challenge      -p data/raw/otto_group
+kaggle datasets    download -d uciml/forest-cover-type-dataset                  -p data/raw/forest_cover --unzip
+kaggle datasets    download -d uciml/human-activity-recognition-with-smartphones -p data/raw/human_activity --unzip
 
 # Regression
-kaggle competitions download -c house-prices-advanced-regression-techniques   -p data/raw/house_prices --unzip
-kaggle datasets download -d rodolfomendes/abalone-dataset                     -p data/raw/abalone --unzip
-kaggle datasets download -d uciml/red-wine-quality-cortez-et-al-2009         -p data/raw/wine_quality --unzip
-kaggle datasets download -d vinayakshanawad/concrete-compressive-strength     -p data/raw/concrete --unzip
-kaggle competitions download -c allstate-claims-severity                      -p data/raw/allstate_claims --unzip
+kaggle competitions download -c house-prices-advanced-regression-techniques      -p data/raw/house_prices
+kaggle datasets    download -d rodolfomendes/abalone-dataset                     -p data/raw/abalone --unzip
+kaggle datasets    download -d uciml/red-wine-quality-cortez-et-al-2009         -p data/raw/wine_quality --unzip
+kaggle datasets    download -d vinayakshanawad/concrete-compressive-strength     -p data/raw/concrete --unzip
+kaggle competitions download -c allstate-claims-severity                         -p data/raw/allstate_claims
 ```
 
-> Note: competition datasets (titanic, santander, otto, house-prices, allstate) require
+Unzip competition downloads manually (PowerShell):
+
+```powershell
+foreach ($name in @("give_me_credit","santander_satisfaction","otto_group","house_prices","allstate_claims")) {
+    $zip = Get-ChildItem "data\raw\$name\*.zip" | Select-Object -First 1
+    Expand-Archive $zip.FullName -DestinationPath "data\raw\$name" -Force
+}
+```
+
+> Note: competition datasets (give-me-some-credit, santander, otto, house-prices, allstate) require
 > accepting the competition rules on Kaggle before the CLI download will work.
 
 ---
@@ -125,7 +133,7 @@ This creates `envs/venvs/<framework>/` for each of:
 python scripts/orchestrator.py --time-budget 3600
 
 # Smoke test — 60 seconds, flaml only, one dataset
-python scripts/orchestrator.py --time-budget 60 --frameworks flaml --datasets titanic
+python scripts/orchestrator.py --time-budget 60 --frameworks flaml --datasets telco_churn
 
 # Resume a stopped run (pass the run ID printed at start)
 python scripts/orchestrator.py --run-id 20260701_143022_abc123
@@ -156,9 +164,8 @@ Run all cells. The notebook:
 
 ```
 dataset/
-  titanic/          train.csv  meta.json  folds.json
-  telco_churn/      ...
-  ...               (15 datasets total)
+  telco_churn/      train.csv  meta.json  folds.json
+  ...               (14 datasets total)
 
 envs/
   venvs/

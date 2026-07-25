@@ -35,8 +35,10 @@ TIME_BUDGET = 3600  # seconds per (framework × dataset × fold)
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-def python_for(framework: str) -> str:
+def python_for(framework: str, no_venv: bool = False) -> str:
     """Return path to the venv python for a given framework."""
+    if no_venv:
+        return sys.executable   # use the current Python (e.g. on Kaggle)
     venv = ENVS_DIR / ("baselines" if framework in BASELINE_FRAMEWORKS else framework)
     if sys.platform == "win32":
         return str(venv / "Scripts" / "python.exe")
@@ -71,7 +73,8 @@ def _save(run: dict, path: Path) -> None:
 
 
 def init_run(run_id: str, time_budget: int, frameworks: list,
-             datasets: list) -> tuple[dict, Path]:
+             datasets: list, max_folds: int | None = None,
+             folds_filter: set | None = None) -> tuple[dict, Path]:
     REPORT_DIR.mkdir(exist_ok=True)
     TMP_DIR.mkdir(exist_ok=True)
     run_file = REPORT_DIR / f"run_{run_id}.json"
@@ -92,7 +95,8 @@ def init_run(run_id: str, time_budget: int, frameworks: list,
         }
         for ds in datasets
         for fw in frameworks
-        for fold in range(ds["n_folds"])
+        for fold in range(min(ds["n_folds"], max_folds or ds["n_folds"]))
+        if folds_filter is None or fold in folds_filter
     ]
     run = {
         "run_id":      run_id,
@@ -108,12 +112,12 @@ def init_run(run_id: str, time_budget: int, frameworks: list,
 
 # ── dispatch one job ──────────────────────────────────────────────────────────
 
-def run_job(job: dict, time_budget: int, run_id: str) -> dict:
+def run_job(job: dict, time_budget: int, run_id: str, no_venv: bool = False) -> dict:
     fw      = job["framework"]
     ds      = job["dataset"]
     fold    = job["fold"]
     out     = TMP_DIR / f"{run_id}_{ds}_{fw}_fold{fold}.json"
-    python  = python_for(fw)
+    python  = python_for(fw, no_venv)
 
     cmd = [
         python, "scripts/worker.py",
@@ -206,6 +210,12 @@ def main() -> None:
                         help="Subset of frameworks to run (default: all)")
     parser.add_argument("--datasets",    nargs="+", default=None,
                         help="Subset of dataset names to run (default: all)")
+    parser.add_argument("--max-folds",   type=int,   default=None,
+                        help="Cap number of folds per (dataset × framework), e.g. 1 for smoke test")
+    parser.add_argument("--folds",       nargs="+",  type=int, default=None,
+                        help="Specific fold indices to run, e.g. --folds 0 1 2 (for distributed runs)")
+    parser.add_argument("--no-venv",     action="store_true",
+                        help="Use current Python instead of venvs (for Kaggle / pre-installed envs)")
     args = parser.parse_args()
 
     frameworks = args.frameworks or ALL_FRAMEWORKS
@@ -221,7 +231,9 @@ def main() -> None:
 
     run_id        = args.run_id or (datetime.now().strftime("%Y%m%d_%H%M%S")
                                     + "_" + uuid.uuid4().hex[:6])
-    run, run_file = init_run(run_id, args.time_budget, frameworks, datasets)
+    folds_filter  = set(args.folds) if args.folds else None
+    run, run_file = init_run(run_id, args.time_budget, frameworks, datasets,
+                             args.max_folds, folds_filter)
 
     total      = len(run["jobs"])
     done       = sum(1 for j in run["jobs"] if j["status"] == "done")
@@ -238,7 +250,7 @@ def main() -> None:
             continue
 
         print(f"  run   {tag} ...", flush=True)
-        result = run_job(job, run["time_budget"], run_id)
+        result = run_job(job, run["time_budget"], run_id, args.no_venv)
 
         job.update(result)
         _save(run, run_file)   # write after every job — crash-safe resume

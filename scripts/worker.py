@@ -31,14 +31,17 @@ from sklearn.model_selection import cross_val_score
 
 def compute_score(y_true, y_pred, y_proba, metric: str) -> float:
     if metric == "auc":
-        proba = y_proba[:, 1] if y_proba.ndim > 1 else y_proba
+        if y_proba is not None and y_proba.ndim > 1 and y_proba.shape[1] > 2:
+            # multiclass: macro one-vs-rest AUC
+            return float(roc_auc_score(y_true, y_proba, multi_class="ovr", average="macro"))
+        proba = y_proba[:, 1] if (y_proba is not None and y_proba.ndim > 1) else y_proba
         return float(roc_auc_score(y_true, proba))
+    if metric == "accuracy":
+        return float((np.asarray(y_true) == np.asarray(y_pred)).mean())
     if metric == "log_loss":
         return float(-log_loss(y_true, y_proba))
     if metric == "rmse":
         return float(-np.sqrt(mean_squared_error(y_true, y_pred)))
-    if metric == "accuracy":
-        return float((np.asarray(y_true) == np.asarray(y_pred)).mean())
     raise ValueError(f"Unknown metric: {metric}")
 
 
@@ -291,7 +294,7 @@ def main() -> None:
 
     # auto-detect binary vs multiclass metric default
     if metric is None:
-        metric = "auc" if y.nunique() == 2 else "log_loss"
+        metric = "auc" if y.nunique() == 2 else "accuracy"
 
     fold      = folds_doc["folds"][args.fold]
     X_train, y_train = X.iloc[fold["train"]], y.iloc[fold["train"]]
