@@ -193,3 +193,8 @@ To reproduce the exact numbers in the report:
 - Use the same `--time-budget` per fold
 - Pin framework versions via `envs/requirements/*.txt` before running `setup.bat`
 - Each `run_*.json` records `framework_version` per result entry for traceability
+
+## Notebooks
+
+Autogloun: https://colab.research.google.com/drive/1oR3wjd_NPxQasEq6xDVa8M-NOQ0zvHax#scrollTo=kKV7QtHBi-R4
+H2O: https://colab.research.google.com/drive/1Pof72P20euFK19ONcoebyhBb9BQO3Hnt#scrollTo=i8f5odeFJpki

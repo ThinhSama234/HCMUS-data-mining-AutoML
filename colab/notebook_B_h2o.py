@@ -6,8 +6,11 @@
 
 # CELL 1 — Clone repo
 # -----------------------------------------------------------------------------
-!git clone https://github.com/ptran1203/HCMUS-data-mining-AutoML /content/repo
-%cd /content/repo
+import os
+os.chdir('/content')
+!rm -rf /content/repo
+!git clone -b phat https://github.com/ptran1203/HCMUS-data-mining-AutoML /content/repo
+os.chdir('/content/repo')
 !pip install pandas numpy scikit-learn -q
 
 
