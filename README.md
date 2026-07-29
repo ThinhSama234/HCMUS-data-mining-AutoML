@@ -17,7 +17,7 @@ captured not hidden. The original benchmark spec lives in [`specs/002-automl-ben
   status + a per-machine **compatibility** badge; built-in **disk management**.
 - **Training** — pick a framework + datasets + budget → a real Dockerized AMLB run → results land
   in the database (with timeout, stop, and auto-reap so jobs never hang).
-- **Evaluation** — ranking, accuracy-vs-time Pareto, and by-characteristic views over the results.
+- **Evaluation** — ranking, accuracy-vs-time Pareto, by-characteristic, and failure-analysis (Memory/Time/Data/Implementation) views over the results.
 
 ## Quickstart
 

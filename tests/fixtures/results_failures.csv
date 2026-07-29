@@ -1,0 +1,9 @@
+framework,task,fold,type,result,metric,constraint,duration,max_runtime_seconds,info
+AutoGluon,t1,0,binary,0.800,auc,1h,120,3600,
+memfw,t1,0,binary,,auc,1h,300,3600,java.lang.OutOfMemoryError: GC overhead limit exceeded
+timefw,t2,0,binary,,auc,1h,,3600,Timeout: time limit exceeded after 3600s
+silentfw,t3,0,binary,,auc,1h,3550,3600,
+datafw,t4,0,binary,,auc,1h,40,3600,ValueError: The least populated class in y has only 5 members
+implfw,t5,0,binary,,auc,1h,80,3600,CalledProcessError: Command returned non-zero exit status 1
+unkfw,t6,0,binary,,auc,1h,5,3600,
+timefw,t2,0,binary,,auc,4h,,14400,Timeout: time limit exceeded after 14400s

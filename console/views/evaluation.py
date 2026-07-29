@@ -124,6 +124,37 @@ st.subheader("Per-task scores", help=(
     "ranks above are computed from. Metric varies by task type (auc / logloss / rmse)."))
 st.dataframe(per_task, width="stretch", hide_index=True)
 
+st.subheader("Failure analysis", help=(
+    "Failed runs are excluded from the rankings but not hidden (AMLB §6.4): a framework that "
+    "silently drops the hard datasets can look artificially strong. Each failure is categorized "
+    "from its error message — memory (OOM / segfault), time (budget exceeded), data (e.g. a "
+    "minority class too small to fold), implementation (framework bug / crash), or unknown."))
+failures = expl.failures_module()
+if failures is None:
+    st.info("Pending — build `analysis/failures.py` and this lights up.")
+else:
+    fcat = failures.by_category(fdf)
+    if int(fcat["n"].sum()) == 0:
+        st.success("No failed runs in the current selection. 🎉")
+    else:
+        _FAILCOLORS = {"memory": "#B5651D", "time": theme.AMBER, "data": "#7D6B9E",
+                       "implementation": "#C0504D", "unknown": "#5C6B69"}
+        fbf = failures.by_framework(fdf)
+        if not fbf.empty:
+            ffig = px.bar(fbf, x="framework", y="n", color="failure_category",
+                          color_discrete_map=_FAILCOLORS,
+                          category_orders={"failure_category": failures.CATEGORIES},
+                          labels={"n": "Failed runs", "framework": "",
+                                  "failure_category": "Category"})
+            ffig.update_layout(height=300, margin=dict(l=0, r=0, t=10, b=0),
+                               legend_title_text="")
+            st.plotly_chart(ffig, use_container_width=True)
+        # By-budget breakdown, when the results carry a budget/constraint column.
+        ftbl = failures.failure_table(fdf)
+        if "constraint" in ftbl.columns:
+            st.caption("Failures by category and time budget")
+            st.dataframe(ftbl, width="stretch", hide_index=True)
+
 if st.button("Export headline figures"):
     paths = expl.export_headline_figures(fdf, os.path.join(theme.REPO_ROOT, "results", "figures"))
     st.success("Wrote: " + ", ".join(os.path.relpath(p, theme.REPO_ROOT) for p in paths))

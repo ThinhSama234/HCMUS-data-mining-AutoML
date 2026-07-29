@@ -69,6 +69,10 @@ def characteristics_module():
     return _optional_module("by_characteristics")
 
 
+def failures_module():
+    return _optional_module("failures")
+
+
 def export_headline_figures(df, outdir):
     """Static export of the ranking figure (matplotlib) for the report (FR-016).
 
