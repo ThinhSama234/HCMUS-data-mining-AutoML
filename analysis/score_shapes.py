@@ -109,6 +109,30 @@ def inference_times(df):
             .rename(columns={"predict_duration": "predict_s"}).reset_index(drop=True))
 
 
+def budget_performance(df):
+    """Normalized performance per (framework × time budget): [framework, constraint, mean_norm] (Hình 7).
+
+    Score is min-max normalized within each dataset across all (framework, budget) cells, then
+    averaged per (framework, constraint) — so a framework that improves with a bigger budget rises.
+    Needs a `constraint` column; a single budget yields one bar per framework (the view notes it).
+    """
+    cols = ["framework", "constraint", "mean_norm"]
+    ok = _successful(df)
+    if ok.empty or "constraint" not in ok.columns or "score" not in ok.columns:
+        return pd.DataFrame(columns=cols)
+    ok = ok[ok["score"].notna() & ok["constraint"].notna()]
+    if ok.empty:
+        return pd.DataFrame(columns=cols)
+    m = ok.groupby(["task", "framework", "constraint"], as_index=False)["score"].mean()
+    lo = m.groupby("task")["score"].transform("min")
+    hi = m.groupby("task")["score"].transform("max")
+    span = hi - lo
+    m["norm"] = np.where(span > 0, (m["score"] - lo) / span.replace(0, np.nan), 1.0)
+    g = (m.groupby(["framework", "constraint"], as_index=False)["norm"].mean()
+         .rename(columns={"norm": "mean_norm"}))
+    return g[cols].reset_index(drop=True)
+
+
 def main(argv):
     if len(argv) < 2:
         print("usage: python -m analysis.score_shapes <results.csv>", file=sys.stderr)

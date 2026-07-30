@@ -75,6 +75,29 @@ def test_null_task_type_kept_as_unknown_consistently():
     assert "mystery" in set(ns["task"]) and "mystery" in set(svt["task"]) and "mystery" in set(sl["task"])
 
 
+def test_budget_performance_normalizes_and_groups_by_budget():
+    # same dataset at two budgets; A best at 60s, B catches up at 300s
+    df = pd.DataFrame([
+        ("adult", "binary", "A", 0, 0.90, 0.90, 60.0, 0.1, "60s"),
+        ("adult", "binary", "B", 0, 0.70, 0.70, 60.0, 0.1, "60s"),
+        ("adult", "binary", "A", 0, 0.92, 0.92, 300.0, 0.1, "300s"),
+        ("adult", "binary", "B", 0, 0.95, 0.95, 300.0, 0.1, "300s"),
+    ], columns=["task", "type", "framework", "fold", "score", "result_num",
+                "training_duration", "predict_duration", "constraint"])
+    df["success"] = True
+    bp = ss.budget_performance(df)
+    assert {"framework", "constraint", "mean_norm"} == set(bp.columns)
+    assert set(bp["constraint"]) == {"60s", "300s"}
+    # B is best overall (0.95) → norm 1.0 at 300s; worst overall (0.70) → 0.0 at 60s
+    b = bp.set_index(["framework", "constraint"])["mean_norm"]
+    assert b[("B", "300s")] == 1.0 and b[("B", "60s")] == 0.0
+
+
+def test_budget_performance_degrades_without_constraint():
+    df = pd.DataFrame({"task": ["t"], "framework": ["A"], "score": [0.9], "success": [True]})
+    assert ss.budget_performance(df).empty
+
+
 def test_all_helpers_degrade_on_empty():
     empty = pd.DataFrame(columns=["task", "type", "framework", "fold",
                                   "score", "result_num", "training_duration",

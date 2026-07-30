@@ -88,6 +88,8 @@ def load(csv_fallback=None):
             # expose the stored error as `info` so analysis.failures can classify DB-sourced
             # failures the same way it does CSV rows (which carry an `info` column).
             runs.c.error_message.label("info"),
+            # per-run metrics JSON (carries peak_memory_mb for report-ingested runs → Phase 6 memory view).
+            runs.c.metrics,
         ).select_from(j)
         with eng.connect() as c:
             df = pd.read_sql(stmt, c)

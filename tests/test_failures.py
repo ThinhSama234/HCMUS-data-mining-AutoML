@@ -99,3 +99,20 @@ def test_no_failures_degrades_gracefully():
     cat = by_category(df_ok)
     assert int(cat["n"].sum()) == 0
     assert list(cat["failure_category"]) == CATEGORIES
+
+
+# --- Phase 6: failures by dataset-size tier (Hình 10 panel B) --------------------------
+
+def test_by_size_groups_failures_by_size_tier():
+    import pandas as pd
+
+    from analysis.failures import by_size
+    df = pd.DataFrame([
+        ("bigds", "H2O", False, "out of memory"),
+        ("smallds", "FLAML", False, "timeout"),
+    ], columns=["task", "framework", "success", "info"])
+    meta = {"bigds": (100_000, 10, None), "smallds": (500, 10, None)}   # injected catalog (offline)
+    bs = by_size(df, meta=meta)
+    assert set(bs.columns) == {"size_tier", "framework", "n"}
+    assert {"large", "small"} <= set(bs["size_tier"])
+    assert int(bs["n"].sum()) == 2

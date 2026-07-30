@@ -81,6 +81,10 @@ def score_shapes_module():
     return _optional_module("score_shapes")
 
 
+def memory_module():
+    return _optional_module("memory")
+
+
 def export_headline_figures(df, outdir):
     """Static export of the ranking figure (matplotlib) for the report (FR-016).
 

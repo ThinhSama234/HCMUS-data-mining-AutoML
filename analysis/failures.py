@@ -145,6 +145,22 @@ def by_framework(df):
     )
 
 
+def by_size(df, meta=None):
+    """Failure counts per (dataset size tier, framework): [size_tier, framework, n] (Hình 10, panel B).
+
+    Reuses ``by_characteristics.with_characteristics`` for the size tier (catalog-sourced), so the
+    breakdown lines up with the "Ranking by data characteristic" view. Empty if no failures / no
+    framework column.
+    """
+    from analysis.by_characteristics import with_characteristics
+    failed = add_failure_category(df)
+    if failed.empty or "framework" not in failed.columns:
+        return pd.DataFrame(columns=["size_tier", "framework", "n"])
+    cdf = with_characteristics(failed, meta)
+    return (cdf.groupby(["size_tier", "framework"]).size().rename("n").reset_index()
+            .sort_values("n", ascending=False).reset_index(drop=True))
+
+
 def main(argv):
     if len(argv) < 2:
         print("usage: python -m analysis.failures <results.csv>", file=sys.stderr)

@@ -190,6 +190,44 @@ if scores is not None:
         ifig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0), showlegend=False)
         st.plotly_chart(ifig, use_container_width=True)
 
+    bp = scores.budget_performance(fdf)
+    if not bp.empty:
+        st.subheader("Performance by budget", help=(
+            "Normalized performance (1 = best on the dataset) per framework at each time budget. "
+            "A framework that keeps improving with a bigger budget rises across the bars."))
+        n_budgets = bp["constraint"].nunique()
+        bfig = px.bar(bp, x="framework", y="mean_norm", color="constraint", barmode="group",
+                      labels={"mean_norm": "Mean normalized score", "framework": "",
+                              "constraint": "Budget"})
+        bfig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0), legend_title_text="Budget")
+        st.plotly_chart(bfig, use_container_width=True)
+        if n_budgets < 2:
+            st.caption("Only one time budget in the current results — the budget comparison fills "
+                       "in once runs at a second budget are ingested.")
+
+memory = expl.memory_module()
+if memory is not None:
+    mbf = memory.memory_by_framework(fdf)
+    if not mbf.empty:
+        st.subheader("Memory usage", help=(
+            "Peak memory (MB) recorded per run. Left: mean per framework. Right: per-(dataset × "
+            "framework) heatmap. Only available for runs whose results carry peak_memory_mb."))
+        ml, mr = st.columns(2)
+        with ml:
+            mfig = px.bar(mbf, x="mean_mb", y="framework", orientation="h",
+                          color_discrete_sequence=[theme.TEAL],
+                          labels={"mean_mb": "Mean peak memory (MB)", "framework": ""})
+            mfig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0))
+            st.plotly_chart(mfig, use_container_width=True)
+        with mr:
+            mat = memory.memory_matrix(fdf)
+            if not mat.empty:
+                hfig = px.imshow(mat, text_auto=".0f", aspect="auto",
+                                 color_continuous_scale="Oranges",
+                                 labels=dict(x="dataset", y="framework", color="MB"))
+                hfig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0))
+                st.plotly_chart(hfig, use_container_width=True)
+
 st.subheader("Per-task scores", help=(
     "The raw score of every framework on every dataset (and fold) — the underlying numbers the "
     "ranks above are computed from. Metric varies by task type (auc / logloss / rmse)."))
@@ -225,6 +263,15 @@ else:
         if "constraint" in ftbl.columns:
             st.caption("Failures by category and time budget")
             st.dataframe(ftbl, width="stretch", hide_index=True)
+        # By dataset-size tier (Hình 10 panel B) — where the hard, large datasets fail.
+        fbs = failures.by_size(fdf)
+        if not fbs.empty and (set(fbs["size_tier"]) - {"unknown"}):
+            st.caption("Failures by dataset size")
+            bsfig = px.bar(fbs, x="size_tier", y="n", color="framework",
+                           category_orders={"size_tier": ["small", "medium", "large", "unknown"]},
+                           labels={"n": "Failed runs", "size_tier": "Dataset size"})
+            bsfig.update_layout(height=280, margin=dict(l=0, r=0, t=10, b=0), legend_title_text="")
+            st.plotly_chart(bsfig, use_container_width=True)
 
 st.subheader("Ranking-flip (Bradley-Terry approximation)", help=(
     "Where does the framework ranking change with data characteristics? Left: the pairwise "
