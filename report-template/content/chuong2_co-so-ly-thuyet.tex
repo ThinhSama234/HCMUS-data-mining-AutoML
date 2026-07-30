@@ -1,8 +1,5 @@
 % ======================================================================
 %  CHƯƠNG 2 — KIẾN THỨC CHUẨN BỊ VÀ CÁC CÔNG TRÌNH LIÊN QUAN
-%  Yêu cầu (mục 2.3): khái niệm nền tảng; khảo sát >= 5 công trình theo hướng
-%  tiếp cận; phân tích điểm mạnh/yếu; xác định khoảng trống nghiên cứu.
-%  Độ dài tham khảo: >= 10 trang.
 % ======================================================================
 \chapter{Kiến thức chuẩn bị và các công trình liên quan}
 \label{ch:cosoly}
@@ -10,156 +7,475 @@
 \section{Bài toán học máy tự động}
 \label{sec:automl}
 Một quy trình học máy có giám sát trên dữ liệu dạng bảng gồm nhiều bước liên
-tiếp: tiền xử lý, trích chọn/biến đổi đặc trưng, lựa chọn thuật toán và tinh
-chỉnh siêu tham số. Học máy tự động (AutoML) nhằm tự động hoá việc \emph{tìm kiếm}
-trên không gian các cấu hình quy trình để đạt hiệu năng tốt nhất trong một ngân
-sách cho trước. Bài toán cốt lõi của AutoML thường được hình thức hoá dưới dạng
-bài toán CASH (\textit{Combined Algorithm Selection and Hyperparameter
-optimization})~\cite{feurer2015autosklearn}.
+tiếp: tiền xử lý, mã hoá biến hạng mục, trích chọn đặc trưng, lựa chọn thuật toán
+và tinh chỉnh siêu tham số. Học máy tự động hướng tới việc tự động hoá quá trình
+tìm kiếm trên không gian các cấu hình khả dĩ nhằm đạt hiệu năng cao nhất trong
+một ngân sách cho trước. Nền tảng hình thức của AutoML là bài toán CASH
+(\textit{Combined Algorithm Selection and Hyperparameter optimization}), được
+Feurer và cộng sự phát biểu như sau~\cite{feurer2015autosklearn}.
 
 \begin{dinhnghia}[Bài toán CASH]
 \label{def:cash}
-Cho tập thuật toán $\mathcal{A} = \{A^{(1)}, \dots, A^{(R)}\}$, mỗi thuật toán
-$A^{(j)}$ có không gian siêu tham số $\Lambda^{(j)}$. Cho tập huấn luyện được chia
-thành $K$ fold $\{(\mathcal{T}_i, \mathcal{V}_i)\}_{i=1}^{K}$ và một hàm mất mát
-$\mathcal{L}$. Bài toán CASH là tìm cặp (thuật toán, siêu tham số)
+Cho tập thuật toán $\mathcal{A} = \{A^{(1)}, \dots, A^{(R)}\}$, trong đó mỗi
+thuật toán $A^{(j)}$ có không gian siêu tham số $\Lambda^{(j)}$. Cho tập dữ liệu
+được chia thành $K$ fold $\{(\mathcal{T}_i, \mathcal{V}_i)\}_{i=1}^{K}$ và hàm mất
+mát $\mathcal{L}$. Bài toán CASH là xác định cặp (thuật toán, siêu tham số)
 \[
     (A^{\ast}, \lambda^{\ast}) \in
     \arg\min_{A^{(j)}\in\mathcal{A},\; \lambda\in\Lambda^{(j)}}\;
     \frac{1}{K}\sum_{i=1}^{K}
     \mathcal{L}\!\left(A^{(j)}_{\lambda}(\mathcal{T}_i),\; \mathcal{V}_i\right),
 \]
-trong đó $A^{(j)}_{\lambda}(\mathcal{T}_i)$ là mô hình huấn luyện trên fold
-$\mathcal{T}_i$ với siêu tham số $\lambda$, và biểu thức được đánh giá trên tập
-kiểm chứng $\mathcal{V}_i$.
+với $A^{(j)}_{\lambda}(\mathcal{T}_i)$ là mô hình thu được khi huấn luyện thuật
+toán $A^{(j)}$ với siêu tham số $\lambda$ trên tập $\mathcal{T}_i$.
 \end{dinhnghia}
 
 \begin{nhanxet}
-Không gian tìm kiếm của Định nghĩa~\ref{def:cash} vừa rời rạc (chọn thuật toán)
-vừa liên tục và có điều kiện (siêu tham số phụ thuộc thuật toán), nên rất lớn và
-gồ ghề. Đây là lý do các thư viện AutoML phải dùng các chiến lược tìm kiếm hiệu
-quả (tối ưu Bayes, đa độ phân giải, học tổ hợp\ldots) thay vì vét cạn.
+\label{nx:cash}
+Không gian tìm kiếm trong Định nghĩa~\ref{def:cash} có ba đặc điểm khiến bài toán
+trở nên khó. Thứ nhất, nó \emph{hỗn hợp}: biến chọn thuật toán là rời rạc trong
+khi nhiều siêu tham số là liên tục. Thứ hai, nó \emph{có điều kiện}: không gian
+$\Lambda^{(j)}$ chỉ có nghĩa khi thuật toán $A^{(j)}$ được chọn, tạo nên cấu trúc
+phân cấp. Thứ ba, hàm mục tiêu \emph{không có dạng giải tích} và mỗi lần đánh giá
+đòi hỏi huấn luyện trọn vẹn một mô hình, tức chi phí rất cao. Ba đặc điểm này loại
+trừ khả năng dùng các phương pháp tối ưu dựa trên gradient hay vét cạn, và giải
+thích vì sao các thư viện AutoML phải dựa vào những chiến lược tìm kiếm gián tiếp
+như tối ưu Bayes, tìm kiếm đa độ phân giải hay giải thuật tiến hoá.
 \end{nhanxet}
 
-\section{Kiểm chứng chéo và giao thức đánh giá công bằng}
+Một hệ quả quan trọng của Nhận xét~\ref{nx:cash} là hiệu năng của một thư viện
+AutoML luôn gắn liền với \emph{ngân sách tài nguyên} được cấp. Cùng một thuật
+toán tìm kiếm, khi được cấp nhiều thời gian hơn, sẽ khảo sát được nhiều cấu hình
+hơn và cho kết quả tốt hơn. Do đó, mọi phép so sánh giữa các thư viện chỉ có
+nghĩa khi ngân sách được kiểm soát chặt chẽ và đồng nhất.
+
+\section{Các chiến lược tìm kiếm trong AutoML}
+\label{sec:chienluoc}
+Do bài toán CASH không cho phép sử dụng thông tin đạo hàm, các thư viện AutoML
+phải dựa vào những chiến lược tìm kiếm gián tiếp. Phần này trình bày ba nhóm chiến
+lược có liên quan trực tiếp tới các thư viện được khảo sát.
+
+\subsection{Tối ưu Bayes}
+Tối ưu Bayes xây dựng một \emph{mô hình thay thế} (\textit{surrogate model}) xấp
+xỉ quan hệ giữa cấu hình $\lambda$ và hiệu năng tương ứng, rồi dùng mô hình này để
+quyết định cấu hình nào đáng được thử tiếp theo. Gọi $\mathcal{H}_t =
+\{(\lambda_1, v_1), \dots, (\lambda_t, v_t)\}$ là tập quan sát sau $t$ lần đánh
+giá, mô hình thay thế cho ta phân phối hậu nghiệm $p(v \mid \lambda, \mathcal{H}_t)$.
+Cấu hình tiếp theo được chọn bằng cách cực đại một \emph{hàm thu nhận}
+(\textit{acquisition function}), chẳng hạn kỳ vọng cải thiện:
+\[
+    \lambda_{t+1} = \arg\max_{\lambda}\;
+    \mathbb{E}\Big[\max\big(v^{\ast} - v(\lambda),\, 0\big) \,\Big|\, \mathcal{H}_t\Big],
+\]
+với $v^{\ast}$ là giá trị tốt nhất quan sát được cho tới thời điểm hiện tại. Hàm
+thu nhận cân bằng giữa \emph{khai thác} (thử các vùng đã biết là tốt) và
+\emph{thăm dò} (thử các vùng còn nhiều bất định). Ưu điểm của cách tiếp cận này là
+số lần đánh giá cần thiết thấp hơn nhiều so với tìm kiếm ngẫu nhiên; hạn chế là
+chi phí duy trì mô hình thay thế tăng theo số quan sát, và hiệu quả giảm khi số
+chiều của không gian tìm kiếm lớn.
+
+\subsection{Phân bổ tài nguyên theo tầng}
+Một hướng tiếp cận khác xuất phát từ nhận xét rằng phần lớn cấu hình kém có thể
+được loại bỏ sớm mà không cần huấn luyện đến cùng. Chiến lược \textit{successive
+halving} khởi đầu với $n$ cấu hình, mỗi cấu hình được cấp một lượng tài nguyên nhỏ,
+sau đó chỉ giữ lại một phần các cấu hình tốt nhất và tăng gấp đôi tài nguyên cho
+chúng; quá trình lặp lại cho tới khi còn một cấu hình duy nhất. Nếu tổng ngân sách
+là $B$ và mỗi vòng giữ lại $1/\eta$ số cấu hình, số vòng lặp là
+$\lfloor \log_{\eta} n \rfloor$ và tài nguyên được phân bổ theo cấp số nhân cho
+những cấu hình tồn tại lâu hơn. Ý tưởng này là nền tảng cho cơ chế kiểm soát chi
+phí đánh giá của FLAML.
+
+\subsection{Giải thuật tiến hoá}
+Nhóm chiến lược thứ ba xem mỗi đường ống học máy như một cá thể trong quần thể và
+áp dụng các toán tử chọn lọc, lai ghép và đột biến để tiến hoá quần thể qua nhiều
+thế hệ. Ưu điểm là khả năng khám phá những cấu trúc đường ống mà không cần giả
+định trước về dạng của chúng; hạn chế là chi phí tính toán lớn do phải duy trì và
+đánh giá cả quần thể, cùng với độ ổn định kết quả thấp giữa các lần chạy do bản
+chất ngẫu nhiên của các toán tử.
+
+\section{Cơ sở của phương pháp học tổ hợp}
+\label{sec:ensemble}
+Ba trong bốn thư viện được khảo sát đều dựa vào việc kết hợp nhiều mô hình, do đó
+việc hiểu cơ sở lý thuyết của học tổ hợp là cần thiết để giải thích kết quả thực
+nghiệm ở Chương~\ref{ch:thucnghiem}.
+
+Xét bài toán hồi quy với hàm mục tiêu thật $f$. Sai số bình phương kỳ vọng của một
+mô hình $\hat{f}$ tại điểm $x$ có thể phân rã thành ba thành phần:
+\[
+    \mathbb{E}\big[(y - \hat{f}(x))^2\big]
+    = \underbrace{\big(\mathbb{E}[\hat{f}(x)] - f(x)\big)^2}_{\text{bình phương độ chệch}}
+    + \underbrace{\mathbb{E}\big[(\hat{f}(x) - \mathbb{E}[\hat{f}(x)])^2\big]}_{\text{phương sai}}
+    + \underbrace{\sigma^2_{\varepsilon}}_{\text{nhiễu}}.
+\]
+Thành phần nhiễu là giới hạn dưới không thể giảm được. Học tổ hợp tác động chủ yếu
+lên thành phần phương sai: nếu lấy trung bình $M$ mô hình có cùng độ chệch, phương
+sai của dự đoán trung bình bằng
+\[
+    \operatorname{Var}\!\left(\frac{1}{M}\sum_{j=1}^{M} \hat{f}_j(x)\right)
+    = \frac{1}{M^2}\left[\sum_{j=1}^{M}\operatorname{Var}(\hat{f}_j(x))
+    + \sum_{j \neq l}\operatorname{Cov}(\hat{f}_j(x), \hat{f}_l(x))\right].
+\]
+
+\begin{nhanxet}
+\label{nx:ensemble}
+Biểu thức trên cho thấy lợi ích của tổ hợp phụ thuộc quyết định vào \emph{hiệp
+phương sai} giữa các mô hình thành phần. Trong trường hợp lý tưởng khi các mô hình
+độc lập ($\operatorname{Cov} = 0$) và có cùng phương sai $\sigma^2$, phương sai của
+tổ hợp giảm còn $\sigma^2/M$. Ngược lại, nếu các mô hình tương quan hoàn toàn,
+phương sai không giảm chút nào. Đây chính là lý do các thư viện như AutoGluon chủ
+động huấn luyện những họ mô hình \emph{khác nhau về bản chất} (cây quyết định
+tăng cường, rừng ngẫu nhiên, mạng nơ-ron) thay vì nhiều biến thể của cùng một
+thuật toán: sự đa dạng giữa các mô hình mới là nguồn gốc của cải thiện, chứ không
+phải số lượng mô hình.
+\end{nhanxet}
+
+\section{Kiểm chứng chéo và tính công bằng của phép so sánh}
 \label{sec:cv}
-Để ước lượng hiệu năng một cách không thiên lệch, dữ liệu được chia thành $K$
-fold theo phương pháp kiểm chứng chéo (\textit{cross-validation}). Một phép so
-sánh giữa các thư viện được gọi là \emph{công bằng} khi mọi thư viện được đánh
-giá trên \emph{cùng} cách chia fold, \emph{cùng} ngân sách thời gian, \emph{cùng}
-độ đo và \emph{cùng} tài nguyên tính toán~\cite{gijsbers2024amlb}. Ngoài ra, các
-lần chạy thất bại (do lỗi cài đặt, hết thời gian hoặc tràn bộ nhớ) cần được ghi
-nhận và phân loại, vì việc âm thầm loại bỏ chúng sẽ làm sai lệch kết quả theo
-hướng có lợi cho những thư viện kém ổn định.
+Để ước lượng hiệu năng của mô hình một cách ít thiên lệch, dữ liệu được phân
+hoạch thành $K$ phần bằng nhau theo phương pháp kiểm chứng chéo
+(\textit{cross-validation}). Lần lượt mỗi phần đóng vai trò tập kiểm thử trong khi
+$K-1$ phần còn lại dùng để huấn luyện; điểm số cuối cùng là trung bình của $K$ lần
+đánh giá. Với bài toán phân loại, phân hoạch phân tầng
+(\textit{stratified $K$-fold}) được sử dụng nhằm giữ nguyên tỉ lệ các lớp trong
+từng fold --- điều đặc biệt quan trọng khi dữ liệu mất cân bằng nhãn.
+
+\begin{dinhnghia}[Phép so sánh công bằng]
+\label{def:congbang}
+Một phép so sánh giữa các thư viện $F_1, \dots, F_k$ trên bộ dữ liệu $D$ được gọi
+là \emph{công bằng} nếu mọi thư viện được đánh giá với: (i) cùng một phân hoạch
+fold $\{(\mathcal{T}_i, \mathcal{V}_i)\}_{i=1}^{K}$; (ii) cùng ngân sách thời gian
+$B$ cho mỗi lần huấn luyện; (iii) cùng độ đo đánh giá; và (iv) cùng cấu hình tài
+nguyên tính toán. Ngoài ra, tập kết quả dùng để tổng hợp phải bao gồm thông tin về
+mọi lần chạy, kể cả các lần thất bại.
+\end{dinhnghia}
+
+\begin{vidu}[Vai trò của phân hoạch phân tầng]
+\label{vd:stratified}
+Xét bộ dữ liệu gồm $100$ mẫu với tỉ lệ nhãn mất cân bằng: $95$ mẫu thuộc lớp âm và
+$5$ mẫu thuộc lớp dương. Chia thành $K = 5$ fold, mỗi fold có $20$ mẫu.
+
+Với phân hoạch \emph{ngẫu nhiên thông thường}, số mẫu dương rơi vào một fold cụ
+thể tuân theo phân phối siêu bội. Xác suất để một fold không chứa mẫu dương nào là
+\[
+    \Pr(\text{fold không có mẫu dương}) = \frac{\binom{95}{20}}{\binom{100}{20}}
+    = \frac{95!\,80!}{75!\,100!} = \frac{80 \cdot 79 \cdot 78 \cdot 77 \cdot 76}
+    {100 \cdot 99 \cdot 98 \cdot 97 \cdot 96} \approx 0.319.
+\]
+Nghĩa là gần một phần ba khả năng xảy ra tình huống tập kiểm thử hoàn toàn không
+có mẫu dương --- khi đó AUC không xác định được và fold tương ứng trở nên vô dụng.
+
+Với phân hoạch \emph{phân tầng}, thuật toán bảo đảm mỗi fold nhận đúng một mẫu
+dương ($5$ mẫu dương chia đều cho $5$ fold), loại trừ hoàn toàn rủi ro trên. Đây
+là lý do đồ án sử dụng phân hoạch phân tầng cho mọi bài toán phân loại, đặc biệt
+quan trọng với các bộ dữ liệu có tỉ lệ mất cân bằng cao như
+\texttt{santander\_satisfaction} và \texttt{give\_me\_credit}.
+\end{vidu}
+
+Điều kiện (i) trong Định nghĩa~\ref{def:congbang} loại trừ phương sai do phân
+hoạch dữ liệu: nếu mỗi thư viện tự sinh phân hoạch riêng, chênh lệch điểm số quan
+sát được sẽ pha trộn giữa năng lực thuật toán và sự may rủi của phép chia. Điều
+kiện cuối cùng bảo đảm bảng tổng hợp không bị thiên lệch sống sót
+(\textit{survivorship bias}), hiện tượng xảy ra khi chỉ những lần chạy thành công
+được đưa vào thống kê.
 
 \section{Các độ đo đánh giá}
 \label{sec:dodo-lythuyet}
-Đồ án sử dụng các độ đo tiêu chuẩn theo từng loại tác vụ.
+Do ba dạng tác vụ có bản chất khác nhau, đồ án sử dụng độ đo riêng cho từng dạng.
 
-\paragraph{AUC (phân lớp nhị phân).} Diện tích dưới đường cong ROC, bằng xác suất
-mô hình xếp một mẫu dương ngẫu nhiên cao hơn một mẫu âm ngẫu nhiên; giá trị càng
-gần $1$ càng tốt.
+\subsection{Diện tích dưới đường cong ROC}
+Với bài toán phân loại nhị phân, đường cong ROC biểu diễn quan hệ giữa tỉ lệ dương
+thật và tỉ lệ dương giả khi ngưỡng quyết định thay đổi. Diện tích dưới đường cong
+này (AUC) có một diễn giải xác suất trực quan: AUC bằng xác suất mô hình gán điểm
+số cao hơn cho một mẫu dương được chọn ngẫu nhiên so với một mẫu âm được chọn ngẫu
+nhiên. Ký hiệu $\mathcal{P}$ và $\mathcal{N}$ lần lượt là tập mẫu dương và mẫu âm,
+$s(\cdot)$ là điểm số do mô hình gán:
+\[
+    \mathrm{AUC} = \frac{1}{|\mathcal{P}|\,|\mathcal{N}|}
+    \sum_{p \in \mathcal{P}} \sum_{n \in \mathcal{N}}
+    \Big[ \mathbb{I}\big(s(p) > s(n)\big) + \tfrac{1}{2}\,\mathbb{I}\big(s(p) = s(n)\big) \Big],
+\]
+với $\mathbb{I}(\cdot)$ là hàm chỉ thị. Giá trị $\mathrm{AUC} = 0.5$ tương ứng với
+dự đoán ngẫu nhiên, $\mathrm{AUC} = 1$ tương ứng với phân tách hoàn hảo. Ưu điểm
+của AUC là không phụ thuộc ngưỡng quyết định và ổn định trước sự mất cân bằng
+nhãn, nên phù hợp với các bộ dữ liệu có tỉ lệ lớp lệch mạnh.
 
-\paragraph{Log-loss (phân lớp đa lớp).} Với $N$ mẫu và $C$ lớp, gọi $y_{ic}\in
-\{0,1\}$ là nhãn đúng và $\hat{p}_{ic}$ là xác suất dự đoán:
+\begin{vidu}[Tính AUC theo định nghĩa xác suất]
+\label{vd:auc}
+Xét tập kiểm thử gồm hai mẫu dương với điểm số $s = 0.9$ và $0.4$, cùng ba mẫu âm
+với điểm số $s = 0.8,\ 0.35$ và $0.2$. Có tất cả $2 \times 3 = 6$ cặp
+(dương, âm). Xét từng cặp: mẫu dương $0.9$ lớn hơn cả ba mẫu âm nên đóng góp $3$
+cặp thuận; mẫu dương $0.4$ lớn hơn hai mẫu âm ($0.35$ và $0.2$) nhưng nhỏ hơn mẫu
+âm $0.8$, đóng góp $2$ cặp thuận. Do đó
+\[
+    \mathrm{AUC} = \frac{3 + 2}{6} = \frac{5}{6} \approx 0.833.
+\]
+Kết quả cho thấy mô hình xếp đúng thứ tự trong $5$ trên $6$ cặp so sánh. Cặp sai
+duy nhất là (mẫu dương $0.4$, mẫu âm $0.8$) --- đây chính là loại lỗi mà AUC nắm
+bắt được nhưng độ chính xác (\textit{accuracy}) tại một ngưỡng cố định có thể bỏ
+sót.
+\end{vidu}
+
+\subsection{Hàm mất mát log và độ chính xác}
+Với phân loại đa lớp, hàm mất mát log (\textit{log-loss}) đo mức độ phù hợp của
+phân phối xác suất dự đoán so với nhãn thật. Với $N$ mẫu và $C$ lớp, gọi
+$y_{ic} \in \{0,1\}$ là chỉ thị nhãn đúng và $\hat{p}_{ic}$ là xác suất dự đoán:
 \[
     \text{log-loss} = -\frac{1}{N}\sum_{i=1}^{N}\sum_{c=1}^{C}
     y_{ic}\,\log \hat{p}_{ic}.
 \]
+Khác với độ chính xác chỉ xét nhãn dự đoán cuối cùng, log-loss phạt nặng những dự
+đoán sai nhưng được đưa ra với độ tự tin cao, do đó phản ánh tốt hơn chất lượng
+hiệu chỉnh xác suất của mô hình. Độ chính xác được định nghĩa đơn giản là tỉ lệ
+mẫu được phân loại đúng và được dùng bổ trợ khi cần một chỉ số dễ diễn giải.
 
-\paragraph{RMSE (hồi quy).} Với giá trị thực $y_i$ và dự đoán $\hat{y}_i$:
+\begin{vidu}[So sánh log-loss và độ chính xác]
+\label{vd:logloss}
+Xét bài toán ba lớp với hai mẫu kiểm thử. Mẫu thứ nhất có nhãn đúng là lớp $1$,
+mẫu thứ hai có nhãn đúng là lớp $2$. Hai mô hình $M_A$ và $M_B$ đưa ra các phân
+phối xác suất sau:
+\begin{center}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & Mẫu 1 (nhãn: lớp 1) & Mẫu 2 (nhãn: lớp 2) \\
+\midrule
+$M_A$ & $(0.60,\ 0.30,\ 0.10)$ & $(0.30,\ 0.50,\ 0.20)$ \\
+$M_B$ & $(0.95,\ 0.03,\ 0.02)$ & $(0.55,\ 0.40,\ 0.05)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Xét theo \emph{độ chính xác}: mô hình $M_A$ dự đoán đúng cả hai mẫu (lớp có xác
+suất cao nhất lần lượt là lớp $1$ và lớp $2$), đạt độ chính xác $100\%$. Mô hình
+$M_B$ dự đoán đúng mẫu thứ nhất nhưng sai mẫu thứ hai (chọn lớp $1$ với $0.55$
+thay vì lớp $2$), chỉ đạt $50\%$.
+
+Xét theo \emph{log-loss}:
+\[
+    \text{log-loss}(M_A) = -\tfrac{1}{2}\big[\ln(0.60) + \ln(0.50)\big]
+    = -\tfrac{1}{2}\big[(-0.511) + (-0.693)\big] \approx 0.602,
+\]
+\[
+    \text{log-loss}(M_B) = -\tfrac{1}{2}\big[\ln(0.95) + \ln(0.40)\big]
+    = -\tfrac{1}{2}\big[(-0.051) + (-0.916)\big] \approx 0.484.
+\]
+Kết quả cho thấy $M_B$ có log-loss \emph{thấp hơn} (tốt hơn) mặc dù độ chính xác
+chỉ bằng một nửa. Nguyên nhân là $M_B$ rất tự tin và đúng ở mẫu thứ nhất
+($0.95$), trong khi sai lầm ở mẫu thứ hai là sai lầm ``nhẹ'' vì mô hình vẫn gán
+xác suất $0.40$ cho lớp đúng. Ví dụ này minh hoạ rằng hai độ đo nắm bắt những khía
+cạnh khác nhau của chất lượng mô hình, và việc lựa chọn độ đo phải xuất phát từ
+mục đích sử dụng: nếu đầu ra được dùng làm xác suất để ra quyết định theo ngưỡng
+thì log-loss phù hợp hơn, còn nếu chỉ cần nhãn cuối cùng thì độ chính xác đủ dùng.
+\end{vidu}
+
+\subsection{Căn bậc hai sai số bình phương trung bình}
+Với bài toán hồi quy, độ đo được sử dụng là RMSE:
 \[
     \text{RMSE} = \sqrt{\frac{1}{N}\sum_{i=1}^{N}\left(y_i - \hat{y}_i\right)^2}.
 \]
-Với AUC, giá trị lớn hơn là tốt hơn; với log-loss và RMSE, giá trị nhỏ hơn là tốt
-hơn. Để thống nhất chiều ``lớn hơn là tốt hơn'' khi xếp hạng, ta có thể lấy dấu âm
-của log-loss và RMSE.
+RMSE giữ nguyên đơn vị của biến mục tiêu nên dễ diễn giải, song do bình phương sai
+số nên nhạy với các điểm ngoại lai.
 
-\begin{vidu}[Minh hoạ cách tính RMSE]
+\begin{vidu}[Tính RMSE và ảnh hưởng của điểm ngoại lai]
 \label{vd:rmse}
-Giả sử trên một tập kiểm thử gồm $N=3$ mẫu, giá trị thực là $y = (3.0,\ 5.0,\
-2.5)$ và dự đoán là $\hat{y} = (2.5,\ 5.0,\ 4.0)$. Khi đó:
+Xét tập kiểm thử gồm $N = 4$ mẫu với giá trị thực $y = (3.0,\ 5.0,\ 2.5,\ 4.0)$ và
+dự đoán $\hat{y} = (2.8,\ 5.1,\ 2.4,\ 4.2)$. Sai số lần lượt là $0.2$, $-0.1$,
+$0.1$ và $-0.2$, do đó
 \[
-    \text{RMSE} = \sqrt{\tfrac{1}{3}\big[(3.0-2.5)^2 + (5.0-5.0)^2 + (2.5-4.0)^2\big]}
-    = \sqrt{\tfrac{1}{3}\,(0.25 + 0 + 2.25)} = \sqrt{0.8333} \approx 0.913.
+    \text{RMSE} = \sqrt{\tfrac{1}{4}\,(0.04 + 0.01 + 0.01 + 0.04)}
+    = \sqrt{0.025} \approx 0.158.
 \]
-Sai số chủ yếu đến từ mẫu thứ ba (lệch $1.5$ đơn vị); điều này cho thấy RMSE
-nhạy với các sai lệch lớn do bình phương khuếch đại chúng.
+Nếu dự đoán cho mẫu thứ tư sai lệch mạnh, chẳng hạn $\hat{y}_4 = 7.0$ thay vì
+$4.2$, sai số tương ứng trở thành $-3.0$ và
+\[
+    \text{RMSE} = \sqrt{\tfrac{1}{4}\,(0.04 + 0.01 + 0.01 + 9.0)}
+    = \sqrt{2.265} \approx 1.505.
+\]
+Chỉ một điểm ngoại lai đã làm RMSE tăng gần mười lần, minh hoạ rõ tính nhạy cảm
+của độ đo này. Đặc điểm đó lý giải vì sao trong thực nghiệm, các bộ dữ liệu hồi
+quy có phân phối mục tiêu đuôi dài thường cho độ lệch chuẩn RMSE lớn giữa các fold.
 \end{vidu}
 
-\section{Các thư viện AutoML tiêu biểu}
+\subsection{Chuẩn hoá chiều tối ưu}
+Ba độ đo trên có chiều tối ưu khác nhau: AUC và độ chính xác càng lớn càng tốt,
+trong khi log-loss và RMSE càng nhỏ càng tốt. Để tổng hợp được trên cùng một
+thang, mọi độ đo được quy về dạng ``lớn hơn là tốt hơn'' bằng cách lấy dấu âm với
+hai độ đo sau:
+\[
+    \tilde{s} =
+    \begin{cases}
+        s, & \text{nếu } s \in \{\mathrm{AUC},\ \text{accuracy}\},\\[2pt]
+        -s, & \text{nếu } s \in \{\text{log-loss},\ \text{RMSE}\}.
+    \end{cases}
+\]
+
+\section{Mô hình xếp hạng Bradley--Terry}
+\label{sec:bt}
+Khi cần tổng hợp kết quả trên nhiều bộ dữ liệu có thang đo khác nhau, việc lấy
+trung bình điểm số trực tiếp là không hợp lệ vì các độ đo không cùng đơn vị. Một
+cách tiếp cận chặt chẽ hơn là quy bài toán về so sánh cặp đôi và sử dụng mô hình
+Bradley--Terry~\cite{bradley1952rank}.
+
+\begin{dinhnghia}[Mô hình Bradley--Terry]
+\label{def:bt}
+Gán cho mỗi thư viện $F_i$ một tham số cường độ $\lambda_i > 0$. Xác suất để thư
+viện $F_i$ thắng thư viện $F_j$ trong một phép so sánh cặp đôi được mô hình hoá là
+\[
+    \Pr(F_i \succ F_j) = \frac{\lambda_i}{\lambda_i + \lambda_j}.
+\]
+\end{dinhnghia}
+
+Các tham số $\lambda_i$ được ước lượng bằng phương pháp hợp lý cực đại từ ma trận
+thắng -- thua quan sát được, sau đó chuẩn hoá sao cho $\sum_i \lambda_i = 1$. Ưu
+điểm của mô hình này là biến các so sánh cặp đôi rời rạc thành một thang cường độ
+liên tục, cho phép xếp hạng nhất quán ngay cả khi quan hệ thắng -- thua không có
+tính bắc cầu hoàn toàn.
+
+\begin{vidu}[Diễn giải tham số cường độ]
+\label{vd:bt}
+Giả sử hai thư viện có cường độ ước lượng $\lambda_1 = 0.446$ và
+$\lambda_2 = 0.197$. Khi đó xác suất thư viện thứ nhất thắng thư viện thứ hai
+trong một phép so sánh ngẫu nhiên là
+\[
+    \Pr(F_1 \succ F_2) = \frac{0.446}{0.446 + 0.197} = \frac{0.446}{0.643}
+    \approx 0.694.
+\]
+Nghĩa là thư viện thứ nhất được kỳ vọng thắng khoảng $69\%$ số lần đối đầu. Cách
+diễn giải này cụ thể và hữu ích hơn so với việc chỉ nói thư viện thứ nhất ``xếp
+trên'', vì nó lượng hoá được mức độ cách biệt.
+\end{vidu}
+
+Mô hình Bradley--Terry còn có thể mở rộng thành \emph{cây Bradley--Terry}, trong
+đó tập quan sát được phân tách theo một biến điều kiện (ở đây là dạng tác vụ) và
+mỗi nhánh có bộ tham số cường độ riêng. Cấu trúc này cho phép phát hiện hiện tượng
+đảo chiều xếp hạng: một thư viện có thể dẫn đầu ở nhóm tác vụ này nhưng xếp cuối ở
+nhóm khác, điều mà một mô hình toàn cục đơn lẻ sẽ che khuất.
+
+\section{Các thư viện AutoML được khảo sát}
 \label{sec:frameworks}
-\paragraph{FLAML.} Thư viện nhẹ, tập trung tối ưu tiết kiệm chi phí
-(\textit{cost-frugal optimization}) và tìm kiếm đa độ phân giải, cho phép đạt kết
-quả tốt trong ngân sách thời gian nhỏ~\cite{wang2021flaml}.
+\subsection{AutoGluon}
+AutoGluon~\cite{erickson2020autogluon} áp dụng chiến lược xếp chồng nhiều tầng
+(\textit{multi-layer stacked ensembling}): thư viện huấn luyện đồng thời nhiều mô
+hình cơ sở thuộc các họ khác nhau (LightGBM, CatBoost, XGBoost, rừng ngẫu nhiên,
+mạng nơ-ron) rồi dùng một mô hình meta để kết hợp đầu ra của chúng. Triết lý thiết
+kế này ưu tiên độ chính xác và độ ổn định thay vì tinh chỉnh siêu tham số chuyên
+sâu cho từng mô hình đơn lẻ. Ưu điểm là hiệu năng cao và ổn định trên dữ liệu có
+không gian đặc trưng lớn và hỗn hợp về kiểu; đồng thời cơ chế dự phòng tự động cho
+phép đường ống hoàn tất ngay cả khi một số mô hình thành phần gặp lỗi. Hạn chế
+nằm ở chi phí bộ nhớ, do toàn bộ tầng mô hình phải được giữ đồng thời trong RAM.
 
-\paragraph{H2O AutoML.} Tự động huấn luyện nhiều họ mô hình (GBM, GLM, mạng nơ-ron,
-rừng ngẫu nhiên\ldots) và kết hợp chúng bằng \textit{stacked ensemble}, hướng tới
-sự tiện dụng và độ chính xác cao~\cite{ledell2020h2o}.
+\subsection{FLAML}
+FLAML~\cite{wang2021flaml} theo đuổi hướng tối ưu tiết kiệm chi phí thông qua
+thuật toán CFO (\textit{Cost-Frugal Optimization}). Thay vì khảo sát không gian
+tìm kiếm một cách đồng đều, FLAML ưu tiên thử nghiệm các mô hình nhẹ trước
+(LightGBM, XGBoost) rồi mới chuyển sang những lựa chọn tốn kém hơn, đồng thời điều
+chỉnh kích thước mẫu và số vòng lặp theo hướng giảm chi phí đánh giá. Nhờ vậy
+FLAML đạt được cấu hình tốt với thời gian và bộ nhớ thấp, đặc biệt phù hợp khi dữ
+liệu lớn nhưng cấu trúc đặc trưng tương đối đơn giản. Đánh đổi là khả năng bao phủ
+hạn chế hơn trên những bài toán đòi hỏi mô hình phức tạp.
 
-\paragraph{AutoGluon.} Đề cao chiến lược xếp chồng nhiều tầng (\textit{multi-layer
-stacking}) và kết hợp mô hình thay vì chỉ tinh chỉnh siêu tham số, thường đạt độ
-chính xác cao trên dữ liệu bảng~\cite{erickson2020autogluon}.
+\subsection{H2O AutoML}
+H2O~AutoML~\cite{ledell2020h2o} vận hành theo kiến trúc máy chủ: toàn bộ quá trình
+huấn luyện diễn ra trong một tiến trình Java riêng biệt, còn mã Python chỉ đóng
+vai trò máy khách giao tiếp qua REST API. Thư viện huấn luyện tuần tự nhiều họ mô
+hình (GLM, GBM, rừng ngẫu nhiên, mạng nơ-ron) rồi kết hợp bằng \textit{stacked
+ensemble} được tối ưu kỹ lưỡng, cho hiệu năng mạnh ở nhóm hồi quy và phân loại nhị
+phân cân bằng. Kiến trúc này kéo theo hai hệ quả đáng lưu ý khi đo đạc: thứ nhất,
+lượng bộ nhớ quan sát được từ phía Python không phản ánh mức tiêu thụ thực tế do
+phần lớn bộ nhớ nằm trong máy ảo Java; thứ hai, chiến lược huấn luyện tuần tự
+khiến H2O thường sử dụng gần hết ngân sách thời gian được cấp.
+
+\subsection{MLJAR}
+MLJAR~\cite{plonska2021mljar} xây dựng đường ống học máy riêng cho từng bộ dữ
+liệu. Thư viện thực hiện sinh đặc trưng tự động (tạo đặc trưng tương tác, áp dụng
+các phép mã hoá chuyên biệt cho biến hạng mục), lựa chọn thuật toán thông qua thư
+viện tối ưu Optuna, rồi tạo tổ hợp từ những đường ống tốt nhất. Cách tiếp cận này
+tỏ ra phù hợp với dữ liệu có không gian đặc trưng cao và các quan hệ phi tuyến.
+Thời gian chạy của MLJAR biến động mạnh theo độ rộng của không gian tìm kiếm: thư
+viện có thể kết thúc sớm khi tìm được đường ống tốt, nhưng cũng có thể kéo dài khi
+phải duyệt qua nhiều lựa chọn.
 
 \section{Khảo sát các công trình liên quan}
 \label{sec:conghinhlienquan}
-Nhóm khảo sát các công trình liên quan và phân loại theo hướng tiếp cận. Bảng
-\ref{tab:relatedwork} tóm tắt so sánh; phần sau phân tích chi tiết điểm mạnh và
-hạn chế của từng hướng.
+Bảng~\ref{tab:relatedwork} tổng hợp các công trình được khảo sát, phân loại theo
+hướng tiếp cận chủ đạo.
 
 \begin{table}[H]
   \centering
   \small
-  \caption{Tóm tắt các công trình liên quan theo hướng tiếp cận.}
+  \caption{Tổng hợp các công trình liên quan theo hướng tiếp cận.}
   \label{tab:relatedwork}
   \renewcommand{\arraystretch}{1.25}
   \begin{tabularx}{\linewidth}{@{}l l X@{}}
     \toprule
     \textbf{Công trình} & \textbf{Hướng tiếp cận} & \textbf{Ý tưởng chính} \\
     \midrule
-    auto-sklearn~\cite{feurer2015autosklearn} & Tối ưu Bayes + meta-learning & Giải CASH bằng tối ưu Bayes, khởi tạo bằng meta-learning và xây dựng ensemble. \\
-    TPOT~\cite{olson2016tpot} & Lập trình di truyền & Tiến hoá đường ống (pipeline) học máy bằng giải thuật di truyền. \\
-    FLAML~\cite{wang2021flaml} & Tối ưu tiết kiệm chi phí & Tìm kiếm đa độ phân giải, hiệu quả trong ngân sách nhỏ. \\
-    H2O AutoML~\cite{ledell2020h2o} & Học tổ hợp (stacking) & Huấn luyện nhiều họ mô hình và kết hợp bằng stacked ensemble. \\
-    AutoGluon~\cite{erickson2020autogluon} & Xếp chồng nhiều tầng & Ưu tiên kết hợp mô hình nhiều tầng hơn là tinh chỉnh siêu tham số. \\
+    auto-sklearn~\cite{feurer2015autosklearn} & Tối ưu Bayes & Giải CASH bằng tối ưu Bayes, khởi tạo bằng meta-learning, xây dựng ensemble hậu kiểm. \\
+    TPOT~\cite{olson2016tpot} & Lập trình di truyền & Tiến hoá cấu trúc đường ống bằng giải thuật di truyền. \\
+    FLAML~\cite{wang2021flaml} & Tối ưu tiết kiệm chi phí & Tìm kiếm CFO ưu tiên mô hình rẻ, kiểm soát chi phí đánh giá. \\
+    H2O AutoML~\cite{ledell2020h2o} & Học tổ hợp & Huấn luyện tuần tự nhiều họ mô hình, kết hợp bằng stacked ensemble trên JVM. \\
+    AutoGluon~\cite{erickson2020autogluon} & Xếp chồng nhiều tầng & Ưu tiên kết hợp mô hình nhiều tầng hơn tinh chỉnh siêu tham số. \\
+    MLJAR~\cite{plonska2021mljar} & Đường ống tuỳ biến & Sinh đặc trưng tự động, chọn thuật toán bằng Optuna. \\
     AMLB~\cite{gijsbers2024amlb} & Chuẩn đánh giá & Giao thức so sánh công bằng, tái lập, ghi nhận thất bại. \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
 \subsection{Hướng tối ưu siêu tham số}
-Các phương pháp như auto-sklearn~\cite{feurer2015autosklearn} và
-FLAML~\cite{wang2021flaml} tập trung tìm kiếm hiệu quả trên không gian CASH.
-\textit{Điểm mạnh:} nền tảng lý thuyết vững, tiết kiệm chi phí (đặc biệt là
-FLAML). \textit{Hạn chế:} chất lượng phụ thuộc nhiều vào không gian tìm kiếm được
-định nghĩa trước và có thể kém hơn các phương pháp tổ hợp khi ngân sách lớn.
+Các công trình theo hướng này xem AutoML là bài toán tối ưu hộp đen và tập trung
+vào hiệu quả của chiến lược tìm kiếm. auto-sklearn~\cite{feurer2015autosklearn}
+sử dụng tối ưu Bayes trên mô hình thay thế, kết hợp meta-learning để khởi tạo tìm
+kiếm từ những cấu hình đã tỏ ra hiệu quả trên các bộ dữ liệu tương tự.
+FLAML~\cite{wang2021flaml} đi theo hướng kiểm soát chi phí, ưu tiên các đánh giá
+rẻ trước. \textit{Điểm mạnh} của nhóm này là nền tảng lý thuyết vững và hiệu quả
+cao khi ngân sách hạn chế. \textit{Hạn chế} là chất lượng phụ thuộc mạnh vào việc
+thiết kế không gian tìm kiếm ban đầu, và khi ngân sách lớn, chúng thường bị các
+phương pháp tổ hợp vượt qua.
 
 \subsection{Hướng học tổ hợp và xếp chồng}
-H2O~AutoML~\cite{ledell2020h2o} và AutoGluon~\cite{erickson2020autogluon} nhấn
-mạnh việc kết hợp nhiều mô hình. \textit{Điểm mạnh:} thường đạt độ chính xác cao
-nhờ tận dụng tính đa dạng của các mô hình thành phần. \textit{Hạn chế:} chi phí
-huấn luyện và bộ nhớ cao hơn, mô hình kết quả khó diễn giải.
+H2O~AutoML~\cite{ledell2020h2o}, AutoGluon~\cite{erickson2020autogluon} và
+MLJAR~\cite{plonska2021mljar} đặt trọng tâm vào việc kết hợp nhiều mô hình thay vì
+tìm kiếm một cấu hình đơn lẻ tối ưu. Cơ sở lý thuyết của hướng này là sự đa dạng
+giữa các mô hình thành phần giúp giảm phương sai của dự đoán tổ hợp.
+\textit{Điểm mạnh} là độ chính xác cao và ổn định trên nhiều dạng dữ liệu.
+\textit{Hạn chế} là chi phí bộ nhớ và thời gian huấn luyện lớn, đồng thời mô hình
+kết quả khó diễn giải --- một trở ngại trong các lĩnh vực đòi hỏi giải trình.
 
 \subsection{Hướng tiến hoá}
-TPOT~\cite{olson2016tpot} dùng lập trình di truyền để tiến hoá cả đường ống.
-\textit{Điểm mạnh:} linh hoạt, có thể khám phá cấu trúc pipeline bất ngờ.
-\textit{Hạn chế:} chi phí tính toán lớn và độ ổn định kết quả thấp hơn.
+TPOT~\cite{olson2016tpot} vận dụng lập trình di truyền để tiến hoá đồng thời cả
+cấu trúc đường ống lẫn siêu tham số. \textit{Điểm mạnh} là tính linh hoạt, cho
+phép khám phá những tổ hợp bước xử lý mà con người khó nghĩ tới. \textit{Hạn chế}
+là chi phí tính toán rất lớn và độ ổn định kết quả thấp giữa các lần chạy do bản
+chất ngẫu nhiên của giải thuật.
 
 \subsection{Hướng chuẩn hoá đánh giá}
-AMLB~\cite{gijsbers2024amlb} không đề xuất thuật toán mới mà cung cấp một
-\emph{khung đánh giá} công bằng. \textit{Điểm mạnh:} kiểm soát chặt fold, ngân
-sách, độ đo, tài nguyên và ghi nhận thất bại; là nền tảng phương pháp cho đồ án
-này. \textit{Hạn chế:} thiên về dòng lệnh, cấu hình phức tạp, chưa có giao diện
-trực quan và chưa hỗ trợ trực tiếp việc nạp dữ liệu tuỳ chọn từ các nguồn như
-Kaggle.
+Khác với các nhóm trên, AMLB~\cite{gijsbers2024amlb} không đề xuất thuật toán mới
+mà cung cấp khung phương pháp luận cho việc đánh giá. Công trình chỉ ra rằng phần
+lớn các so sánh AutoML công bố trước đó đều mắc ít nhất một trong các lỗi: ngân
+sách không đồng nhất, phân hoạch dữ liệu khác nhau, hoặc loại bỏ lần chạy thất
+bại. \textit{Điểm mạnh} là tính chặt chẽ về phương pháp và bộ kết quả tham chiếu
+quy mô lớn. \textit{Hạn chế} nằm ở khả năng tiếp cận: khung này vận hành chủ yếu
+qua dòng lệnh với cấu hình phức tạp, gắn với hệ sinh thái OpenML nên việc đưa vào
+các bộ dữ liệu tuỳ chọn từ nguồn khác đòi hỏi nhiều thao tác thủ công.
 
 \section{Khoảng trống nghiên cứu}
 \label{sec:khoangtrong}
-Từ khảo sát trên, nhóm nhận thấy hai khoảng trống. Thứ nhất, phần lớn nghiên cứu
-tập trung \emph{cải tiến thuật toán} AutoML, trong khi khía cạnh \emph{đánh giá
-công bằng và tái lập} ít được chú trọng ở cấp độ công cụ thực dụng. Thứ hai, AMLB
-tuy chặt chẽ về phương pháp nhưng có rào cản sử dụng: thiếu giao diện trực quan,
-chưa hỗ trợ nạp dữ liệu công khai từ Kaggle và chưa tổng hợp kết quả một cách
-thân thiện. Đồ án hướng tới lấp khoảng trống này bằng cách kế thừa giao thức công
-bằng của AMLB và bổ sung một hệ thống hỗ trợ nạp dữ liệu, chạy đánh giá trong môi
-trường cô lập và trực quan hoá kết quả (trình bày ở Chương~\ref{ch:phuongphap}).
+Từ khảo sát trên, nhóm xác định ba khoảng trống mà đồ án hướng tới.
+
+Thứ nhất, phần lớn nỗ lực nghiên cứu tập trung vào việc \emph{cải tiến thuật
+toán} AutoML, trong khi khía cạnh \emph{đánh giá công bằng} chỉ được chú trọng ở
+một số ít công trình. Điều này tạo ra nghịch lý: có nhiều thư viện nhưng thiếu cơ
+sở khách quan để lựa chọn giữa chúng.
+
+Thứ hai, các bộ kết quả tham chiếu hiện có chủ yếu gắn với những bộ dữ liệu chuẩn
+đã được xử lý sẵn trong hệ sinh thái OpenML. Hành vi của các thư viện trên dữ liệu
+thô thu thập trực tiếp từ nguồn thực tế --- với giá trị khuyết, ký hiệu thiếu
+không chuẩn và mất cân bằng nhãn nghiêm trọng --- ít được khảo sát hơn.
+
+Thứ ba, các so sánh thường dừng lại ở chỉ số chất lượng dự đoán, ít chú ý đến các
+chiều đánh giá khác có ý nghĩa vận hành như tốc độ suy luận, mức tiêu thụ bộ nhớ
+và đặc biệt là \emph{tỉ lệ thất bại} theo quy mô dữ liệu. Trong khi đó, với người
+triển khai thực tế, một thư viện thất bại trên dữ liệu lớn có thể là yếu tố loại
+trừ quan trọng hơn chênh lệch vài phần nghìn điểm AUC.
+
+Chương~\ref{ch:phuongphap} trình bày cách đồ án giải quyết ba khoảng trống này
+thông qua một giao thức đánh giá và hạ tầng thực nghiệm được thiết kế tương ứng.

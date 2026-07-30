@@ -3,23 +3,33 @@
 \chapter*{Danh mục thuật ngữ và viết tắt}
 \addcontentsline{toc}{chapter}{Danh mục thuật ngữ và viết tắt}
 
-\begin{center}
-\begin{tabularx}{\linewidth}{@{}l l X@{}}
+% Hai cột nội dung dùng X (co giãn) với trọng số hsize để cột thuật ngữ đầy đủ
+% rộng hơn cột diễn giải; tổng trọng số phải bằng số cột X (1.15 + 0.85 = 2).
+\begin{longtable}{@{}l >{\raggedright\arraybackslash}p{6.2cm} >{\raggedright\arraybackslash}p{5.0cm}@{}}
 \toprule
 \textbf{Viết tắt} & \textbf{Thuật ngữ đầy đủ} & \textbf{Nghĩa / diễn giải} \\
 \midrule
+\endfirsthead
+\toprule
+\textbf{Viết tắt} & \textbf{Thuật ngữ đầy đủ} & \textbf{Nghĩa / diễn giải} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
 AutoML & Automated Machine Learning & Học máy tự động \\
 AMLB   & AutoML Benchmark & Chuẩn đánh giá AutoML của Gijsbers và cộng sự \\
-CASH   & Combined Algorithm Selection and Hyperparameter optimization & Bài toán chọn thuật toán và tối ưu siêu tham số kết hợp \\
-CV     & Cross-Validation & Kiểm chứng chéo (chia dữ liệu theo fold) \\
 AUC    & Area Under the ROC Curve & Diện tích dưới đường cong ROC \\
-RMSE   & Root Mean Squared Error & Căn bậc hai sai số bình phương trung bình \\
+BT     & Bradley--Terry model & Mô hình xếp hạng dựa trên so sánh cặp đôi \\
+CASH   & Combined Algorithm Selection and Hyperparameter optimization & Bài toán chọn thuật toán và tối ưu siêu tham số kết hợp \\
+CFO    & Cost-Frugal Optimization & Tối ưu tiết kiệm chi phí (dùng trong FLAML) \\
+CV     & Cross-Validation & Kiểm chứng chéo (chia dữ liệu theo fold) \\
+GBM    & Gradient Boosting Machine & Máy tăng cường gradient \\
+GLM    & Generalized Linear Model & Mô hình tuyến tính tổng quát \\
 HPO    & Hyperparameter Optimization & Tối ưu siêu tham số \\
-NAS    & Neural Architecture Search & Tìm kiếm kiến trúc mạng nơ-ron \\
+IQR    & Interquartile Range & Khoảng tứ phân vị \\
+JVM    & Java Virtual Machine & Máy ảo Java \\
+OOM    & Out Of Memory & Lỗi tràn bộ nhớ \\
 OpenML & Open Machine Learning & Nền tảng chia sẻ dữ liệu và tác vụ học máy \\
+RMSE   & Root Mean Squared Error & Căn bậc hai sai số bình phương trung bình \\
 UI     & User Interface & Giao diện người dùng \\
-\bottomrule
-\end{tabularx}
-\end{center}
-
-% Bổ sung/loại bớt cho khớp với thuật ngữ thực sự xuất hiện trong báo cáo.
+\end{longtable}

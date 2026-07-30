@@ -1,46 +1,98 @@
 % ======================================================================
 %  PHỤ LỤC
-%  Theo yêu cầu đồ án: (a) ghi rõ phần có sử dụng công cụ AI; (b) mã nguồn nộp
-%  qua repository, có README hướng dẫn cài đặt và chạy.
 % ======================================================================
-\chapter{Hướng dẫn tái lập và mã nguồn}
+\chapter{Hướng dẫn tái lập thực nghiệm}
 \label{ch:phuluc-repo}
 
-Toàn bộ mã nguồn được công bố tại kho lưu trữ:
+Toàn bộ mã nguồn của đồ án được công bố tại kho lưu trữ:
 \begin{center}
 \url{https://github.com/ThinhSama234/HCMUS-data-mining-AutoML}
 \end{center}
-Kho chứa tệp \texttt{README.md} hướng dẫn cài đặt môi trường (Python 3.9--3.11,
-PostgreSQL và MinIO qua Docker Compose) và cách chạy hệ thống. Tóm tắt các bước:
-\begin{enumerate}
-    \item Tạo môi trường ảo và cài đặt phụ thuộc: \texttt{pip install -r requirements.txt}.
-    \item Khởi động PostgreSQL và MinIO: \texttt{docker-compose up -d}, sau đó nạp
-    danh mục bằng \texttt{python -m storage.seed}.
-    \item Chạy giao diện: \texttt{streamlit run console/app.py}.
-    \item Trên trang Methods, tích hợp thư viện (kéo ảnh Docker); trên trang
-    Training, chọn bộ dữ liệu và ngân sách rồi khởi chạy; kết quả hiển thị ở trang
-    Evaluation.
-\end{enumerate}
 
-\chapter{Ghi chú về việc sử dụng công cụ hỗ trợ (AI)}
-\label{ch:phuluc-ai}
+Kho mã nguồn kèm tệp \texttt{README.md} mô tả chi tiết cách thiết lập môi trường
+và chạy thực nghiệm. Quy trình tái lập gồm các bước sau.
 
-Theo quy định của đồ án, nhóm ghi chú minh bạch các phần có sử dụng công cụ trí
-tuệ nhân tạo hỗ trợ. Nhóm chịu trách nhiệm hoàn toàn về tính đúng đắn của mọi nội
-dung nộp.
+\paragraph{Bước 1 --- Chuẩn bị dữ liệu.} Tải các tệp thô từ Kaggle theo danh mục
+đăng ký trong \texttt{scripts/prep.py}, đặt vào thư mục \texttt{data/raw/} rồi
+chạy lệnh tiền xử lý. Kết quả là mỗi bộ dữ liệu được chuẩn hoá thành một tệp dữ
+liệu và một tệp siêu dữ liệu mô tả cột nhãn, dạng tác vụ và độ đo:
+\begin{center}
+\texttt{python scripts/prep.py -{}-all}
+\end{center}
+
+\paragraph{Bước 2 --- Sinh phân hoạch fold.} Phân hoạch được sinh một lần và dùng
+chung cho mọi thư viện, bảo đảm điều kiện công bằng theo
+Định nghĩa~\ref{def:congbang}:
+\begin{center}
+\texttt{python scripts/gen\_folds.py -{}-n-splits 5 -{}-seed 42}
+\end{center}
+
+\paragraph{Bước 3 --- Thiết lập môi trường ảo cho từng thư viện.} Mỗi thư viện
+AutoML được cài đặt vào một môi trường ảo riêng dưới thư mục \texttt{envs/venvs/}
+nhằm loại trừ xung đột phụ thuộc giữa các thư viện.
+
+\paragraph{Bước 4 --- Chạy thực nghiệm.} Tiến trình điều phối sinh và phân phối
+toàn bộ công việc; tham số \texttt{-{}-time-budget} quy định ngân sách thời gian
+cho mỗi lần huấn luyện:
+\begin{center}
+\texttt{python scripts/orchestrator.py -{}-time-budget 300}
+\end{center}
+Quá trình có thể được tiếp tục sau gián đoạn bằng cách truyền lại định danh lượt
+chạy qua tham số \texttt{-{}-run-id}, hoặc giới hạn phạm vi bằng
+\texttt{-{}-frameworks} và \texttt{-{}-datasets} khi chia việc cho nhiều máy.
+
+\paragraph{Bước 5 --- Hợp nhất và phân tích.} Các tệp kết quả từng phần thu được
+từ nhiều máy được gộp thành một báo cáo duy nhất, sau đó sinh bảng tổng hợp và
+biểu đồ:
+\begin{center}
+\texttt{python scripts/merge.py reports/partial\_*.json}
+\end{center}
+
+\paragraph{Cấu hình tái lập.} Các tham số quyết định tính tái lập của kết quả
+trình bày trong báo cáo được liệt kê ở Bảng~\ref{tab:cauhinh}.
 
 \begin{table}[H]
   \centering
   \small
-  \caption{Ghi chú sử dụng công cụ AI trong đồ án.}
+  \caption{Cấu hình thực nghiệm dùng để tái lập kết quả.}
+  \label{tab:cauhinh}
+  \renewcommand{\arraystretch}{1.2}
+  \begin{tabularx}{\linewidth}{@{}l X@{}}
+    \toprule
+    \textbf{Tham số} & \textbf{Giá trị} \\
+    \midrule
+    Số fold $K$              & 5 \\
+    Hạt giống ngẫu nhiên     & 42 \\
+    Phép chia (phân loại)    & Phân tầng theo nhãn (\textit{stratified $K$-fold}) \\
+    Phép chia (hồi quy)      & $K$-fold ngẫu nhiên \\
+    Ngân sách thời gian      & 60 giây và 300 giây cho mỗi lần huấn luyện \\
+    Thư viện so sánh         & AutoGluon, FLAML, H2O AutoML, MLJAR \\
+    Số bộ dữ liệu            & 12 (5 nhị phân, 3 đa lớp, 4 hồi quy) \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\chapter{Ghi chú về việc sử dụng công cụ hỗ trợ}
+\label{ch:phuluc-ai}
+
+Theo quy định của đồ án, nhóm ghi chú minh bạch những phần có sử dụng công cụ trí
+tuệ nhân tạo trong quá trình thực hiện. Nhóm đã kiểm tra, hiệu chỉnh và chịu trách
+nhiệm hoàn toàn về tính chính xác của mọi nội dung trình bày trong báo cáo cũng
+như mã nguồn nộp kèm.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Ghi chú sử dụng công cụ hỗ trợ trong đồ án.}
   \label{tab:ai-usage}
   \renewcommand{\arraystretch}{1.25}
   \begin{tabularx}{\linewidth}{@{}l l X@{}}
     \toprule
-    \textbf{Hạng mục} & \textbf{Công cụ} & \textbf{Mức độ sử dụng và kiểm chứng} \\
+    \textbf{Hạng mục} & \textbf{Công cụ} & \textbf{Mức độ sử dụng và cách kiểm chứng} \\
     \midrule
-    {[}Ví dụ: soạn thảo báo cáo{]} & {[}tên công cụ{]} & {[}mô tả: gợi ý câu chữ; nhóm đã đọc, chỉnh sửa và kiểm chứng nội dung{]} \\
-    {[}Ví dụ: hỗ trợ lập trình{]}  & {[}tên công cụ{]} & {[}mô tả: gợi ý đoạn mã; nhóm đã kiểm thử và chịu trách nhiệm{]} \\
+    {[}Soạn thảo báo cáo{]} & {[}tên công cụ{]} & {[}Mô tả phạm vi hỗ trợ; nhóm đã đọc, hiệu chỉnh và đối chiếu mọi số liệu với kết quả thực nghiệm gốc.{]} \\
+    {[}Hỗ trợ lập trình{]}  & {[}tên công cụ{]} & {[}Mô tả phạm vi hỗ trợ; nhóm đã kiểm thử và xác nhận tính đúng đắn của mã nguồn.{]} \\
+    {[}Trực quan hoá dữ liệu{]} & {[}tên công cụ{]} & {[}Mô tả phạm vi hỗ trợ; nhóm đã kiểm tra tính nhất quán giữa biểu đồ và dữ liệu gốc.{]} \\
     \bottomrule
   \end{tabularx}
 \end{table}

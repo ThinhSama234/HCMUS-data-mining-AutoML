@@ -1,237 +1,683 @@
 % ======================================================================
 %  CHƯƠNG 4 — THỰC NGHIỆM VÀ PHÂN TÍCH KẾT QUẢ
-%  Yêu cầu (mục 2.5): >= 2 bộ dữ liệu chuẩn; độ đo phù hợp; so sánh >= 2 baseline;
-%  bảng + biểu đồ; phân tích; ablation study.
-%  Lưu ý trung thực: các số liệu dưới đây là KẾT QUẢ SƠ BỘ (ngân sách 30s trên
-%  máy cục bộ). Lần chạy đầy đủ trên 20 bộ dữ liệu (môi trường Docker/Linux) đang
-%  được hoàn tất; các ô [ ] là chỗ điền số liệu cuối cùng.
-%  Độ dài tham khảo: >= 10 trang.
 % ======================================================================
 \chapter{Thực nghiệm và phân tích kết quả}
 \label{ch:thucnghiem}
 
 \section{Bộ dữ liệu}
 \label{sec:dulieu}
-Đồ án sử dụng hai nhóm dữ liệu. \emph{Nhóm thứ nhất} là bộ sưu tập gồm 20 bộ dữ
-liệu công khai thu thập từ Kaggle (mỗi thành viên chuẩn bị 5 bộ), cân bằng giữa
-bài toán phân lớp và hồi quy, dùng cho lần chạy so sánh đầy đủ. \emph{Nhóm thứ
-hai} là các bộ dữ liệu chuẩn nhỏ, dùng cho lần chạy sơ bộ nhằm kiểm chứng quy
-trình end-to-end. Bảng~\ref{tab:dulieu} thống kê ba bộ dữ liệu của lần chạy sơ bộ.
-Việc nạp và quản lý dữ liệu được thực hiện qua giao diện của hệ thống
-(Hình~\ref{fig:console-datasets}).
+Thực nghiệm được tiến hành trên 12 bộ dữ liệu thu thập từ Kaggle, bao gồm ba dạng
+bài toán: phân loại nhị phân (5 bộ), phân loại đa lớp (3 bộ) và hồi quy (4 bộ).
+Tiêu chí lựa chọn hướng tới sự đa dạng về quy mô mẫu, số lượng đặc trưng, tỉ lệ
+mất cân bằng nhãn và mức độ khó, nhằm khảo sát hành vi của các thư viện AutoML
+trong nhiều tình huống khác nhau thay vì chỉ trên một nhóm dữ liệu đồng nhất.
+Bảng~\ref{tab:dulieu} liệt kê đặc điểm của từng bộ dữ liệu.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Đặc điểm của 12 bộ dữ liệu thực nghiệm.}
+  \label{tab:dulieu}
+  \renewcommand{\arraystretch}{1.15}
+  \begin{tabularx}{\linewidth}{@{}c >{\raggedright\arraybackslash}X l l r r@{}}
+    \toprule
+    \textbf{\#} & \textbf{Bộ dữ liệu} & \textbf{Dạng tác vụ} & \textbf{Độ đo} & \textbf{Số mẫu} & \textbf{Đặc trưng} \\
+    \midrule
+    1  & adult\_income            & Phân loại nhị phân & AUC      & 32.561  & 13 \\
+    2  & breast\_cancer           & Phân loại nhị phân & AUC      & 569     & 30 \\
+    3  & give\_me\_credit         & Phân loại nhị phân & AUC      & 150.000 & 10 \\
+    4  & santander\_satisfaction  & Phân loại nhị phân & AUC      & 76.020  & 369 \\
+    5  & telco\_churn             & Phân loại nhị phân & AUC      & 7.043   & 19 \\
+    \midrule
+    6  & forest\_cover            & Phân loại đa lớp   & log-loss & 581.012 & 54 \\
+    7  & obesity                  & Phân loại đa lớp   & log-loss & 2.111   & 16 \\
+    8  & wine                     & Phân loại đa lớp   & accuracy & 178     & 13 \\
+    \midrule
+    9  & abalone                  & Hồi quy            & RMSE     & 4.177   & 8 \\
+    10 & california\_housing      & Hồi quy            & RMSE     & 20.640  & 8 \\
+    11 & house\_prices            & Hồi quy            & RMSE     & 1.460   & 79 \\
+    12 & wine\_quality            & Hồi quy            & RMSE     & 1.599   & 11 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Hình~\ref{fig:dataset-pie} thể hiện tỉ trọng ba dạng tác vụ trong tập dữ liệu.
+Thiết kế thực nghiệm nghiêng nhẹ về phân loại nhị phân, chiếm gần một nửa số bộ
+dữ liệu, phản ánh mức độ phổ biến của dạng bài toán này trong ứng dụng thực tế;
+hai dạng còn lại được phân bổ tương đương nhau nhằm bảo đảm mỗi nhóm đều có đủ số
+quan sát để phân tích riêng.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\linewidth]{image/console-datasets.png}
-    \caption{Trang Datasets: nạp dữ liệu từ tệp CSV, tác vụ OpenML hoặc liên kết
-    Kaggle công khai; mỗi bộ được ghi nhận kèm loại, nguồn và trạng thái.}
-    \label{fig:console-datasets}
+    \includegraphics[width=0.52\linewidth]{image/dataset_pie.png}
+    \caption{Phân bố 12 bộ dữ liệu theo dạng bài toán: phân loại nhị phân
+    (5 bộ), phân loại đa lớp (3 bộ) và hồi quy (4 bộ).}
+    \label{fig:dataset-pie}
 \end{figure}
 
-\begin{table}[H]
-  \centering
-  \small
-  \caption{Ba bộ dữ liệu dùng trong lần chạy sơ bộ.}
-  \label{tab:dulieu}
-  \renewcommand{\arraystretch}{1.2}
-  \begin{tabularx}{\linewidth}{@{}l l l X@{}}
-    \toprule
-    \textbf{Bộ dữ liệu} & \textbf{Loại tác vụ} & \textbf{Độ đo} & \textbf{Ghi chú} \\
-    \midrule
-    breast\_cancer       & Phân lớp nhị phân & AUC       & Chẩn đoán u lành/ác. \\
-    wine                 & Phân lớp đa lớp   & log-loss  & Phân loại ba giống rượu vang. \\
-    california\_housing  & Hồi quy           & RMSE      & Dự đoán giá nhà. \\
-    \bottomrule
-  \end{tabularx}
-\end{table}
+Sự chênh lệch về quy mô giữa các bộ dữ liệu là rất lớn và có chủ ý.
+Hình~\ref{fig:dataset-summary} cho thấy khoảng biến thiên trải từ
+\texttt{wine} với 178 mẫu đến \texttt{forest\_cover} với 581.012 mẫu, tức gấp hơn
+ba nghìn lần. Về chiều đặc trưng, \texttt{santander\_satisfaction} nổi bật với 369
+đặc trưng đã được ẩn danh hoá, trong khi phần lớn các bộ còn lại có dưới 30 đặc
+trưng. Khoảng biến thiên rộng theo cả hai chiều này chính là điều kiện cần để bộc
+lộ giới hạn khả năng mở rộng của từng thư viện --- một khía cạnh sẽ được phân tích
+ở Mục~\ref{sec:thatbai}.
 
-\noindent Bảng~\ref{tab:dulieu-full} là khung thống kê cho bộ 20 bộ dữ liệu Kaggle
-(điền khi hoàn tất thu thập).
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{image/dataset_summary.png}
+    \caption{Quy mô và độ phức tạp đặc trưng của từng bộ dữ liệu. Bên trái: số
+    lượng mẫu. Bên phải: số lượng đặc trưng, phân tách theo kiểu số và kiểu hạng
+    mục.}
+    \label{fig:dataset-summary}
+\end{figure}
 
-\begin{table}[H]
-  \centering
-  \small
-  \caption{Thống kê bộ 20 bộ dữ liệu Kaggle (khung điền).}
-  \label{tab:dulieu-full}
-  \renewcommand{\arraystretch}{1.15}
-  \begin{tabularx}{\linewidth}{@{}l c c c X@{}}
-    \toprule
-    \textbf{Bộ dữ liệu} & \textbf{Tác vụ} & \textbf{Số mẫu} & \textbf{Số đặc trưng} & \textbf{Nguồn} \\
-    \midrule
-    {[}\ldots{]} & {[}\ldots{]} & {[}\ldots{]} & {[}\ldots{]} & Kaggle: {[}liên kết{]} \\
-    \multicolumn{5}{c}{\textit{\ldots\ (tổng cộng 20 bộ: 10 phân lớp, 10 hồi quy)}} \\
-    \bottomrule
-  \end{tabularx}
-\end{table}
+Phân phối biến mục tiêu, trình bày ở Hình~\ref{fig:dataset-target}, cho thấy nhiều
+bộ dữ liệu phân loại nhị phân có mức mất cân bằng nhãn nghiêm trọng:
+\texttt{santander\_satisfaction} có khoảng $94\%$ mẫu thuộc lớp âm,
+\texttt{give\_me\_credit} khoảng $93\%$, và \texttt{adult\_income} khoảng $75\%$.
+Đặc điểm này đặt ra yêu cầu các thư viện phải tự xử lý hiện tượng mất cân bằng, và
+đồng thời củng cố lựa chọn dùng AUC làm độ đo cho nhóm nhị phân, bởi độ chính xác
+sẽ cho kết quả gây hiểu nhầm trên những phân phối lệch như vậy. Ở nhóm hồi quy,
+\texttt{abalone} và \texttt{wine\_quality} có phân phối gần đối xứng, trong khi
+\texttt{california\_housing} có đuôi dài về phía phải --- yếu tố góp phần làm tăng
+độ biến động của RMSE giữa các fold như đã phân tích ở Ví dụ~\ref{vd:rmse}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{image/dataset_target_dist.png}
+    \caption{Phân phối biến mục tiêu của từng bộ dữ liệu. Các bộ phân loại hiển
+    thị số lượng mẫu theo lớp; các bộ hồi quy hiển thị histogram của giá trị liên
+    tục.}
+    \label{fig:dataset-target}
+\end{figure}
 
 \section{Thiết lập thực nghiệm}
 \label{sec:thietlap}
-\textbf{Thư viện so sánh:} FLAML, H2O~AutoML và AutoGluon. \\
-\textbf{Baseline:} rừng ngẫu nhiên (\textit{RandomForest}) và bộ dự đoán hằng
-(\textit{constantpredictor}) --- hai baseline được AMLB cung cấp sẵn, dùng làm mốc
-dưới để kiểm tra xem một thư viện có thực sự ``học'' được gì hay không. \\
-\textbf{Ràng buộc tài nguyên:} theo ba mức của AMLB --- \texttt{smoke} (1 fold,
-60 giây, 4 nhân), \texttt{1h} (10 fold, 3600 giây, 8 nhân) và \texttt{4h} (10
-fold, 14400 giây, 8 nhân). Lần chạy sơ bộ dùng ngân sách 30 giây/fold. \\
-\textbf{Môi trường:} mỗi thư viện chạy trong ảnh Docker \texttt{automlbenchmark/*}
-riêng để bảo đảm môi trường đồng nhất; siêu dữ liệu và kết quả lưu trên
-PostgreSQL, tệp dữ liệu và dự đoán lưu trên MinIO. Người dùng chọn thư viện, bộ
-dữ liệu và ngân sách rồi khởi chạy trực tiếp từ trang Training
-(Hình~\ref{fig:console-training}).
+\textbf{Thư viện được so sánh.} Bốn thư viện AutoML mã nguồn mở: AutoGluon, FLAML,
+H2O~AutoML và MLJAR, mỗi thư viện được cài đặt trong một môi trường ảo Python độc
+lập theo cơ chế trình bày ở Mục~\ref{sec:giaothuc}.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.9\linewidth]{image/console-training.png}
-    \caption{Trang Training: chọn thư viện, bộ dữ liệu và ngân sách để khởi chạy
-    một lần đánh giá trong Docker; các tác vụ tự động cập nhật trạng thái.}
-    \label{fig:console-training}
-\end{figure}
+\textbf{Giao thức đánh giá.} Mỗi cặp (thư viện, bộ dữ liệu) được đánh giá bằng
+kiểm chứng chéo $K = 5$ fold. Phân hoạch fold được sinh một lần với hạt giống cố
+định $\rho = 42$, sử dụng phân tầng theo nhãn cho bài toán phân loại và phân hoạch
+ngẫu nhiên thông thường cho bài toán hồi quy, sau đó dùng chung cho cả bốn thư
+viện.
 
-\section{Độ đo đánh giá}
-\label{sec:dodo}
-Nhóm dùng AUC cho phân lớp nhị phân, log-loss cho phân lớp đa lớp và RMSE cho hồi
-quy (định nghĩa và ví dụ tính đã trình bày ở Mục~\ref{sec:dodo-lythuyet}, Ví
-dụ~\ref{vd:rmse}). Kết quả tổng hợp được quy về \emph{thứ hạng trung bình} theo
-công thức ở Mục~\ref{sec:giaothuc} để so sánh xuyên suốt các loại độ đo.
+\textbf{Ngân sách thời gian.} Thực nghiệm được tiến hành ở hai mức ngân sách
+$B \in \{60,\ 300\}$ giây cho mỗi lần huấn luyện, nhằm khảo sát mức độ phụ thuộc
+của từng thư viện vào tài nguyên thời gian. Trừ khi nói rõ, các kết quả trình bày
+trong chương này ứng với mức $B = 300$ giây.
 
-\section{Kết quả sơ bộ và xếp hạng}
+\textbf{Độ đo.} AUC cho phân loại nhị phân, log-loss cho phân loại đa lớp
+(riêng \texttt{wine} báo cáo bằng độ chính xác do số lớp nhỏ và các thư viện đều
+đạt mức gần bão hoà), và RMSE cho hồi quy. Mọi độ đo được quy về chiều ``lớn hơn
+là tốt hơn'' trước khi tổng hợp.
+
+\textbf{Đại lượng đo đạc.} Với mỗi lần chạy, hệ thống ghi nhận điểm số trên tập
+kiểm thử, thời gian huấn luyện, thời gian suy luận, mức sử dụng bộ nhớ đỉnh quan
+sát từ tiến trình Python, và trạng thái kết thúc.
+
+\section{Kết quả tổng hợp}
 \label{sec:ketqua}
-Bảng~\ref{tab:ketqua} trình bày điểm số và chi phí thời gian của ba thư viện trên
-ba bộ dữ liệu ở ngân sách 30 giây/fold. Đây là kết quả \emph{sơ bộ} nhằm kiểm
-chứng quy trình; lần chạy đầy đủ trên 20 bộ dữ liệu đang được hoàn tất.
+Bảng~\ref{tab:ketqua} trình bày điểm số trung bình kèm độ lệch chuẩn trên 5 fold,
+cùng thời gian huấn luyện và bộ nhớ đỉnh trung bình của từng cặp (bộ dữ liệu, thư
+viện) ở mức ngân sách 300 giây. Giá trị tốt nhất trên mỗi bộ dữ liệu được in đậm.
+Các ô vắng mặt tương ứng với những cặp mà thư viện không hoàn tất được lần chạy
+nào, được phân tích riêng ở Mục~\ref{sec:thatbai}.
+
+\begingroup
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{@{}l l l r r r@{}}
+\caption{Kết quả thực nghiệm đầy đủ ở ngân sách 300 giây, trung bình trên 5 fold.}
+\label{tab:ketqua} \\
+\toprule
+\textbf{Bộ dữ liệu} & \textbf{Thư viện} & \textbf{Độ đo} & \textbf{Điểm số $\pm$ độ lệch} & \textbf{T.gian (s)} & \textbf{RAM (MB)} \\
+\midrule
+\endfirsthead
+\multicolumn{6}{l}{\small\textit{(tiếp theo Bảng~\ref{tab:ketqua})}} \\
+\toprule
+\textbf{Bộ dữ liệu} & \textbf{Thư viện} & \textbf{Độ đo} & \textbf{Điểm số $\pm$ độ lệch} & \textbf{T.gian (s)} & \textbf{RAM (MB)} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{6}{r}{\small\textit{(còn tiếp)}} \\
+\endfoot
+\bottomrule
+\endlastfoot
+abalone & autogluon & RMSE & 2,1130 $\pm$ 0,1437 & 97,3 & 229,6 \\
+abalone & flaml     & RMSE & 2,1473 $\pm$ 0,1337 & 326,9 & 107,2 \\
+abalone & h2o       & RMSE & \textbf{2,1125 $\pm$ 0,1308} & 307,6 & 23,0 \\
+abalone & mljar     & RMSE & 2,1324 $\pm$ 0,1512 & 335,3 & 234,2 \\
+\midrule
+adult\_income & autogluon & AUC & 0,9299 $\pm$ 0,0016 & 262,0 & 357,0 \\
+adult\_income & flaml     & AUC & 0,9295 $\pm$ 0,0015 & 331,4 & 114,4 \\
+adult\_income & h2o       & AUC & 0,9283 $\pm$ 0,0019 & 310,5 & 31,1 \\
+adult\_income & mljar     & AUC & \textbf{0,9301 $\pm$ 0,0018} & 369,3 & 285,9 \\
+\midrule
+breast\_cancer & autogluon & AUC & 0,9945 $\pm$ 0,0045 & 78,9 & 205,5 \\
+breast\_cancer & flaml     & AUC & 0,9941 $\pm$ 0,0042 & 327,2 & 103,6 \\
+breast\_cancer & h2o       & AUC & \textbf{0,9947 $\pm$ 0,0059} & 308,7 & 24,6 \\
+breast\_cancer & mljar     & AUC & 0,9933 $\pm$ 0,0066 & 353,5 & 214,2 \\
+\midrule
+california\_housing & autogluon & RMSE & 0,4408 $\pm$ 0,0104 & 325,0 & 528,8 \\
+california\_housing & flaml     & RMSE & 0,4528 $\pm$ 0,0106 & 329,0 & 120,7 \\
+california\_housing & h2o       & RMSE & 0,4383 $\pm$ 0,0101 & 309,6 & 28,9 \\
+california\_housing & mljar     & RMSE & \textbf{0,4324 $\pm$ 0,0114} & 334,2 & 212,5 \\
+\midrule
+forest\_cover & autogluon & log-loss & 0,4593 $\pm$ 0,0127 & 113,2 & 1284,8 \\
+forest\_cover & flaml     & log-loss & \textbf{0,4501 $\pm$ 0,1409} & 103,3 & 1481,3 \\
+\midrule
+give\_me\_credit & autogluon & AUC & 0,8654 $\pm$ 0,0053 & 320,0 & 839,9 \\
+give\_me\_credit & flaml     & AUC & \textbf{0,8659 $\pm$ 0,0038} & 280,9 & 153,1 \\
+give\_me\_credit & h2o       & AUC & 0,8592 $\pm$ 0,0034 & 327,4 & 88,8 \\
+give\_me\_credit & mljar     & AUC & 0,8654 $\pm$ 0,0044 & 72,6 & 223,6 \\
+\midrule
+house\_prices & autogluon & RMSE & \textbf{28708,5 $\pm$ 7647,3} & 87,4 & 220,3 \\
+house\_prices & flaml     & RMSE & 29053,1 $\pm$ 9052,3 & 113,2 & 104,1 \\
+house\_prices & h2o       & RMSE & 29362,7 $\pm$ 11357,0 & 308,7 & 23,8 \\
+house\_prices & mljar     & RMSE & 30737,5 $\pm$ 9153,3 & 83,4 & 158,9 \\
+\midrule
+obesity & autogluon & log-loss & 0,0851 $\pm$ 0,0201 & 75,1 & 245,3 \\
+obesity & h2o       & log-loss & \textbf{0,0737 $\pm$ 0,0246} & 311,6 & 22,9 \\
+obesity & mljar     & log-loss & 0,0861 $\pm$ 0,0222 & 90,7 & 168,9 \\
+\midrule
+santander\_satisfaction & autogluon & AUC & 0,8373 $\pm$ 0,0071 & 343,9 & 1132,3 \\
+santander\_satisfaction & flaml     & AUC & 0,8323 $\pm$ 0,0097 & 89,8 & 1200,1 \\
+santander\_satisfaction & mljar     & AUC & \textbf{0,8383 $\pm$ 0,0054} & 90,1 & 703,7 \\
+\midrule
+telco\_churn & autogluon & AUC & 0,8439 $\pm$ 0,0138 & 68,0 & 213,8 \\
+telco\_churn & flaml     & AUC & 0,8475 $\pm$ 0,0136 & 87,1 & 103,2 \\
+telco\_churn & h2o       & AUC & \textbf{0,8486 $\pm$ 0,0130} & 335,9 & 25,3 \\
+telco\_churn & mljar     & AUC & 0,8475 $\pm$ 0,0129 & 95,9 & 174,2 \\
+\midrule
+wine & autogluon & accuracy & 0,9660 $\pm$ 0,0314 & 43,5 & 203,9 \\
+wine & flaml     & accuracy & \textbf{0,9722 $\pm$ 0,0000} & 108,5 & 101,4 \\
+wine & h2o       & accuracy & 0,9721 $\pm$ 0,0340 & 321,1 & 22,9 \\
+wine & mljar     & accuracy & 0,9717 $\pm$ 0,0350 & 93,0 & 170,9 \\
+\midrule
+wine\_quality & autogluon & RMSE & 0,5852 $\pm$ 0,0369 & 41,3 & 212,7 \\
+wine\_quality & flaml     & RMSE & 0,5906 $\pm$ 0,0342 & 84,4 & 103,6 \\
+wine\_quality & h2o       & RMSE & \textbf{0,5706 $\pm$ 0,0242} & 320,9 & 22,9 \\
+wine\_quality & mljar     & RMSE & 0,5866 $\pm$ 0,0345 & 88,2 & 158,3 \\
+\end{longtable}
+\endgroup
+
+Quan sát bao trùm toàn bộ Bảng~\ref{tab:ketqua} là mức độ cạnh tranh rất sát giữa
+bốn thư viện. Trên \texttt{adult\_income}, chênh lệch AUC giữa thư viện tốt nhất
+và kém nhất chỉ là $0.9301 - 0.9283 = 0.0018$, tức nhỏ hơn cả độ lệch chuẩn giữa
+các fold của chính từng thư viện (khoảng $0.0015$--$0.0019$). Hiện tượng tương tự
+lặp lại trên \texttt{breast\_cancer} và \texttt{wine}. Điều này cho thấy trên các
+bài toán phân loại tiêu chuẩn với ngân sách đủ lớn, cả bốn thư viện đều đã tiệm
+cận mức hiệu năng bão hoà mà dữ liệu cho phép, và việc phân định thắng thua dựa
+trên chênh lệch ở hàng phần nghìn là không có ý nghĩa thống kê. Nhận định này định
+hướng cách diễn giải toàn bộ các phân tích tiếp theo: sự khác biệt đáng kể giữa
+các thư viện nằm ở chi phí tài nguyên và độ ổn định, nhiều hơn là ở chất lượng dự
+đoán thuần tuý.
+
+\subsection{Phân tích theo nhóm phân loại nhị phân}
+Ở nhóm này không có thư viện nào chiếm ưu thế rõ rệt. MLJAR đạt AUC cao nhất trên
+\texttt{adult\_income} ($0.9301$) và \texttt{santander\_satisfaction} ($0.8383$);
+H2O dẫn đầu trên \texttt{breast\_cancer} ($0.9947$) và \texttt{telco\_churn}
+($0.8486$); FLAML tốt nhất trên \texttt{give\_me\_credit} ($0.8659$). AutoGluon
+tuy không đứng đầu trên bộ dữ liệu nào nhưng luôn nằm sát nhóm dẫn đầu, cho thấy
+tính ổn định cao. Đáng chú ý, MLJAR đạt kết quả tốt nhất trên
+\texttt{santander\_satisfaction} --- bộ dữ liệu có 369 đặc trưng --- phù hợp với
+đặc điểm thiết kế của thư viện này là chú trọng sinh và chọn lọc đặc trưng.
+
+\subsection{Phân tích theo nhóm phân loại đa lớp}
+H2O tỏ ra vượt trội trên \texttt{obesity} với log-loss thấp nhất ($0.0737$ so với
+$0.0851$ của AutoGluon và $0.0861$ của MLJAR), tức giảm khoảng $13\%$ so với thư
+viện xếp thứ hai --- một khoảng cách đáng kể so với mức chênh lệch thường thấy ở
+nhóm nhị phân. Trên \texttt{forest\_cover}, FLAML đạt log-loss trung bình tốt hơn
+AutoGluon ($0.4501$ so với $0.4593$), nhưng độ lệch chuẩn của FLAML lớn hơn gấp
+hơn mười lần ($0.1409$ so với $0.0127$). Chênh lệch về độ ổn định này quan trọng
+hơn chênh lệch về giá trị trung bình: nó cho thấy FLAML cho kết quả rất không nhất
+quán giữa các fold trên bộ dữ liệu quy mô lớn, trong khi AutoGluon giữ được hành
+vi đều đặn. Sự vắng mặt hoàn toàn của H2O và MLJAR trên \texttt{forest\_cover} là
+chỉ dấu đầu tiên về giới hạn khả năng mở rộng của hai thư viện này.
+
+\subsection{Phân tích theo nhóm hồi quy}
+MLJAR cho RMSE thấp nhất trên \texttt{california\_housing} ($0.4324$); H2O dẫn đầu
+trên \texttt{abalone} ($2.1125$) và \texttt{wine\_quality} ($0.5706$); AutoGluon
+tốt nhất trên \texttt{house\_prices} ($28.708$). FLAML không đứng đầu trên bất kỳ
+bộ dữ liệu hồi quy nào và có xu hướng cho RMSE cao hơn các thư viện còn lại. Đây
+là dấu hiệu sớm của một quy luật sẽ được xác nhận bằng mô hình xếp hạng ở
+Mục~\ref{sec:bt-ketqua}: chiến lược tối ưu tiết kiệm chi phí của FLAML, vốn ưu
+tiên các mô hình tăng cường gradient nhẹ, tỏ ra kém phù hợp với các quan hệ hồi
+quy phức tạp.
+
+Riêng \texttt{house\_prices} có độ lệch chuẩn rất lớn ở mọi thư viện, dao động từ
+$7.647$ đến $11.357$ trên giá trị trung bình khoảng $29.000$, tức hệ số biến thiên
+xấp xỉ $26$--$39\%$. Nguyên nhân đến từ quy mô nhỏ của bộ dữ liệu (1.460 mẫu, chia
+thành 5 fold nên mỗi tập kiểm thử chỉ có khoảng 292 mẫu) kết hợp với số đặc trưng
+lớn (79) và sự hiện diện của các giá trị mục tiêu ngoại lai. Như đã phân tích ở
+Ví dụ~\ref{vd:rmse}, chỉ một vài dự đoán lệch mạnh cũng đủ làm RMSE của cả fold
+tăng vọt.
+
+\section{So sánh với các phương pháp cơ sở}
+\label{sec:baseline}
+Một bảng xếp hạng chỉ gồm các thư viện AutoML không trả lời được câu hỏi nền tảng:
+liệu công sức tìm kiếm tự động có thực sự mang lại giá trị so với những phương
+pháp đơn giản hay không. Vì vậy, giao thức đánh giá bổ sung hai phương pháp cơ sở
+được chạy dưới đúng điều kiện như các thư viện AutoML.
+
+\textbf{Bộ dự đoán hằng} (\textit{constant predictor}) luôn trả về cùng một kết
+quả bất kể đầu vào: lớp đa số đối với bài toán phân loại và giá trị trung bình của
+biến mục tiêu đối với bài toán hồi quy. Phương pháp này thiết lập ngưỡng sàn tuyệt
+đối --- bất kỳ mô hình nào không vượt được nó đều không học được gì từ đặc trưng.
+Trên các bộ dữ liệu mất cân bằng nặng như \texttt{santander\_satisfaction}, bộ dự
+đoán hằng vẫn đạt độ chính xác khoảng $94\%$ chỉ bằng cách luôn dự đoán lớp âm ---
+minh hoạ rõ vì sao độ chính xác không phải là độ đo phù hợp và vì sao AUC được
+chọn cho nhóm nhị phân, bởi bộ dự đoán hằng chỉ đạt AUC $= 0.5$ theo đúng định
+nghĩa.
+
+\textbf{Rừng ngẫu nhiên với siêu tham số mặc định} đại diện cho cách làm phổ biến
+của một người thực hành có kinh nghiệm nhưng không đầu tư vào tinh chỉnh: chọn một
+thuật toán mạnh và đáng tin cậy rồi chạy với cấu hình mặc định. Đây là ngưỡng so
+sánh có ý nghĩa thực tiễn hơn, bởi nó lượng hoá chính xác phần giá trị gia tăng mà
+AutoML mang lại so với phương án đơn giản nhất mà vẫn hợp lý.
+
+Bảng~\ref{tab:baseline} trình bày kết quả đối chiếu, tổng hợp theo dạng tác vụ.
 
 \begin{table}[H]
   \centering
   \small
-  \caption{Kết quả sơ bộ: điểm số (và thời gian chạy, giây) ở ngân sách 30s/fold.
-  Giá trị tốt nhất mỗi hàng được in đậm.}
-  \label{tab:ketqua}
+  \caption{Đối chiếu các thư viện AutoML với hai phương pháp cơ sở. Giá trị là
+  điểm số trung bình trên các bộ dữ liệu thuộc từng nhóm tác vụ.}
+  \label{tab:baseline}
   \renewcommand{\arraystretch}{1.25}
-  \begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X c c c@{}}
+  \begin{tabularx}{\linewidth}{@{}X c c c@{}}
     \toprule
-    \textbf{Bộ dữ liệu (độ đo)} & \textbf{FLAML} & \textbf{AutoGluon} & \textbf{H2O} \\
+    \textbf{Phương pháp} & \textbf{Nhị phân (AUC $\uparrow$)} & \textbf{Đa lớp (log-loss $\downarrow$)} & \textbf{Hồi quy (RMSE $\downarrow$)} \\
     \midrule
-    breast\_cancer (AUC $\uparrow$)
-        & \makecell{0.9957\\(68.2s)} & \makecell{0.9961\\(37.4s)} & \makecell{\textbf{0.9974}\\(57.4s)} \\
-    california\_housing (RMSE $\downarrow$)
-        & \makecell{0.4693\\(33.8s)} & \makecell{\textbf{0.4320}\\(31.5s)} & \makecell{0.4389\\(125.9s)} \\
-    wine (log-loss $\downarrow$)
-        & \makecell{0.0487\\(161.4s)} & \makecell{0.0099\\(31.5s)} & \makecell{\textbf{0.0038}\\(130.7s)} \\
+    Bộ dự đoán hằng          & [\,] & [\,] & [\,] \\
+    Rừng ngẫu nhiên mặc định & [\,] & [\,] & [\,] \\
     \midrule
-    \textbf{Thứ hạng trung bình} & 3.00 & 1.67 & \textbf{1.33} \\
+    AutoGluon  & [\,] & [\,] & [\,] \\
+    FLAML      & [\,] & [\,] & [\,] \\
+    H2O AutoML & [\,] & [\,] & [\,] \\
+    MLJAR      & [\,] & [\,] & [\,] \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
-Cách tính thứ hạng trung bình đã được minh hoạ ở Ví dụ~\ref{vd:rank}. Hình
-\ref{fig:rank} trực quan hoá thứ hạng này (thấp hơn là tốt hơn).
+Kết quả đối chiếu cần được diễn giải theo hai mức. Mức thứ nhất là kiểm tra tính
+hợp lệ: mọi thư viện AutoML phải vượt bộ dự đoán hằng trên mọi bộ dữ liệu; nếu
+không, đó là dấu hiệu của lỗi cấu hình chứ không phải đặc điểm thuật toán. Mức thứ
+hai là đánh giá giá trị gia tăng: khoảng cách giữa các thư viện AutoML và rừng
+ngẫu nhiên mặc định chính là phần lợi ích mà quá trình tìm kiếm tự động mang lại,
+đổi lấy chi phí tính toán lớn hơn nhiều lần. Trên những bộ dữ liệu mà khoảng cách
+này hẹp, việc triển khai AutoML có thể không tương xứng với chi phí bỏ ra.
+
+\section{Hiệu năng chuẩn hoá theo dạng tác vụ}
+\label{sec:scaled}
+Để so sánh xuyên suốt các bộ dữ liệu có thang đo khác nhau, điểm số được chuẩn hoá
+về đoạn $[0,1]$ theo công thức ở Mục~\ref{sec:xephang}.
+Hình~\ref{fig:scaled-perf} trình bày phân phối điểm chuẩn hoá của từng thư viện,
+tổng hợp toàn cục và tách theo dạng tác vụ.
 
 \begin{figure}[H]
     \centering
-    \begin{tikzpicture}
-    \begin{axis}[
-        width=0.72\linewidth, height=5.2cm,
-        ybar, bar width=20pt,
-        symbolic x coords={H2O, AutoGluon, FLAML},
-        xtick=data, ymin=0, ymax=3.4,
-        ylabel={Thứ hạng TB ($\downarrow$)},
-        nodes near coords, enlarge x limits=0.35]
-      \addplot coordinates {(H2O, 1.33) (AutoGluon, 1.67) (FLAML, 3.00)};
-    \end{axis}
-    \end{tikzpicture}
-    \caption{Thứ hạng trung bình của ba thư viện trên lần chạy sơ bộ (càng thấp
-    càng tốt).}
-    \label{fig:rank}
+    \includegraphics[width=\linewidth]{image/experiment_scaled_perf.png}
+    \caption{Phân phối điểm số chuẩn hoá về đoạn $[0,1]$ (giá trị $1$ ứng với thư
+    viện tốt nhất trên bộ dữ liệu tương ứng). Bên trái: tổng hợp trên toàn bộ 12
+    bộ dữ liệu. Bên phải: tách theo ba dạng tác vụ.}
+    \label{fig:scaled-perf}
 \end{figure}
 
-Ở ngân sách nhỏ này, H2O và AutoGluon nhỉnh hơn FLAML về chất lượng, nhưng FLAML
-và AutoGluon thường hoàn tất nhanh hơn --- cho thấy sự \emph{đánh đổi giữa chất
-lượng và thời gian}. Bảng~\ref{tab:full} là khung tổng hợp cho lần chạy đầy đủ.
+Ở khung tổng hợp toàn cục, cả bốn thư viện có trung vị xấp xỉ nhau, quanh mức
+$0.6$. Nếu dừng lại ở đây, kết luận sẽ là các thư viện tương đương nhau --- một
+kết luận sai lệch. Khi tách theo dạng tác vụ, bức tranh thay đổi hoàn toàn. Ở nhóm
+phân loại nhị phân, AutoGluon có trung vị cao nhất và phân phối hẹp, trong khi H2O
+có đuôi dưới kéo xuống thấp do thất bại trên một số bộ dữ liệu. Ở nhóm đa lớp, H2O
+chiếm ưu thế rõ rệt với khoảng tứ phân vị nằm gọn trong vùng cao, còn các thư viện
+khác có hộp rộng hơn và xuất hiện nhiều giá trị ngoại lai gần $0$. Ở nhóm hồi quy,
+H2O và MLJAR dẫn đầu, trong khi FLAML có trung vị thấp nhất với đuôi kéo xuống gần
+$0$.
+
+Sự tương phản giữa khung tổng hợp và khung phân tách minh hoạ một nguyên tắc quan
+trọng trong đánh giá: việc gộp các nhóm tác vụ có bản chất khác nhau vào một thống
+kê duy nhất có thể triệt tiêu lẫn nhau những khác biệt thực sự tồn tại. Đây chính
+là cơ sở để đồ án sử dụng mô hình cây Bradley--Terry thay vì một xếp hạng toàn cục
+đơn lẻ.
+
+Hình~\ref{fig:boxplot-task} cung cấp góc nhìn chi tiết hơn ở mức từng bộ dữ liệu,
+với phân phối điểm số thô trên 5 fold.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{image/experiment_score_boxplots_by_task.png}
+    \caption{Phân phối điểm số thô trên 5 fold của từng cặp (bộ dữ liệu, thư
+    viện), nhóm theo dạng tác vụ.}
+    \label{fig:boxplot-task}
+\end{figure}
+
+Ở nhóm nhị phân, \texttt{breast\_cancer} có khoảng tứ phân vị rất hẹp ở mọi thư
+viện, phản ánh tính dễ của bài toán khi các lớp gần như tách được tuyến tính;
+ngược lại \texttt{santander\_satisfaction} và \texttt{telco\_churn} có độ biến
+động cao hơn hẳn. Ở nhóm đa lớp, \texttt{forest\_cover} bộc lộ vấn đề nghiêm
+trọng: FLAML chỉ hoàn tất 4 trên 5 fold và khoảng biến thiên của điểm số trải rộng
+bất thường, xác nhận nhận định về tính không ổn định đã nêu ở
+Mục~\ref{sec:ketqua}. Ở nhóm hồi quy, \texttt{house\_prices} có hộp rộng nhất kèm
+nhiều giá trị ngoại lai ở mức RMSE $40.000$--$50.000$, trong khi các bộ dữ liệu
+nhỏ và thuần nhất hơn như \texttt{abalone} và \texttt{wine\_quality} cho kết quả
+ổn định hơn nhiều.
+
+\section{Đánh đổi giữa chất lượng và thời gian}
+\label{sec:tradeoff}
+Chất lượng dự đoán chỉ là một nửa của bài toán lựa chọn thư viện; nửa còn lại là
+chi phí để đạt được chất lượng đó. Hình~\ref{fig:score-time} biểu diễn quan hệ
+giữa điểm số trung bình và thời gian huấn luyện trung bình trên thang lô-ga-rít.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{image/experiment_score_vs_time.png}
+    \caption{Quan hệ giữa điểm số trung bình và thời gian huấn luyện trung bình
+    (thang lô-ga-rít), tách theo ba dạng tác vụ. Màu sắc biểu thị thư viện, ký
+    hiệu điểm biểu thị bộ dữ liệu.}
+    \label{fig:score-time}
+\end{figure}
+
+Ở nhóm phân loại nhị phân, AutoGluon hoàn tất trong khoảng $50$--$100$ giây trên
+phần lớn bộ dữ liệu nhờ cơ chế dừng sớm hiệu quả, trong khi FLAML, H2O và MLJAR
+thường sử dụng gần hết ngân sách $300$ giây được cấp. Trường hợp
+\texttt{breast\_cancer} là minh hoạ rõ nhất: AutoGluon đạt AUC $0.9945$ chỉ sau
+$78.9$ giây, trong khi H2O đạt $0.9947$ --- cao hơn đúng $0.0002$ --- nhưng tiêu
+tốn $308.7$ giây, tức gấp gần bốn lần. Xét theo tỉ lệ chất lượng trên đơn vị thời
+gian, AutoGluon rõ ràng chiếm ưu thế.
+
+Hành vi trái ngược giữa các thư viện xuất phát từ chiến lược thiết kế đã phân tích
+ở Mục~\ref{sec:frameworks}. AutoGluon dừng khi tổ hợp mô hình không còn cải thiện
+đáng kể trên tập kiểm chứng nội bộ, còn H2O huấn luyện tuần tự theo danh sách mô
+hình định trước và chỉ dừng khi hết ngân sách. Điều này lý giải vì sao thời gian
+chạy của H2O gần như hằng số quanh mức $310$--$335$ giây bất kể quy mô bộ dữ liệu,
+trong khi thời gian của AutoGluon biến thiên theo độ khó của bài toán.
+
+Ở nhóm hồi quy, các thư viện phân cụm gần nhau về điểm số nhưng phân tán rộng về
+thời gian, một lần nữa cho thấy thời gian chạy nhiều hơn không bảo đảm chất lượng
+tốt hơn khi bài toán đã tiệm cận bão hoà.
+
+\section{Ảnh hưởng của ngân sách thời gian}
+\label{sec:ablation}
+Nhằm định lượng mức độ phụ thuộc của từng thư viện vào tài nguyên thời gian, toàn
+bộ thực nghiệm được lặp lại ở mức ngân sách $60$ giây và so sánh với mức $300$
+giây. Đây đóng vai trò một nghiên cứu loại bỏ thành phần đối với yếu tố tài
+nguyên. Kết quả trình bày ở Hình~\ref{fig:budget}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{image/experiment_perf_by_budget.png}
+    \caption{So sánh hiệu năng chuẩn hoá giữa hai mức ngân sách $60$ giây và
+    $300$ giây. Bên trái: trung bình kèm độ lệch chuẩn theo thư viện. Bên phải:
+    quỹ đạo thay đổi của từng thư viện, vùng tô ứng với khoảng $\pm 1$ độ lệch
+    chuẩn.}
+    \label{fig:budget}
+\end{figure}
+
+Cả bốn thư viện đều cải thiện khi ngân sách tăng, song biên độ khác nhau rõ rệt và
+phản ánh đúng đặc điểm thuật toán của từng thư viện.
+
+MLJAR có mức tăng lớn nhất, từ khoảng $0.59$ lên $0.79$ trên thang chuẩn hoá. Điều
+này cho thấy ở mức $60$ giây, thư viện chưa kịp hoàn tất quá trình sinh đặc trưng
+và duyệt không gian đường ống; thời gian bổ sung được chuyển hoá trực tiếp thành
+chất lượng. FLAML cũng cải thiện đáng kể, phù hợp với cơ chế CFO tiếp tục tinh
+chỉnh cấu hình khi còn ngân sách.
+
+Ngược lại, AutoGluon và H2O cải thiện ít hơn, nhưng vì hai lý do khác nhau.
+AutoGluon đã đạt mức điểm gần tối ưu ngay ở $60$ giây trên nhiều bộ dữ liệu nhỏ,
+nên phần dư địa cải thiện vốn đã hẹp. H2O thì bị giới hạn bởi chiến lược huấn
+luyện tuần tự: trong $60$ giây, thư viện chỉ kịp hoàn tất một phần danh sách mô
+hình, và việc kéo dài ngân sách giúp bổ sung thêm mô hình vào tổ hợp nhưng với
+hiệu suất biên giảm dần.
+
+Quan sát này dẫn tới một khuyến nghị thực tiễn: khi tài nguyên thời gian eo hẹp,
+AutoGluon là lựa chọn an toàn nhờ khả năng đạt kết quả tốt sớm; khi tài nguyên dồi
+dào, MLJAR và FLAML có nhiều dư địa cải thiện hơn.
+
+\section{Tốc độ suy luận}
+\label{sec:inference}
+Thời gian huấn luyện là chi phí một lần, trong khi thời gian suy luận là chi phí
+lặp lại trong suốt vòng đời vận hành của mô hình. Hình~\ref{fig:inference} trình
+bày phân phối thời gian suy luận của bốn thư viện.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.72\linewidth]{image/experiment_inference_speed.png}
+    \caption{Phân phối thời gian suy luận (giây, thang lô-ga-rít) của mỗi thư viện
+    trên toàn bộ các fold thực nghiệm.}
+    \label{fig:inference}
+\end{figure}
+
+FLAML cho thời gian suy luận nhanh nhất với trung vị khoảng $0.25$ giây, hệ quả
+trực tiếp của việc thư viện thường trả về một mô hình tăng cường gradient đơn lẻ
+thay vì một tổ hợp. H2O có phân phối hẹp nhất với trung vị khoảng $0.65$ giây,
+phản ánh tính nhất quán của cấu trúc tổ hợp cố định. MLJAR có trung vị khoảng
+$1.0$ giây do đường ống tuỳ biến bao gồm nhiều bước biến đổi đặc trưng phải được
+áp dụng lại ở giai đoạn suy luận. AutoGluon có trung vị khoảng $0.8$ giây nhưng
+xuất hiện các giá trị ngoại lai lên tới hơn $10$ giây, tương ứng với những trường
+hợp tổ hợp nhiều tầng được xây dựng đầy đủ.
+
+Một điểm đáng lưu ý là quan hệ nghịch giữa tốc độ suy luận và chất lượng dự đoán:
+FLAML nhanh nhất khi suy luận nhưng xếp cuối về chất lượng ở nhóm hồi quy, trong
+khi AutoGluon chậm nhất ở phần đuôi phân phối nhưng ổn định nhất về chất lượng.
+Trong bối cảnh triển khai đòi hỏi độ trễ thấp, chênh lệch này là một tiêu chí lựa
+chọn thực chất. Tuy vậy, cần đặt các con số vào đúng bối cảnh: mọi thư viện đều có
+trung vị dưới $2$ giây cho toàn bộ tập kiểm thử, mức hoàn toàn chấp nhận được với
+phần lớn ứng dụng không yêu cầu thời gian thực.
+
+\section{Mức tiêu thụ bộ nhớ}
+\label{sec:bonho}
+Hình~\ref{fig:memory} trình bày mức sử dụng bộ nhớ đỉnh đo từ tiến trình Python,
+theo từng cặp (bộ dữ liệu, thư viện) và trung bình theo thư viện.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{image/experiment_memory_usage.png}
+    \caption{Mức sử dụng bộ nhớ đỉnh (MB) quan sát từ tiến trình Python. Bên
+    trái: bản đồ nhiệt theo từng cặp (bộ dữ liệu, thư viện). Bên phải: trung bình
+    trên toàn bộ dữ liệu theo thư viện.}
+    \label{fig:memory}
+\end{figure}
+
+AutoGluon tiêu thụ bộ nhớ nhiều nhất với trung bình khoảng $473$ MB, đạt đỉnh
+$839.9$ MB trên \texttt{give\_me\_credit} và $1.132$ MB trên
+\texttt{santander\_satisfaction}. Con số này là hệ quả trực tiếp của chiến lược
+xếp chồng nhiều tầng: toàn bộ các mô hình cơ sở phải được giữ đồng thời trong bộ
+nhớ để mô hình meta có thể truy cập đầu ra của chúng. FLAML đứng thứ hai với trung
+bình khoảng $336$ MB, nhưng đạt tới $1.481$ MB trên \texttt{forest\_cover} --- mức
+cao bất thường so với hồ sơ tiêu thụ thông thường của thư viện này, cho thấy bộ dữ
+liệu $581.012$ mẫu đã đẩy quá trình xây dựng cây quyết định vượt khỏi vùng vận
+hành tối ưu. MLJAR ở mức trung bình khoảng $246$ MB, với đỉnh $703.7$ MB trên
+\texttt{santander\_satisfaction} tương ứng với không gian $369$ đặc trưng.
+
+Số liệu của H2O đòi hỏi cách diễn giải thận trọng. Giá trị trung bình khoảng $31$
+MB thấp hơn hẳn ba thư viện còn lại, nhưng con số này \emph{không phản ánh mức
+tiêu thụ thực tế}. Như đã trình bày ở Mục~\ref{sec:frameworks}, H2O thực hiện toàn
+bộ quá trình huấn luyện trong một tiến trình máy ảo Java riêng biệt, còn mã Python
+chỉ đóng vai trò máy khách gửi yêu cầu qua REST API. Do phép đo được thực hiện từ
+phía tiến trình Python, phần bộ nhớ do máy ảo Java cấp phát nằm ngoài phạm vi quan
+sát. Đây là một giới hạn về phương pháp đo cần được ghi nhận minh bạch, và là lý
+do đồ án không xếp hạng các thư viện theo tiêu chí bộ nhớ.
+
+\section{Phân tích thất bại}
+\label{sec:thatbai}
+Việc ghi nhận đầy đủ các lần chạy không thành công cho phép xem tỉ lệ thất bại như
+một chiều đánh giá độc lập. Hình~\ref{fig:failures} tổng hợp phân tích theo ba góc
+nhìn.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{image/experiment_failures.png}
+    \caption{Phân tích thất bại theo ba góc nhìn: (A) tỉ lệ thất bại theo thư
+    viện và loại lỗi; (B) tỉ lệ thất bại theo quy mô bộ dữ liệu; (C) tỉ lệ thất
+    bại theo mức ngân sách thời gian.}
+    \label{fig:failures}
+\end{figure}
+
+\subsection{Tỉ lệ thất bại theo thư viện}
+FLAML và H2O có tỉ lệ thất bại cao nhất, cùng ở mức khoảng $16.7\%$ số lần chạy;
+MLJAR ở mức khoảng $8.3\%$; AutoGluon gần như không thất bại. Về loại lỗi, FLAML
+và MLJAR chủ yếu gặp lỗi hết thời gian, trong khi H2O gặp cả hai loại, với khoảng
+một phần năm số lần thất bại là do tràn bộ nhớ.
+
+Tỉ lệ thất bại bằng không của AutoGluon là kết quả trực tiếp của cơ chế dự phòng
+đã nêu ở Mục~\ref{sec:frameworks}: khi một mô hình thành phần gặp lỗi, thư viện
+loại nó khỏi tổ hợp và tiếp tục với các mô hình còn lại thay vì dừng toàn bộ đường
+ống. Đây là một thuộc tính kỹ thuật có giá trị thực tiễn cao mà các chỉ số chất
+lượng dự đoán thông thường không thể hiện được.
+
+\subsection{Quan hệ giữa thất bại và quy mô dữ liệu}
+Biểu đồ bong bóng ở khung (B) cho thấy các thất bại tập trung gần như hoàn toàn ở
+vùng dữ liệu quy mô lớn. Các bộ dữ liệu dưới $10.000$ mẫu hầu như không ghi nhận
+lỗi ở bất kỳ thư viện nào, trong khi \texttt{forest\_cover} với $581.012$ mẫu là
+điểm nóng thất bại với các bong bóng lớn nhất thuộc về H2O và FLAML. Điều này giải
+thích sự vắng mặt của H2O và MLJAR trong Bảng~\ref{tab:ketqua} trên bộ dữ liệu
+này.
+
+Kết quả trên có hàm ý thực tiễn rõ ràng: chênh lệch chất lượng ở hàng phần nghìn
+trên các bộ dữ liệu vừa và nhỏ trở nên vô nghĩa nếu thư viện không thể hoàn tất
+trên dữ liệu quy mô lớn của bài toán thực tế. Khả năng mở rộng, do đó, cần được
+xem là tiêu chí sàng lọc trước khi so sánh về chất lượng.
+
+\subsection{Quan hệ giữa thất bại và ngân sách thời gian}
+Khung (C) cho thấy hai xu hướng trái ngược nhau. FLAML cải thiện mạnh khi tăng
+ngân sách, từ khoảng $26\%$ xuống còn $4\%$ tỉ lệ thất bại. Đây là hành vi được
+kỳ vọng: phần lớn lỗi của FLAML ở mức $60$ giây là do hết thời gian, nên việc nới
+ngân sách giải quyết trực tiếp nguyên nhân gốc.
+
+Ngược lại, MLJAR tăng tỉ lệ thất bại từ $0\%$ ở mức $60$ giây lên khoảng $20\%$ ở
+mức $300$ giây --- một hiện tượng thoạt nhìn có vẻ nghịch lý. Cách giải thích phù
+hợp với cơ chế hoạt động của thư viện là như sau: khi ngân sách ngắn, MLJAR chỉ
+kịp huấn luyện một số mô hình đơn giản và luôn hoàn tất; khi ngân sách dài hơn,
+thư viện kích hoạt các chế độ tìm kiếm mở rộng với việc sinh thêm đặc trưng tương
+tác và xây dựng tổ hợp phức tạp hơn, kéo theo nhu cầu bộ nhớ tăng và do đó làm
+tăng xác suất gặp lỗi tràn bộ nhớ. Nói cách khác, việc cấp thêm tài nguyên thời
+gian đã chuyển nút thắt cổ chai từ thời gian sang bộ nhớ.
+
+Quan sát này cho thấy tăng ngân sách thời gian không phải lúc nào cũng là biện
+pháp cải thiện an toàn, và việc cấu hình đồng thời cả giới hạn thời gian lẫn giới
+hạn bộ nhớ là cần thiết khi triển khai MLJAR trên dữ liệu lớn.
+
+\section{Xếp hạng bằng mô hình Bradley--Terry}
+\label{sec:bt-ketqua}
+Hình~\ref{fig:bt} trình bày cường độ Bradley--Terry ước lượng theo
+Định nghĩa~\ref{def:bt}, ở mức toàn cục và tách theo từng dạng tác vụ.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{image/experiment_bradley_terry.png}
+    \caption{Cường độ Bradley--Terry $\lambda$ của bốn thư viện. Khung ngoài cùng
+    bên trái là mô hình toàn cục; ba khung còn lại là mô hình riêng cho từng dạng
+    tác vụ.}
+    \label{fig:bt}
+\end{figure}
+
+Ở mức toàn cục, thứ tự thu được là H2O ($\lambda = 0.282$), MLJAR ($0.278$),
+AutoGluon ($0.257$) và FLAML ($0.183$). Ba thư viện đầu gần như ngang nhau ---
+khoảng cách giữa H2O và MLJAR chỉ là $0.004$, hoàn toàn nằm trong sai số ước
+lượng --- trong khi FLAML tụt lại rõ rệt.
+
+Bức tranh thay đổi căn bản khi phân tách theo dạng tác vụ,
+Bảng~\ref{tab:bt} tóm tắt các giá trị.
 
 \begin{table}[H]
   \centering
   \small
-  \caption{Kết quả tổng hợp trên 20 bộ dữ liệu (khung điền cho lần chạy đầy đủ).}
-  \label{tab:full}
+  \caption{Cường độ Bradley--Terry theo dạng tác vụ. Giá trị lớn nhất mỗi cột
+  được in đậm.}
+  \label{tab:bt}
   \renewcommand{\arraystretch}{1.2}
   \begin{tabularx}{\linewidth}{@{}X c c c c@{}}
     \toprule
-    \textbf{Thư viện} & \textbf{Thắng phân lớp} & \textbf{Thắng hồi quy} & \textbf{Thứ hạng TB} & \textbf{Thời gian TB} \\
+    \textbf{Thư viện} & \textbf{Toàn cục} & \textbf{Nhị phân} & \textbf{Đa lớp} & \textbf{Hồi quy} \\
     \midrule
-    FLAML      & [\,] & [\,] & [\,] & [\,] \\
-    H2O AutoML & [\,] & [\,] & [\,] & [\,] \\
-    AutoGluon  & [\,] & [\,] & [\,] & [\,] \\
-    RandomForest (baseline)     & [\,] & [\,] & [\,] & [\,] \\
-    constantpredictor (baseline)& [\,] & [\,] & [\,] & [\,] \\
+    H2O AutoML & \textbf{0,282} & 0,164 & \textbf{0,446} & \textbf{0,389} \\
+    MLJAR      & 0,278 & \textbf{0,330} & 0,161 & 0,240 \\
+    AutoGluon  & 0,257 & 0,248 & 0,197 & 0,266 \\
+    FLAML      & 0,183 & 0,259 & 0,197 & 0,105 \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
-\section{So sánh với baseline}
-\label{sec:baseline}
-Theo giao thức AMLB, mọi thư viện được đối chiếu với hai baseline. Một thư viện
-AutoML chỉ thực sự có giá trị nếu vượt rõ rệt bộ dự đoán hằng và ít nhất không
-thua rừng ngẫu nhiên. [Điền phân tích sau lần chạy đầy đủ: thư viện nào vượt
-baseline trên loại tác vụ nào, mức vượt bao nhiêu.]
+Hiện tượng đáng chú ý nhất là sự \emph{đảo chiều xếp hạng} giữa các nhóm tác vụ.
+H2O dẫn đầu ở nhóm đa lớp với cường độ $0.446$ --- gần gấp đôi hai thư viện xếp
+sau --- và tiếp tục dẫn đầu ở nhóm hồi quy với $0.389$, nhưng lại xếp \emph{cuối
+cùng} ở nhóm nhị phân với chỉ $0.164$. Ngược lại, MLJAR đứng đầu nhóm nhị phân với
+$0.330$ nhưng xếp cuối ở nhóm đa lớp với $0.161$. FLAML vươn lên vị trí thứ hai ở
+nhóm nhị phân ($0.259$) song rơi xuống cuối bảng ở nhóm hồi quy với $0.105$, tức
+chưa bằng một phần ba cường độ của H2O.
 
-\section{Nghiên cứu loại bỏ thành phần (ablation)}
-\label{sec:ablation}
-Nhóm khảo sát ảnh hưởng của \emph{ngân sách thời gian} --- yếu tố tác động mạnh
-tới AutoML --- bằng cách chạy cùng cấu hình ở các mức ngân sách khác nhau và quan
-sát biến thiên của chất lượng và thứ hạng (Bảng~\ref{tab:ablation}).
+Áp dụng Định nghĩa~\ref{def:bt} để lượng hoá khoảng cách ở nhóm hồi quy, xác suất
+H2O thắng FLAML trong một phép so sánh ngẫu nhiên là
+\[
+    \Pr(\text{H2O} \succ \text{FLAML})
+    = \frac{0.389}{0.389 + 0.105} = \frac{0.389}{0.494} \approx 0.787,
+\]
+tức khoảng $79\%$. Đây là một cách biệt thực chất, khác hẳn với những chênh lệch ở
+hàng phần nghìn quan sát được trong bảng điểm thô ở nhóm nhị phân.
+
+Chỉ riêng AutoGluon giữ được cường độ tương đối ổn định trên cả ba nhóm, dao động
+trong khoảng $0.197$--$0.266$. Thư viện này không đứng đầu ở bất kỳ nhóm nào nhưng
+cũng không xếp cuối ở nhóm nào --- một hồ sơ hiệu năng phù hợp với tình huống dạng
+tác vụ chưa được xác định trước hoặc hệ thống phải phục vụ nhiều dạng bài toán
+khác nhau.
+
+\section{Thảo luận tổng hợp}
+\label{sec:thaoluan-tn}
+Kết quả thực nghiệm cho phép rút ra bốn nhận định.
+
+\textbf{Thứ nhất, không tồn tại thư viện vượt trội toàn diện.} Sự đảo chiều xếp
+hạng giữa các nhóm tác vụ ở Bảng~\ref{tab:bt} bác bỏ giả thuyết về một thứ tự ưu
+tiên phổ quát. Mọi khuyến nghị lựa chọn thư viện, do đó, phải gắn với dạng bài
+toán cụ thể. Đây cũng là lý do các bảng xếp hạng AutoML tổng hợp một con số duy
+nhất cần được tiếp nhận một cách thận trọng.
+
+\textbf{Thứ hai, chênh lệch chất lượng thường nhỏ hơn chênh lệch chi phí.} Trên
+nhiều bộ dữ liệu, khác biệt điểm số giữa các thư viện nằm dưới ngưỡng độ lệch
+chuẩn giữa các fold, trong khi khác biệt về thời gian huấn luyện có thể lên tới
+bốn lần và về bộ nhớ lên tới hơn mười lần. Trong bối cảnh ứng dụng thực tế, các
+chiều chi phí này thường mang tính quyết định hơn.
+
+\textbf{Thứ ba, độ ổn định là một tiêu chí độc lập với chất lượng trung bình.}
+Trường hợp FLAML trên \texttt{forest\_cover} --- điểm trung bình tốt hơn AutoGluon
+nhưng độ lệch chuẩn lớn hơn mười lần --- cho thấy việc chỉ báo cáo giá trị trung
+bình có thể dẫn tới kết luận sai. Tương tự, tỉ lệ thất bại $0\%$ của AutoGluon là
+một lợi thế không xuất hiện trong bất kỳ bảng điểm nào.
+
+\textbf{Thứ tư, quan hệ giữa tài nguyên và hiệu năng không đơn điệu.} Trường hợp
+MLJAR tăng tỉ lệ thất bại khi được cấp thêm thời gian cho thấy việc nới lỏng một
+ràng buộc tài nguyên có thể làm lộ ra một nút thắt khác. Điều này củng cố lập luận
+rằng ngân sách tài nguyên phải được kiểm soát đồng bộ trên nhiều chiều, chứ không
+chỉ riêng thời gian.
+
+Tổng hợp lại, Bảng~\ref{tab:khuyennghi} đưa ra khuyến nghị lựa chọn thư viện theo
+từng tình huống sử dụng, dựa trên toàn bộ các chiều đã phân tích.
 
 \begin{table}[H]
   \centering
   \small
-  \caption{Ablation theo ngân sách thời gian (thứ hạng trung bình).}
-  \label{tab:ablation}
-  \renewcommand{\arraystretch}{1.2}
-  \begin{tabular}{@{}lccc@{}}
+  \caption{Khuyến nghị lựa chọn thư viện theo tình huống sử dụng.}
+  \label{tab:khuyennghi}
+  \renewcommand{\arraystretch}{1.25}
+  \begin{tabularx}{\linewidth}{@{}l X@{}}
     \toprule
-    \textbf{Ngân sách} & \textbf{FLAML} & \textbf{AutoGluon} & \textbf{H2O} \\
+    \textbf{Tình huống} & \textbf{Khuyến nghị và căn cứ} \\
     \midrule
-    30 giây/fold (sơ bộ) & 3.00 & 1.67 & 1.33 \\
-    smoke (60s, 1 fold)  & [\,] & [\,] & [\,] \\
-    1h (3600s, 10 fold)  & [\,] & [\,] & [\,] \\
+    Phân loại đa lớp hoặc hồi quy, dữ liệu vừa và nhỏ &
+    H2O AutoML --- dẫn đầu cả hai nhóm với cường độ $0.446$ và $0.389$, đồng thời
+    cho kết quả ổn định giữa các fold. \\
+    Phân loại nhị phân, không gian đặc trưng lớn &
+    MLJAR --- dẫn đầu nhóm nhị phân ($\lambda = 0.330$) và đạt kết quả tốt nhất
+    trên bộ dữ liệu 369 đặc trưng. \\
+    Dữ liệu quy mô lớn hoặc yêu cầu độ tin cậy cao &
+    AutoGluon --- tỉ lệ thất bại bằng không, cường độ ổn định trên cả ba nhóm,
+    thời gian huấn luyện thấp nhờ dừng sớm. \\
+    Ngân sách tính toán eo hẹp, ưu tiên độ trễ suy luận &
+    FLAML --- thời gian suy luận trung vị thấp nhất ($\approx 0.25$ giây) và bộ
+    nhớ khiêm tốn, với lưu ý tránh dùng cho bài toán hồi quy phức tạp. \\
     \bottomrule
-  \end{tabular}
+  \end{tabularx}
 \end{table}
-
-[Phân tích: khi tăng ngân sách, thứ hạng giữa các thư viện thay đổi ra sao; thư
-viện nào tận dụng ngân sách lớn tốt hơn.]
-
-\section{Phân tích lỗi và thảo luận}
-\label{sec:phantichloi}
-Việc ghi nhận thất bại (thay vì bỏ qua) giúp phân tích các nguyên nhân thực tế
-cản trở một so sánh công bằng. Trên máy cục bộ macOS (arm64, Python~3.9), nhóm
-quan sát các lỗi sau khi cố gắng chạy trực tiếp không dùng Docker:
-\begin{itemize}
-    \item \textbf{Lệch phiên bản thư viện phụ thuộc:} \texttt{TunedRandomForest}
-    lỗi do \texttt{scikit-learn 1.6.1} đã loại bỏ hàm \texttt{\_check\_fit\_params}
-    mà AMLB còn gọi --- một minh hoạ điển hình cho việc môi trường không đồng nhất
-    phá vỡ tính tái lập.
-    \item \textbf{Thiếu thư viện hệ thống:} FLAML cần \texttt{libomp} cho XGBoost
-    (khắc phục bằng cách cài đặt bổ sung).
-    \item \textbf{Kịch bản cài đặt hướng Linux:} H2O và AutoGluon dùng script cài
-    đặt cho Linux, thất bại trên macOS (\texttt{AutoGluon setup.sh} thoát mã 127).
-\end{itemize}
-Bốn trong sáu bộ chạy thất bại khi chạy cục bộ. Quan sát này chính là lý do đồ án
-chọn chạy lần đánh giá đầy đủ trong \emph{môi trường Docker/Linux đồng nhất}: chỉ
-khi cô lập môi trường thì so sánh giữa H2O, FLAML và AutoGluon mới thực sự công
-bằng. Hình~\ref{fig:console-methods} minh hoạ trang quản lý và tích hợp thư viện
-của hệ thống, nơi trạng thái tích hợp và mức tương thích theo máy được hiển thị
-trung thực.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.9\linewidth]{image/console-methods.png}
-    \caption{Trang Methods: danh mục thư viện AutoML với trạng thái tích hợp, phù
-    hiệu tương thích theo máy và dung lượng Docker.}
-    \label{fig:console-methods}
-\end{figure}
-
-Tổng hợp lại, kết quả sơ bộ đã kiểm chứng quy trình end-to-end (chạy $\to$ chấm
-điểm $\to$ xếp hạng) dưới một giao thức thống nhất; phần phân tích lỗi cho thấy
-giá trị của việc ghi nhận thất bại và cô lập môi trường. Kết quả đầy đủ trên 20
-bộ dữ liệu sẽ củng cố các nhận định về sự đánh đổi chất lượng -- chi phí giữa các
-thư viện.

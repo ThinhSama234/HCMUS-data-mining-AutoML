@@ -1,55 +1,169 @@
 % ======================================================================
 %  CHƯƠNG 1 — MỞ ĐẦU
-%  Yêu cầu (mục 2.2, 2.6 của đề bài): bối cảnh & động lực; phát biểu bài toán
-%  (Input/Output/Ràng buộc); mục tiêu & phạm vi; đóng góp; cấu trúc báo cáo.
-%  Độ dài tham khảo: 5--10 trang.
 % ======================================================================
 \chapter{Mở đầu}
 \label{ch:gioithieu}
 
-\section{Bối cảnh và động lực nghiên cứu}
+\section{Bối cảnh nghiên cứu}
 \label{sec:boicanh}
-Sự phổ biến của học máy trong nhiều lĩnh vực đã kéo theo nhu cầu ngày càng lớn
-về việc xây dựng mô hình một cách nhanh chóng và hiệu quả. Tuy nhiên, một quy
-trình học máy điển hình đòi hỏi nhiều bước thủ công đòi hỏi chuyên môn cao: tiền
-xử lý dữ liệu, trích chọn đặc trưng, lựa chọn thuật toán và tinh chỉnh siêu tham
-số. Học máy tự động (\textit{Automated Machine Learning}, AutoML) ra đời nhằm tự
-động hoá các bước này, giúp người dùng không chuyên vẫn có thể thu được mô hình
-chất lượng với công sức tối thiểu~\cite{feurer2015autosklearn}.
+Học máy đã trở thành công cụ nền tảng trong hầu hết các lĩnh vực xử lý dữ liệu,
+từ tài chính, y tế đến thương mại điện tử. Tuy nhiên, khoảng cách giữa một ý
+tưởng mô hình hoá và một mô hình vận hành được vẫn còn lớn: người thực hiện phải
+lần lượt làm sạch dữ liệu, mã hoá biến hạng mục, xử lý giá trị khuyết, lựa chọn
+họ thuật toán phù hợp, tinh chỉnh siêu tham số và cuối cùng là kiểm chứng kết
+quả. Mỗi bước đều đòi hỏi kinh nghiệm chuyên môn, và chất lượng mô hình cuối cùng
+phụ thuộc nhiều vào các quyết định mang tính thủ công ở từng bước.
 
-Hiện nay có nhiều thư viện AutoML mã nguồn mở phổ biến như FLAML~\cite{wang2021flaml},
-H2O~AutoML~\cite{ledell2020h2o} và AutoGluon~\cite{erickson2020autogluon}, mỗi thư
-viện dựa trên một triết lý thiết kế khác nhau. Điều này đặt ra một câu hỏi thực
-tiễn quan trọng: \textit{với một bài toán và một ngân sách tài nguyên cho trước,
-nên lựa chọn thư viện AutoML nào?} Trả lời câu hỏi này đòi hỏi một quá trình đánh
-giá so sánh khách quan.
+Học máy tự động (\textit{Automated Machine Learning}, AutoML) ra đời nhằm thu hẹp
+khoảng cách này. Ý tưởng trung tâm của AutoML là xem toàn bộ quy trình xây dựng
+mô hình như một bài toán tối ưu: cho trước dữ liệu và một ngân sách tài nguyên,
+hệ thống tự động tìm kiếm trong không gian các cấu hình (thuật toán, siêu tham số,
+phép biến đổi đặc trưng) để trả về mô hình tốt nhất có thể~\cite{feurer2015autosklearn}.
+Nhờ đó, người dùng chỉ cần cung cấp dữ liệu và chỉ định biến mục tiêu, phần còn
+lại được hệ thống đảm nhiệm.
 
-Trên thực tế, việc so sánh các thư viện AutoML thường không công bằng và khó tái
-lập. Các báo cáo khác nhau thường sử dụng ngân sách thời gian, cách chia dữ liệu,
-độ đo và cấu hình tài nguyên khác nhau; tệ hơn, các lần chạy thất bại đôi khi bị
-loại bỏ một cách thầm lặng, khiến kết quả trở nên thiên lệch. Nhằm khắc phục,
-Gijsbers và cộng sự đề xuất \textit{AutoML Benchmark} (AMLB) --- một khung đánh
-giá áp dụng \emph{cùng một giao thức thống nhất} (cùng cách chia fold, cùng ngân
-sách thời gian, cùng độ đo, cùng tài nguyên) cho mọi thư viện và ghi nhận đầy đủ
-các lần thất bại~\cite{gijsbers2024amlb}. Đây chính là động lực của đồ án: xây
-dựng một quy trình đánh giá AutoML \emph{công bằng, tái lập được} và thuận tiện
-sử dụng trên dữ liệu thực do người dùng lựa chọn.
+Sự phát triển nhanh của lĩnh vực này đã tạo ra một hệ sinh thái phong phú các thư
+viện mã nguồn mở, mỗi thư viện theo đuổi một triết lý thiết kế riêng.
+AutoGluon~\cite{erickson2020autogluon} đặt trọng tâm vào việc xếp chồng nhiều
+tầng mô hình; FLAML~\cite{wang2021flaml} tối ưu theo hướng tiết kiệm chi phí tính
+toán; H2O~AutoML~\cite{ledell2020h2o} huấn luyện nhiều họ mô hình rồi kết hợp
+bằng \textit{stacked ensemble} trên nền máy ảo Java; MLJAR~\cite{plonska2021mljar}
+xây dựng đường ống riêng cho từng bộ dữ liệu với kỹ thuật sinh đặc trưng tự động.
+Sự đa dạng này đặt ra một câu hỏi thực tiễn: \textit{trước một bài toán cụ thể và
+một ngân sách tài nguyên cho trước, đâu là thư viện nên chọn?}
 
-\section{Phát biểu bài toán}
-\label{sec:phatbieu}
-Bài toán của đồ án được phát biểu như sau. Cho một tập các bộ dữ liệu
-$\mathcal{D} = \{D_1, \dots, D_m\}$ (bao gồm cả bài toán phân lớp và hồi quy) và
-một tập các thư viện AutoML $\mathcal{F} = \{F_1, \dots, F_k\}$. Với một ngân
-sách tài nguyên thống nhất (thời gian, số nhân CPU, bộ nhớ), cần đánh giá và
-\emph{xếp hạng} các thư viện trong $\mathcal{F}$ theo chất lượng dự đoán và theo
-sự đánh đổi giữa chất lượng và chi phí, sao cho phép so sánh là công bằng và có
-thể tái lập. Bảng~\ref{tab:io} tóm tắt bài toán theo ba thành phần Input --
-Output -- Ràng buộc.
+\section{Tổng quan về học máy tự động}
+\label{sec:tongquan-automl}
+Để định vị chính xác phạm vi của đồ án, phần này phác hoạ cấu trúc của lĩnh vực
+AutoML và chỉ ra thành phần mà nghiên cứu tập trung vào.
+
+\subsection{Các giai đoạn của một quy trình học máy}
+Một quy trình học máy có giám sát trên dữ liệu dạng bảng thường được chia thành
+năm giai đoạn kế tiếp. Giai đoạn \emph{làm sạch dữ liệu} xử lý giá trị khuyết,
+loại bỏ bản ghi trùng lặp và chuẩn hoá kiểu dữ liệu. Giai đoạn \emph{biến đổi đặc
+trưng} thực hiện mã hoá biến hạng mục, chuẩn hoá thang đo và đôi khi sinh thêm đặc
+trưng dẫn xuất. Giai đoạn \emph{lựa chọn mô hình} xác định họ thuật toán phù hợp
+với bản chất bài toán. Giai đoạn \emph{tinh chỉnh siêu tham số} tìm cấu hình tốt
+nhất trong không gian tham số của thuật toán đã chọn. Cuối cùng, giai đoạn
+\emph{đánh giá và tổ hợp} ước lượng hiệu năng và, nếu cần, kết hợp nhiều mô hình
+thành một dự đoán chung.
+
+Điểm đáng chú ý là các giai đoạn này không độc lập với nhau. Cách mã hoá biến hạng
+mục ảnh hưởng tới họ thuật toán nên chọn; ngược lại, một số thuật toán như
+CatBoost có cơ chế xử lý biến hạng mục riêng khiến bước mã hoá thủ công trở nên
+thừa hoặc thậm chí có hại. Sự phụ thuộc lẫn nhau này khiến việc tối ưu từng giai
+đoạn một cách riêng rẽ không bảo đảm thu được quy trình tối ưu tổng thể, và là lý
+do các hệ thống AutoML hiện đại tối ưu toàn bộ đường ống như một thể thống nhất.
+
+\subsection{Phân nhánh của lĩnh vực}
+Lĩnh vực AutoML có thể được phân thành bốn nhánh chính theo đối tượng tự động
+hoá. Nhánh \emph{tối ưu siêu tham số} (HPO) giả định thuật toán đã được chọn và
+chỉ tìm kiếm trên không gian tham số. Nhánh \emph{lựa chọn thuật toán kết hợp tối
+ưu siêu tham số} (CASH) mở rộng không gian tìm kiếm để bao gồm cả việc chọn thuật
+toán, và là bài toán trung tâm của các thư viện được khảo sát trong đồ án. Nhánh
+\emph{tìm kiếm kiến trúc mạng nơ-ron} (NAS) chuyên biệt cho học sâu, tự động thiết
+kế cấu trúc mạng. Nhánh \emph{meta-learning} khai thác kinh nghiệm tích luỹ từ các
+bộ dữ liệu đã xử lý trước đó để rút ngắn quá trình tìm kiếm trên bộ dữ liệu mới.
+
+Bảng~\ref{tab:nhanh} tóm tắt bốn nhánh cùng phạm vi tự động hoá tương ứng.
 
 \begin{table}[H]
   \centering
   \small
-  \caption{Phát biểu bài toán theo Input -- Output -- Ràng buộc.}
+  \caption{Các nhánh chính của lĩnh vực học máy tự động.}
+  \label{tab:nhanh}
+  \renewcommand{\arraystretch}{1.25}
+  \begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{3.4cm} >{\raggedright\arraybackslash}p{3.6cm} X@{}}
+    \toprule
+    \textbf{Nhánh} & \textbf{Đối tượng tự động hoá} & \textbf{Đặc điểm} \\
+    \midrule
+    Tối ưu siêu tham số (HPO) &
+    Siêu tham số của một thuật toán đã chọn &
+    Không gian tìm kiếm thuần nhất, thường liên tục; là thành phần con của các
+    nhánh còn lại. \\
+    Lựa chọn thuật toán kết hợp tối ưu siêu tham số (CASH) &
+    Thuật toán và siêu tham số của nó &
+    Không gian hỗn hợp và có điều kiện; là bài toán trung tâm của các thư viện
+    AutoML cho dữ liệu bảng. \\
+    Tìm kiếm kiến trúc mạng (NAS) &
+    Cấu trúc mạng nơ-ron &
+    Chuyên biệt cho học sâu; chi phí tính toán rất lớn. \\
+    Meta-learning &
+    Tri thức khởi tạo cho quá trình tìm kiếm &
+    Khai thác kinh nghiệm từ các bộ dữ liệu đã xử lý nhằm rút ngắn tìm kiếm trên
+    bộ dữ liệu mới. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Đồ án tập trung vào nhánh CASH áp dụng cho dữ liệu dạng bảng, bởi đây là nhánh
+trưởng thành nhất về mặt công cụ và cũng là nhánh có nhiều thư viện cạnh tranh
+nhất --- do đó nhu cầu so sánh khách quan là cấp thiết nhất. Cần lưu ý rằng ranh
+giới giữa các nhánh không tuyệt đối: auto-sklearn kết hợp CASH với meta-learning
+để khởi tạo tìm kiếm, còn AutoGluon đưa cả mạng nơ-ron vào tập mô hình cơ sở của
+mình. Sự giao thoa này càng làm nổi bật nhu cầu về một phương pháp đánh giá thống
+nhất, bởi các thư viện tuy cùng giải một bài toán nhưng lại vận dụng những cơ chế
+rất khác nhau.
+
+\section{Vấn đề và động lực}
+\label{sec:dongluc}
+Câu hỏi trên tưởng chừng đơn giản nhưng lại khó trả lời một cách khách quan, bởi
+việc so sánh các thư viện AutoML trong thực tế thường vi phạm những nguyên tắc cơ
+bản của một phép đo công bằng.
+
+Thứ nhất là \textbf{sự không đồng nhất về giao thức}. Các báo cáo khác nhau
+thường dùng cách chia dữ liệu khác nhau, ngân sách thời gian khác nhau và độ đo
+khác nhau. Khi đó, chênh lệch điểm số quan sát được có thể bắt nguồn từ điều kiện
+thí nghiệm chứ không phải từ năng lực thực sự của thư viện. Một thư viện được cấp
+gấp đôi thời gian gần như chắc chắn sẽ cho kết quả tốt hơn, nhưng kết luận rút ra
+từ phép so sánh như vậy không có giá trị.
+
+Thứ hai là \textbf{sự xung đột môi trường}. Mỗi thư viện AutoML kéo theo một cây
+phụ thuộc riêng, thường xung đột lẫn nhau về phiên bản. Việc cài đặt chung nhiều
+thư viện vào một môi trường Python dễ dẫn tới tình trạng thư viện này hoạt động
+thì thư viện kia hỏng, và kết quả đo được phản ánh chất lượng cài đặt nhiều hơn
+là chất lượng thuật toán.
+
+Thứ ba, và nghiêm trọng nhất, là \textbf{việc bỏ qua các lần chạy thất bại}. Khi
+một thư viện hết thời gian hoặc tràn bộ nhớ trên một bộ dữ liệu khó, kết quả
+tương ứng thường bị loại khỏi bảng tổng hợp. Hệ quả là bảng xếp hạng chỉ phản ánh
+những trường hợp mà thư viện chạy thành công, tạo ra thiên lệch có lợi cho chính
+những thư viện kém ổn định nhất. Trong khi đó, với người dùng thực tế, một thư
+viện thất bại trên dữ liệu lớn là một nhược điểm quan trọng cần được ghi nhận.
+
+Để thấy rõ mức độ nghiêm trọng của vấn đề thứ ba, xét một tình huống minh hoạ. Giả
+sử hai thư viện $F_1$ và $F_2$ cùng được đánh giá trên mười bộ dữ liệu, trong đó
+có ba bộ có quy mô rất lớn. Thư viện $F_1$ hoàn tất cả mười bộ với điểm trung bình
+$0.80$. Thư viện $F_2$ thất bại trên đúng ba bộ dữ liệu lớn nhưng đạt $0.85$ trên
+bảy bộ còn lại. Nếu bảng tổng hợp chỉ lấy trung bình trên các lần chạy thành công,
+$F_2$ sẽ được xếp trên $F_1$ với $0.85$ so với $0.80$. Kết luận này sai lệch theo
+hai hướng: nó bỏ qua việc $F_2$ hoàn toàn không sử dụng được trên một phần ba số
+bài toán, đồng thời so sánh $F_2$ trên tập bài toán \emph{dễ hơn} với $F_1$ trên
+tập bài toán \emph{đầy đủ}. Hiện tượng này được gọi là thiên lệch sống sót
+(\textit{survivorship bias}), và nó chỉ có thể được phát hiện nếu các lần thất bại
+được ghi nhận thay vì loại bỏ.
+
+Nhằm khắc phục các vấn đề trên, Gijsbers và cộng sự đề xuất \textit{AutoML
+Benchmark} (AMLB)~\cite{gijsbers2024amlb}: một khung đánh giá áp dụng cùng một
+giao thức thống nhất cho mọi thư viện và ghi nhận đầy đủ các lần thất bại thay vì
+loại bỏ chúng. Đây là nền tảng phương pháp luận mà đồ án kế thừa và triển khai
+trên tập dữ liệu do nhóm tự thu thập.
+
+\section{Phát biểu bài toán}
+\label{sec:phatbieu}
+Bài toán mà đồ án giải quyết được phát biểu như sau. Cho tập bộ dữ liệu
+$\mathcal{D} = \{D_1, \dots, D_m\}$ thuộc ba dạng tác vụ (phân loại nhị phân,
+phân loại đa lớp, hồi quy) và tập thư viện AutoML
+$\mathcal{F} = \{F_1, \dots, F_k\}$. Với một ngân sách tài nguyên thống nhất, cần
+xác định thứ tự ưu tiên giữa các thư viện trong $\mathcal{F}$ xét trên cả chất
+lượng dự đoán lẫn chi phí tính toán, sao cho phép so sánh là công bằng, tái lập
+được và phản ánh trung thực cả những trường hợp thất bại.
+Bảng~\ref{tab:io} đặc tả bài toán theo ba thành phần Input -- Output -- Ràng buộc.
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{Đặc tả bài toán theo Input -- Output -- Ràng buộc.}
   \label{tab:io}
   \renewcommand{\arraystretch}{1.3}
   \begin{tabularx}{\linewidth}{@{}l X@{}}
@@ -57,71 +171,132 @@ Output -- Ràng buộc.
     \textbf{Thành phần} & \textbf{Mô tả} \\
     \midrule
     \textbf{Input} &
-    Tập bộ dữ liệu $\mathcal{D}$ dạng bảng (mỗi bộ gồm ma trận đặc trưng và cột
-    nhãn/giá trị mục tiêu, có xác định loại tác vụ: phân lớp nhị phân, phân lớp
-    đa lớp hoặc hồi quy); tập thư viện AutoML $\mathcal{F}$; ngân sách tài nguyên
-    thống nhất (thời gian trên mỗi fold, số nhân CPU, bộ nhớ). \\
+    Tập bộ dữ liệu dạng bảng $\mathcal{D}$, mỗi bộ $D_j$ gồm ma trận đặc trưng
+    $X_j \in \mathbb{R}^{n_j \times d_j}$ (có thể chứa biến hạng mục và giá trị
+    khuyết), véc-tơ mục tiêu $y_j$ và siêu dữ liệu xác định dạng tác vụ cùng độ đo
+    tương ứng; tập thư viện AutoML $\mathcal{F}$; ngân sách thời gian $B$ áp dụng
+    cho mỗi lần huấn luyện; số fold $K$ và hạt giống ngẫu nhiên cố định. \\
     \textbf{Output} &
-    Với mỗi cặp (thư viện, bộ dữ liệu): điểm số theo độ đo phù hợp
-    (AUC cho phân lớp nhị phân, log-loss cho phân lớp đa lớp, RMSE cho hồi quy)
-    cùng chi phí thời gian và bộ nhớ; bảng xếp hạng tổng hợp các thư viện theo
-    thứ hạng trung bình; biểu đồ đánh đổi giữa chất lượng và thời gian. \\
+    Với mỗi bộ ba (thư viện, bộ dữ liệu, fold): điểm số theo độ đo tương ứng,
+    thời gian huấn luyện, thời gian suy luận, bộ nhớ đỉnh và trạng thái kết thúc.
+    Từ đó tổng hợp thành bảng điểm trung bình kèm độ lệch chuẩn, bảng xếp hạng
+    theo cường độ Bradley--Terry, biểu đồ đánh đổi chất lượng -- thời gian và
+    thống kê tỉ lệ thất bại. \\
     \textbf{Ràng buộc} &
-    Giao thức đánh giá phải \emph{đồng nhất} giữa các thư viện (cùng fold, cùng
-    ngân sách, cùng độ đo, cùng tài nguyên); các lần chạy thất bại phải được
-    \emph{ghi nhận} thay vì bỏ qua; toàn bộ quy trình phải tái lập được và chạy
-    trong môi trường cô lập bằng Docker. \\
+    Mọi thư viện phải được đánh giá trên \emph{cùng} phân hoạch fold, \emph{cùng}
+    ngân sách thời gian và \emph{cùng} độ đo; mỗi thư viện chạy trong môi trường
+    thực thi cô lập để loại trừ xung đột phụ thuộc; mọi lần chạy thất bại phải
+    được ghi nhận kèm phân loại nguyên nhân; toàn bộ quy trình phải tái lập được
+    từ hạt giống ngẫu nhiên và cấu hình đã lưu. \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
-\section{Mục tiêu và phạm vi nghiên cứu}
+\section{Mục tiêu và phạm vi}
 \label{sec:muctieu}
-\textbf{Mục tiêu tổng quát:} xây dựng và trình bày một quy trình đánh giá công
-bằng, tái lập được cho các thư viện AutoML, đồng thời tiến hành thực nghiệm so
-sánh trên dữ liệu thực. Cụ thể, đồ án hướng đến:
+Mục tiêu tổng quát của đồ án là xây dựng một quy trình đánh giá công bằng, tái
+lập được cho các thư viện AutoML và vận dụng quy trình đó để rút ra khuyến nghị
+lựa chọn thư viện theo từng dạng tác vụ. Các mục tiêu cụ thể gồm:
 \begin{itemize}
-    \item Trình bày lại và làm rõ giao thức đánh giá công bằng theo chuẩn
-    AMLB~\cite{gijsbers2024amlb}, bao gồm cách kiểm soát fold, ngân sách, độ đo
-    và tài nguyên.
-    \item Xây dựng hệ thống \textit{AutoML Bench Console} hỗ trợ nạp dữ liệu (CSV,
-    OpenML, liên kết Kaggle công khai), tích hợp thư viện AutoML dạng ảnh Docker,
-    chạy đánh giá và trực quan hoá kết quả.
-    \item Thực nghiệm so sánh FLAML, H2O~AutoML và AutoGluon trên các bộ dữ liệu
-    phân lớp và hồi quy, có đối chiếu với các baseline và phân tích các lần thất
-    bại.
+    \item Hệ thống hoá giao thức đánh giá công bằng theo tinh thần
+    AMLB~\cite{gijsbers2024amlb}, làm rõ các yếu tố cần kiểm soát và cơ chế bảo
+    đảm tính tái lập.
+    \item Thiết kế và hiện thực một hạ tầng thực nghiệm cho phép chạy phân tán
+    trên nhiều máy, cô lập môi trường theo từng thư viện, hỗ trợ khôi phục tiến
+    trình và hợp nhất kết quả.
+    \item Tiến hành thực nghiệm so sánh bốn thư viện AutoML trên 12 bộ dữ liệu
+    thực với hai mức ngân sách thời gian, phân tích kết quả theo nhiều chiều:
+    chất lượng, thời gian, bộ nhớ, tốc độ suy luận và tỉ lệ thất bại.
+    \item Áp dụng mô hình Bradley--Terry để xếp hạng các thư viện dựa trên so sánh
+    cặp đôi, qua đó xác định liệu có tồn tại một thư viện vượt trội toàn diện hay
+    không.
 \end{itemize}
 
-\noindent\textbf{Đối tượng nghiên cứu:} các thư viện AutoML cho dữ liệu dạng bảng
-và phương pháp đánh giá so sánh chúng. \\
-\textbf{Phạm vi nghiên cứu:} đồ án tập trung vào bài toán học có giám sát trên dữ
-liệu dạng bảng (phân lớp và hồi quy); không bao gồm dữ liệu ảnh, văn bản hay
-chuỗi thời gian, và không nhằm đề xuất một thuật toán AutoML mới mà tập trung vào
-\emph{phương pháp đánh giá} và \emph{công cụ hỗ trợ} tái lập.
+\noindent\textbf{Đối tượng nghiên cứu} là các thư viện AutoML mã nguồn mở dành cho
+dữ liệu dạng bảng và phương pháp luận đánh giá so sánh chúng.
+\textbf{Phạm vi nghiên cứu} giới hạn ở bài toán học có giám sát trên dữ liệu dạng
+bảng với ba dạng tác vụ đã nêu; không bao gồm dữ liệu ảnh, văn bản, chuỗi thời
+gian hay học không giám sát. Đồ án không đề xuất thuật toán AutoML mới mà tập
+trung vào phương pháp đánh giá và hạ tầng thực nghiệm.
 
 \section{Đóng góp của đồ án}
 \label{sec:donggop}
-Các đóng góp chính của đồ án bao gồm:
+Đồ án có các đóng góp chính sau:
 \begin{enumerate}
-    \item Trình bày lại một cách hệ thống giao thức đánh giá AutoML công bằng theo
-    chuẩn AMLB và làm rõ các ``bẫy'' thường gặp khiến so sánh trở nên thiên lệch.
-    \item Xây dựng \textit{AutoML Bench Console} --- một hệ thống end-to-end cho
-    phép nạp dữ liệu, tích hợp thư viện, chạy đánh giá trong môi trường Docker cô
-    lập và trực quan hoá kết quả, với lưu trữ trên PostgreSQL và MinIO.
-    \item Thực nghiệm so sánh ba thư viện AutoML tiêu biểu trên nhiều bộ dữ liệu,
-    kèm phân tích sự đánh đổi chất lượng -- chi phí và phân tích các lần chạy thất
-    bại nhằm bảo đảm tính trung thực khoa học.
+    \item \textbf{Về phương pháp luận:} hệ thống hoá và triển khai một giao thức
+    đánh giá AutoML công bằng, trong đó phân hoạch fold được sinh một lần và dùng
+    chung cho mọi thư viện, mỗi thư viện chạy trong môi trường ảo riêng, và mọi
+    lần thất bại đều được ghi nhận kèm phân loại nguyên nhân.
+    \item \textbf{Về hạ tầng thực nghiệm:} xây dựng bộ công cụ điều phối theo mô
+    hình tiến trình chủ -- tiến trình con, cho phép phân tán khối lượng tính toán
+    trên nhiều máy, khôi phục sau gián đoạn và hợp nhất kết quả từng phần thành
+    báo cáo hoàn chỉnh.
+    \item \textbf{Về kết quả thực nghiệm:} cung cấp bộ kết quả so sánh bốn thư
+    viện AutoML trên 12 bộ dữ liệu thực với 5 fold và hai mức ngân sách, kèm phân
+    tích đa chiều về chất lượng, chi phí và độ ổn định. Kết quả cho thấy không tồn
+    tại thư viện vượt trội toàn diện: thứ hạng đảo chiều rõ rệt giữa các dạng tác
+    vụ, do đó khuyến nghị lựa chọn phải gắn với dạng bài toán cụ thể.
 \end{enumerate}
+
+\section{Ý nghĩa khoa học và thực tiễn}
+\label{sec:ynghia}
+Về mặt khoa học, đồ án góp phần kiểm chứng tính tổng quát của các kết luận về đánh
+giá AutoML trên một bối cảnh dữ liệu khác với công trình gốc. Các bộ kết quả tham
+chiếu quy mô lớn hiện có chủ yếu dựa trên những bộ dữ liệu đã được chuẩn hoá sẵn
+trong hệ sinh thái OpenML, nơi các vấn đề như ký hiệu khuyết không thống nhất hay
+cột định danh dư thừa đã được xử lý từ trước. Việc lặp lại giao thức đánh giá trên
+dữ liệu thô thu thập trực tiếp từ Kaggle cho phép quan sát hành vi của các thư
+viện trong điều kiện gần với thực tế triển khai hơn.
+
+Về mặt thực tiễn, kết quả của đồ án cung cấp căn cứ định lượng cho việc lựa chọn
+thư viện AutoML. Thay vì một khuyến nghị chung chung, báo cáo đưa ra bảng đối
+chiếu giữa tình huống sử dụng và thư viện phù hợp, dựa trên nhiều chiều đánh giá
+bao gồm cả những chiều thường bị bỏ qua như tỉ lệ thất bại theo quy mô dữ liệu và
+tốc độ suy luận. Với một tổ chức đang cân nhắc đưa AutoML vào quy trình làm việc,
+thông tin về việc thư viện nào không hoàn tất được trên dữ liệu hàng trăm nghìn
+bản ghi có giá trị quyết định cao hơn chênh lệch vài phần nghìn điểm AUC trên các
+bộ dữ liệu mẫu.
+
+Ngoài ra, hạ tầng thực nghiệm được xây dựng trong đồ án có thể tái sử dụng: việc
+bổ sung một thư viện mới hay một bộ dữ liệu mới vào quy trình đánh giá chỉ đòi hỏi
+khai báo cấu hình tương ứng, không cần sửa đổi phần lõi.
+
+\section{Phương pháp nghiên cứu}
+\label{sec:phuongphapnc}
+Đồ án được thực hiện theo hướng \emph{trình bày lại và tái thực nghiệm}: nhóm kế
+thừa nền tảng phương pháp luận từ công trình AMLB, hiện thực hoá lại giao thức
+đánh giá trên hạ tầng do nhóm xây dựng, rồi áp dụng lên một tập dữ liệu và một tập
+thư viện khác với công trình gốc. Cách tiếp cận này được lựa chọn thay vì đề xuất
+một thuật toán AutoML mới vì hai lý do.
+
+Thứ nhất, giá trị khoa học của việc tái thực nghiệm nằm ở chỗ kiểm chứng tính tổng
+quát của kết luận gốc. Nếu các quy luật được AMLB chỉ ra vẫn đúng trên một tập dữ
+liệu thô thu thập độc lập và một tập thư viện khác, độ tin cậy của những quy luật
+đó được củng cố; nếu không, sự sai khác chính là phát hiện đáng quan tâm.
+
+Thứ hai, quá trình tái thực nghiệm buộc nhóm phải hiểu thấu đáo từng chi tiết của
+giao thức --- vì chỉ cần bỏ sót một cơ chế kiểm soát, chẳng hạn không cố định hạt
+giống của phép chia fold, toàn bộ kết quả sẽ mất giá trị so sánh.
+
+Quy trình nghiên cứu được tổ chức thành bốn bước. Bước khảo sát tài liệu xác định
+các nguyên tắc của một phép so sánh công bằng và những sai sót thường gặp. Bước
+thiết kế chuyển các nguyên tắc đó thành các cơ chế kiểm soát cụ thể trong hạ tầng
+thực nghiệm. Bước thực nghiệm tiến hành thu thập dữ liệu, chạy đánh giá và ghi
+nhận kết quả. Bước phân tích tổng hợp kết quả trên nhiều chiều và rút ra kết luận,
+trong đó mọi nhận định đều được đối chiếu với đặc điểm thiết kế của từng thư viện
+nhằm bảo đảm lời giải thích có căn cứ chứ không chỉ mô tả hiện tượng.
 
 \section{Cấu trúc báo cáo}
 \label{sec:bocuc}
-Phần còn lại của báo cáo được tổ chức như sau.
-Chương~\ref{ch:cosoly} trình bày các kiến thức nền tảng về AutoML và các độ đo,
-đồng thời khảo sát và phân loại các công trình liên quan để xác định khoảng trống
-nghiên cứu.
-Chương~\ref{ch:phuongphap} mô tả chi tiết giao thức đánh giá công bằng, kiến trúc
-hệ thống, thuật toán quy trình và ví dụ tính toán minh hoạ cách xếp hạng.
-Chương~\ref{ch:thucnghiem} trình bày bộ dữ liệu, thiết lập thực nghiệm, kết quả
-so sánh, nghiên cứu loại bỏ thành phần (ablation) và phân tích lỗi.
-Cuối cùng, Chương~\ref{ch:ketluan} tổng kết đóng góp, nêu giới hạn và đề xuất các
-hướng phát triển.
+Báo cáo được tổ chức thành năm chương.
+Chương~\ref{ch:cosoly} trình bày các khái niệm nền tảng về AutoML, các độ đo đánh
+giá, mô hình xếp hạng Bradley--Terry, đồng thời khảo sát và phân loại các công
+trình liên quan nhằm xác định khoảng trống nghiên cứu.
+Chương~\ref{ch:phuongphap} mô tả giao thức đánh giá công bằng, kiến trúc hạ tầng
+thực nghiệm, các thuật toán điều phối và tổng hợp kết quả, kèm phân tích độ phức
+tạp và ví dụ tính toán minh hoạ.
+Chương~\ref{ch:thucnghiem} trình bày bộ dữ liệu, thiết lập thực nghiệm và phân
+tích kết quả trên nhiều chiều đánh giá, bao gồm khảo sát ảnh hưởng của ngân sách
+thời gian và phân tích thất bại.
+Chương~\ref{ch:ketluan} tổng kết các đóng góp, nêu giới hạn của nghiên cứu và đề
+xuất hướng phát triển.

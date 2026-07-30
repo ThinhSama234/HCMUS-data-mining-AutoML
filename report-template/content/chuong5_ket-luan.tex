@@ -1,48 +1,161 @@
 % ======================================================================
 %  CHƯƠNG 5 — KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN TƯƠNG LAI
-%  Yêu cầu (mục 2.6): tóm tắt đóng góp; nêu giới hạn trung thực; đề xuất >= 2--3
-%  hướng phát triển cụ thể, có luận điểm rõ ràng.
-%  Độ dài tham khảo: 3--7 trang.
 % ======================================================================
 \chapter{Kết luận và hướng phát triển tương lai}
 \label{ch:ketluan}
 
 \section{Kết luận}
 \label{sec:ketluan}
-Đồ án đã trình bày lại một cách hệ thống giao thức đánh giá AutoML công bằng theo
-chuẩn AMLB và hiện thực hoá giao thức đó bằng hệ thống \textit{AutoML Bench
-Console}: một công cụ end-to-end cho phép nạp dữ liệu từ nhiều nguồn (CSV,
-OpenML, Kaggle công khai), tích hợp thư viện AutoML dưới dạng ảnh Docker cô lập,
-chạy đánh giá theo cùng một giao thức (fold, ngân sách, độ đo, tài nguyên) và
-trực quan hoá kết quả. Nhóm đã kiểm chứng toàn bộ quy trình từ chạy đến xếp hạng
-trên một lần chạy sơ bộ với ba thư viện FLAML, H2O~AutoML và AutoGluon, đồng thời
-phân tích các lần thất bại để bảo đảm tính trung thực khoa học. Các kết quả này
-đáp ứng mục tiêu đặt ra ở Chương~\ref{ch:gioithieu}: một quy trình so sánh AutoML
-công bằng và tái lập được trên dữ liệu thực.
+Đồ án đã xây dựng và vận hành một quy trình đánh giá công bằng cho các thư viện
+học máy tự động, đồng thời áp dụng quy trình đó để so sánh bốn thư viện AutoML mã
+nguồn mở trên 12 bộ dữ liệu thực thu thập từ Kaggle.
 
-\section{Giới hạn}
+Về mặt phương pháp luận, đồ án đã hệ thống hoá bốn điều kiện của một phép so sánh
+công bằng và hiện thực hoá từng điều kiện bằng một cơ chế kiểm soát cụ thể: phân
+hoạch fold được sinh một lần từ hạt giống cố định và dùng chung cho mọi thư viện;
+mỗi thư viện được cô lập trong một môi trường ảo riêng nhằm loại trừ xung đột phụ
+thuộc; ngân sách thời gian được áp đặt đồng nhất ở cả hai lớp thư viện và tiến
+trình; và mọi lần chạy thất bại đều được ghi nhận kèm phân loại nguyên nhân thay
+vì bị loại khỏi thống kê.
+
+Về mặt hạ tầng, nhóm đã xây dựng bộ công cụ điều phối theo mô hình tiến trình chủ
+--- tiến trình con, hỗ trợ phân tán khối lượng tính toán trên nhiều máy, khôi phục
+sau gián đoạn và hợp nhất kết quả từng phần. Hạ tầng này đã hoàn tất khối lượng
+thực nghiệm gồm bốn thư viện trên 12 bộ dữ liệu với 5 fold và hai mức ngân sách
+thời gian.
+
+Về mặt kết quả, phát hiện quan trọng nhất là \emph{không tồn tại thư viện AutoML
+vượt trội toàn diện}. Mô hình cây Bradley--Terry cho thấy thứ hạng đảo chiều rõ
+rệt giữa các dạng tác vụ: H2O~AutoML dẫn đầu ở phân loại đa lớp và hồi quy nhưng
+xếp cuối ở phân loại nhị phân, trong khi MLJAR đứng đầu nhóm nhị phân nhưng xếp
+cuối nhóm đa lớp. Một xếp hạng toàn cục đơn lẻ, nếu được sử dụng, sẽ che khuất
+hoàn toàn cấu trúc này.
+
+Bên cạnh đó, thực nghiệm cho thấy chênh lệch về chất lượng dự đoán giữa các thư
+viện thường nhỏ hơn độ lệch chuẩn giữa các fold, trong khi chênh lệch về chi phí
+tài nguyên lại rất lớn: thời gian huấn luyện chênh nhau tới bốn lần và bộ nhớ tới
+hơn mười lần cho cùng một mức chất lượng. Điều này gợi ý rằng trong thực tiễn
+triển khai, các tiêu chí về chi phí, độ ổn định và tỉ lệ thất bại nên được cân
+nhắc ngang bằng, nếu không muốn nói là trước, so với chỉ số chất lượng thuần tuý.
+
+\section{Trả lời các câu hỏi nghiên cứu}
+\label{sec:traloi}
+Đối chiếu với mục tiêu đặt ra ở Chương~\ref{ch:gioithieu}, các kết quả thu được
+cho phép trả lời ba câu hỏi trung tâm của đồ án.
+
+\paragraph{Có tồn tại một thư viện AutoML tốt nhất hay không?} Câu trả lời là
+không. Mô hình cây Bradley--Terry cho thấy H2O~AutoML đạt cường độ $0.446$ ở nhóm
+phân loại đa lớp và $0.389$ ở nhóm hồi quy --- dẫn đầu cả hai --- nhưng chỉ đạt
+$0.164$ ở nhóm phân loại nhị phân, tức xếp cuối. MLJAR thể hiện xu hướng ngược
+lại. Nếu chỉ nhìn vào bảng xếp hạng toàn cục, nơi ba thư viện dẫn đầu chênh nhau
+chưa tới $0.03$, cấu trúc đảo chiều này sẽ hoàn toàn bị che khuất. Kết luận rút ra
+là việc lựa chọn thư viện phải xuất phát từ dạng tác vụ cụ thể, và các bảng xếp
+hạng AutoML rút gọn thành một con số duy nhất cần được tiếp nhận thận trọng.
+
+\paragraph{Chênh lệch giữa các thư viện nằm ở đâu?} Không nằm chủ yếu ở chất lượng
+dự đoán. Trên nhiều bộ dữ liệu, khác biệt điểm số giữa thư viện tốt nhất và kém
+nhất nhỏ hơn độ lệch chuẩn giữa các fold của chính từng thư viện --- trường hợp
+\texttt{adult\_income} với chênh lệch AUC $0.0018$ so với độ lệch chuẩn
+$0.0015$--$0.0019$ là ví dụ điển hình. Trong khi đó, chênh lệch về thời gian huấn
+luyện lên tới bốn lần và về bộ nhớ lên tới hơn mười lần. Do vậy, trong phần lớn
+tình huống ứng dụng, tiêu chí chi phí và độ ổn định có sức phân biệt cao hơn tiêu
+chí chất lượng.
+
+\paragraph{Cấp thêm tài nguyên có luôn cải thiện kết quả không?} Không phải lúc
+nào cũng vậy. Khi tăng ngân sách từ $60$ lên $300$ giây, MLJAR cải thiện mạnh về
+chất lượng (từ $0.59$ lên $0.79$ trên thang chuẩn hoá) nhưng đồng thời tăng tỉ lệ
+thất bại từ $0\%$ lên khoảng $20\%$. Việc nới lỏng ràng buộc thời gian đã kích
+hoạt các chế độ tìm kiếm tốn bộ nhớ hơn, qua đó chuyển nút thắt cổ chai từ thời
+gian sang bộ nhớ. Quan hệ giữa tài nguyên và hiệu năng, vì vậy, không đơn điệu và
+cần được kiểm soát đồng thời trên nhiều chiều.
+
+\section{Giới hạn của nghiên cứu}
 \label{sec:hanche}
-Nhóm thẳng thắn nêu các giới hạn hiện tại. Thứ nhất, kết quả trình bày mới ở mức
-\emph{sơ bộ} (ba bộ dữ liệu, ngân sách 30 giây); lần chạy đầy đủ trên 20 bộ dữ
-liệu với các mức ngân sách lớn hơn cần môi trường Linux/đám mây và chưa được hoàn
-tất. Thứ hai, các thư viện nặng (AutoGluon, auto-sklearn) khó chạy trên máy cục
-bộ (đặc biệt trên Apple Silicon), nên độ bao phủ thư viện còn phụ thuộc hạ tầng.
-Thứ ba, phạm vi mới giới hạn ở dữ liệu bảng cho phân lớp và hồi quy.
+Nhóm ghi nhận một số giới hạn của kết quả trình bày trong báo cáo.
+
+\textbf{Về phép đo bộ nhớ.} Mức tiêu thụ bộ nhớ được quan sát từ tiến trình
+Python, do đó không phản ánh đúng thực tế đối với H2O~AutoML --- thư viện thực
+hiện huấn luyện trong một tiến trình máy ảo Java riêng biệt. Vì lý do này, đồ án
+không xếp hạng các thư viện theo tiêu chí bộ nhớ, và các con số của H2O ở
+Mục~\ref{sec:bonho} chỉ nên được hiểu là chi phí phía máy khách.
+
+\textbf{Về quy mô ngân sách.} Thực nghiệm giới hạn ở hai mức ngân sách $60$ và
+$300$ giây. Các nghiên cứu quy mô lớn thường sử dụng ngân sách hàng giờ, nơi trật
+tự giữa các thư viện có thể thay đổi --- đặc biệt với những thư viện còn nhiều dư
+địa cải thiện như MLJAR.
+
+\textbf{Về mức độ cô lập môi trường.} Việc sử dụng môi trường ảo Python thay vì
+container cho phép chạy phân tán trên nhiều máy khác nhau, song mức độ cô lập ở
+tầng thư viện hệ thống thấp hơn. Điều kiện công bằng vẫn được bảo toàn trong mỗi
+lượt chạy vì mọi thư viện dùng chung một cấu hình phần cứng, nhưng việc tái lập
+chính xác trên máy khác đòi hỏi thêm thao tác thiết lập.
+
+\textbf{Về ý nghĩa thống kê.} Với 5 fold trên mỗi cặp (thư viện, bộ dữ liệu), các
+chênh lệch nhỏ giữa những thư viện dẫn đầu chưa được kiểm chứng bằng kiểm định
+thống kê hình thức. Báo cáo đã thận trọng không tuyên bố thắng thua trong những
+trường hợp chênh lệch nằm dưới ngưỡng độ lệch chuẩn, song một kết luận chặt chẽ
+đòi hỏi công cụ kiểm định phù hợp.
+
+\textbf{Về phạm vi bài toán.} Nghiên cứu giới hạn ở dữ liệu dạng bảng với ba dạng
+tác vụ học có giám sát; các kết luận không mở rộng trực tiếp sang dữ liệu ảnh, văn
+bản hay chuỗi thời gian.
 
 \section{Hướng phát triển tương lai}
 \label{sec:huongphattrien}
-\begin{enumerate}
-    \item \textbf{Hoàn tất lần chạy đầy đủ và phân tích theo đặc trưng dữ liệu.}
-    Chạy toàn bộ 20 bộ dữ liệu ở các mức ngân sách \texttt{1h}/\texttt{4h} trên
-    môi trường Linux/đám mây, sau đó phân tích thứ hạng theo đặc trưng bộ dữ liệu
-    (kích thước, số lớp, tỉ lệ mất cân bằng) để rút ra khuyến nghị chọn thư viện
-    theo từng nhóm bài toán, thay vì một kết luận chung chung.
-    \item \textbf{Mở rộng tập thư viện và bổ sung phân tích thống kê.} Tích hợp
-    thêm auto-sklearn và TPOT, đồng thời áp dụng kiểm định thống kê (ví dụ kiểm
-    định Friedman kèm hậu kiểm Nemenyi) để khẳng định các khác biệt về thứ hạng là
-    có ý nghĩa thống kê chứ không do ngẫu nhiên.
-    \item \textbf{Phân tích đánh đổi chất lượng -- chi phí một cách định lượng.}
-    Xây dựng đường Pareto giữa chất lượng và thời gian/bộ nhớ cho từng thư viện,
-    giúp người dùng chọn thư viện phù hợp khi tài nguyên bị giới hạn --- một tình
-    huống phổ biến trong thực tế triển khai.
-\end{enumerate}
+
+\subsection{Bổ sung kiểm định thống kê cho xếp hạng}
+Hạn chế về ý nghĩa thống kê nêu trên có thể được khắc phục bằng quy trình kiểm
+định chuẩn cho bài toán so sánh nhiều thuật toán trên nhiều bộ dữ liệu do Dem\v{s}ar
+đề xuất~\cite{demsar2006statistical}: kiểm định Friedman để bác bỏ giả thuyết mọi
+thư viện có hiệu năng như nhau, tiếp theo là hậu kiểm Nemenyi để xác định những
+cặp thư viện thực sự khác biệt, và biểu diễn kết quả bằng biểu đồ khoảng cách tới
+hạn. Bổ sung này sẽ cho phép phát biểu chắc chắn
+rằng cách biệt giữa H2O và FLAML ở nhóm hồi quy là có ý nghĩa thống kê, đồng thời
+xác nhận rằng khoảng cách $0.004$ giữa H2O và MLJAR ở mức toàn cục là không đáng
+kể --- điều mà hiện tại báo cáo mới chỉ nhận định dựa trên độ lệch chuẩn quan sát.
+
+\subsection{Mở rộng thang ngân sách và khảo sát đường cong hội tụ}
+Thay vì chỉ so sánh hai mức ngân sách rời rạc, hướng phát triển tiếp theo là ghi
+nhận đường cong hiệu năng theo thời gian trong suốt quá trình tìm kiếm của mỗi thư
+viện. Cách tiếp cận này cho phép trả lời những câu hỏi mà thiết kế hiện tại chưa
+xử lý được: mỗi thư viện cần bao nhiêu thời gian để đạt $95\%$ hiệu năng cuối
+cùng, và thời điểm nào hiệu suất biên của việc cấp thêm tài nguyên trở nên không
+đáng kể. Với kết quả cho thấy MLJAR cải thiện mạnh từ $0.59$ lên $0.79$ khi tăng
+ngân sách, việc xác định điểm bão hoà của thư viện này có giá trị thực tiễn trực
+tiếp trong việc hoạch định tài nguyên.
+
+\subsection{Kiểm soát đồng thời nhiều chiều tài nguyên}
+Phát hiện về việc MLJAR tăng tỉ lệ thất bại khi được cấp thêm thời gian cho thấy
+ngân sách thời gian và ngân sách bộ nhớ tương tác với nhau theo cách không hiển
+nhiên. Hướng nghiên cứu tiếp theo là thiết kế thực nghiệm hai chiều, trong đó cả
+giới hạn thời gian lẫn giới hạn bộ nhớ đều được biến thiên có hệ thống, nhằm xây
+dựng bản đồ vùng vận hành an toàn cho từng thư viện. Kết quả sẽ trả lời câu hỏi
+mà người triển khai thực sự quan tâm: với một cấu hình máy cho trước, mức ngân
+sách thời gian nào là tối ưu mà vẫn giữ tỉ lệ thất bại ở mức chấp nhận được.
+
+\subsection{Đo bộ nhớ ở mức tiến trình hệ điều hành}
+Để khắc phục giới hạn của phép đo hiện tại, mức tiêu thụ bộ nhớ nên được ghi nhận
+ở mức tiến trình hệ điều hành thay vì từ bên trong tiến trình Python, qua đó bao
+gồm cả bộ nhớ do máy ảo Java của H2O cấp phát. Khi đó, bộ nhớ mới có thể trở thành
+một tiêu chí xếp hạng hợp lệ bên cạnh chất lượng và thời gian, và bức tranh đánh
+đổi giữa các thư viện sẽ hoàn chỉnh hơn.
+
+\subsection{Tích hợp meta-learning để khuyến nghị tự động}
+Kết quả của đồ án cho thấy thư viện phù hợp phụ thuộc vào dạng tác vụ và đặc điểm
+dữ liệu. Điều này gợi mở khả năng xây dựng một cơ chế khuyến nghị tự động: từ các
+đặc trưng mô tả bộ dữ liệu (số mẫu, số đặc trưng, tỉ lệ biến hạng mục, mức mất cân
+bằng nhãn, dạng tác vụ), huấn luyện một mô hình dự đoán thư viện nào có khả năng
+cho kết quả tốt nhất trong ngân sách cho trước. Bộ kết quả gồm 12 bộ dữ liệu hiện
+tại còn quá nhỏ để huấn luyện một mô hình như vậy, song việc mở rộng tập dữ liệu
+lên vài chục bộ sẽ tạo đủ cơ sở. Hướng phát triển này biến kết quả đánh giá từ một
+bảng tra cứu tĩnh thành một công cụ hỗ trợ ra quyết định.
+
+\subsection{Mở rộng tập thư viện và dạng dữ liệu}
+Cuối cùng, việc bổ sung các thư viện theo hướng tiếp cận khác biệt --- chẳng hạn
+auto-sklearn với tối ưu Bayes kết hợp meta-learning, hay TPOT với giải thuật tiến
+hoá --- sẽ giúp kiểm chứng liệu hiện tượng đảo chiều xếp hạng theo dạng tác vụ có
+phải là đặc tính chung của lĩnh vực AutoML hay chỉ giới hạn trong bốn thư viện đã
+khảo sát. Song song, việc mở rộng sang dữ liệu chuỗi thời gian sẽ cho phép đánh
+giá năng lực của các thư viện trong một lớp bài toán có cấu trúc phụ thuộc thời
+gian, nơi giả định về tính độc lập giữa các mẫu không còn đúng và do đó bản thân
+giao thức kiểm chứng chéo cũng cần được thiết kế lại.

@@ -1,52 +1,65 @@
 # Báo cáo đồ án MTH055 — Khai thác Dữ liệu lớn (Nhóm 19)
 
-Khung báo cáo LaTeX theo **chuẩn luận văn thạc sĩ**, đã được điền sẵn nội dung
-theo đề tài của nhóm: **Đánh giá và so sánh công bằng các framework AutoML**
-(FLAML, H2O AutoML, AutoGluon) theo giao thức **AMLB**, kèm hệ thống *AutoML Bench
-Console*. Nhiều phần đã viết sẵn bằng văn phong khoa học; các chỗ `[...]` là số
-liệu/thông tin cần điền (đặc biệt là kết quả lần chạy đầy đủ trên 20 bộ dữ liệu).
+Báo cáo LaTeX theo **chuẩn luận văn thạc sĩ** cho đề tài **đánh giá và so sánh
+công bằng các framework AutoML** (AutoGluon, FLAML, H2O AutoML, MLJAR) theo giao
+thức AMLB. Nội dung đã được viết dựa trên kết quả thực nghiệm thật ở
+`report/report_v2.md` và bộ biểu đồ ở `report/images/` (nhánh `phat`).
 
-## Cấu trúc thư mục
+## Cấu trúc
 ```
 report-template/
-├── main.tex                          # Preamble (12pt) + lắp ráp báo cáo
+├── main.tex                          # Preamble 12pt + lắp ráp báo cáo
 ├── frontmatter/                      # Bìa, cam đoan, cảm ơn, tóm tắt, danh mục viết tắt
 ├── content/
-│   ├── chuong1_gioi-thieu.tex        # Mở đầu (có bảng Input/Output/Ràng buộc)
-│   ├── chuong2_co-so-ly-thuyet.tex   # Kiến thức nền + khảo sát ≥5 công trình
-│   ├── chuong3_phuong-phap.tex       # Giao thức AMLB + kiến trúc + thuật toán + ví dụ tính
-│   ├── chuong4_thuc-nghiem.tex       # Dữ liệu, kết quả sơ bộ, ablation, phân tích lỗi
-│   ├── chuong5_ket-luan.tex          # Kết luận + hướng phát triển
+│   ├── chuong1_gioi-thieu.tex        # Mở đầu: bối cảnh, Input/Output/Ràng buộc, đóng góp
+│   ├── chuong2_co-so-ly-thuyet.tex   # CASH, chiến lược tìm kiếm, độ đo, Bradley–Terry, 7 công trình
+│   ├── chuong3_phuong-phap.tex       # Giao thức công bằng, kiến trúc, thuật toán, độ phức tạp
+│   ├── chuong4_thuc-nghiem.tex       # 12 dataset, kết quả, 11 biểu đồ, ablation, phân tích lỗi
+│   ├── chuong5_ket-luan.tex          # Kết luận, giới hạn, 5 hướng phát triển
 │   └── phu-luc.tex                   # Hướng dẫn tái lập + ghi chú sử dụng AI
-├── main/references.bib               # Tài liệu tham khảo (IEEE)
-└── image/                            # Ảnh chụp hệ thống (thật, từ docs/images)
+├── main/references.bib               # 9 tài liệu tham khảo (IEEE)
+└── image/                            # 11 biểu đồ thực nghiệm + 4 ảnh giao diện
 ```
 
-## Ánh xạ tới yêu cầu đề bài (MTH055)
-| Yêu cầu đề bài | Vị trí trong báo cáo |
-|---|---|
-| Phát biểu bài toán (Input/Output/Ràng buộc) | Chương 1, Bảng 1.1 |
-| Khảo sát ≥5 công trình, phân loại, khoảng trống | Chương 2, mục 2.6–2.7 |
-| Trình bày lại/cải tiến + thuật toán + độ phức tạp | Chương 3 (Hướng 1: tái thực nghiệm AMLB) |
-| ≥2 bộ dữ liệu, ≥2 baseline, độ đo, bảng+biểu đồ, ablation | Chương 4 |
-| Kết luận + ≥2–3 hướng phát triển cụ thể | Chương 5 |
-| Mục lục, danh mục thuật ngữ/hình/bảng, phụ lục | frontmatter/ + phu-luc |
-| Ghi chú sử dụng công cụ AI | Phụ lục B |
-| Định dạng: LaTeX, 12pt, lề T/B 2.5cm, trái 3cm, phải 2.5cm, TLTK IEEE | main.tex |
-
-> **Còn cần điền:** thành viên nhóm + MSHV (bìa), tên GVHD, số liệu lần chạy đầy
-> đủ 20 bộ dữ liệu (các bảng có ô `[ ]`), thống kê bộ dữ liệu Kaggle, ghi chú AI.
-> Yêu cầu tối thiểu 50 trang — mỗi chương đã có ghi chú mốc ≥10 trang.
-
 ## Biên dịch
-- **Overleaf (khuyến nghị):** tải cả thư mục, đặt `main.tex` làm file chính,
-  Compiler = **pdfLaTeX** → Recompile.
+- **Overleaf (khuyến nghị):** tải cả thư mục, `main.tex` là file chính, Compiler =
+  **pdfLaTeX** → Recompile.
 - **Máy cá nhân:** `pdflatex main` → `bibtex main` → `pdflatex main` → `pdflatex main`.
-- Nếu bắt buộc font Times New Roman: dùng **XeLaTeX** + `\usepackage{fontspec}`,
-  `\setmainfont{Times New Roman}` (xem ghi chú trong `main.tex`).
 
-## Lưu ý về tính trung thực
-Các số liệu ở Chương 4 (breast_cancer / california_housing / wine, ngân sách 30s)
-là **kết quả sơ bộ có thật**, trích từ `reports/run_20260702_211007_f0f0d1.json`
-và `report/report.md` của dự án. Kết quả trên đủ 20 bộ dữ liệu (môi trường
-Docker/Linux) đang hoàn tất — giữ nguyên nhãn "sơ bộ" cho tới khi có số cuối cùng.
+## Trạng thái so với yêu cầu đề bài
+| Yêu cầu | Trạng thái |
+|---|---|
+| Phát biểu bài toán (Input/Output/Ràng buộc) | ✅ Chương 1, Bảng 1.2 |
+| Khảo sát ≥5 công trình + khoảng trống | ✅ Chương 2 (7 công trình) |
+| Thuật toán từng bước + độ phức tạp | ✅ Chương 3 |
+| ≥2 bộ dữ liệu, độ đo phù hợp, bảng + biểu đồ | ✅ Chương 4 (12 bộ, 11 biểu đồ) |
+| Ablation study | ✅ Mục 4.7 (ngân sách 60s vs 300s) |
+| **So sánh ≥2 baseline** | ⚠️ **Mục 4.5 đã có khung + luận giải, CẦN ĐIỀN SỐ** |
+| Kết luận + ≥2–3 hướng phát triển | ✅ Chương 5 (5 hướng) |
+| Mục lục, danh mục hình/bảng/thuật ngữ, phụ lục | ✅ |
+| Ghi chú sử dụng AI | ⚠️ Phụ lục B — cần điền |
+| LaTeX, 12pt, lề 2.5/3/2.5cm, TLTK IEEE | ✅ main.tex |
+| Tối thiểu 50 trang (không tính phụ lục + TLTK) | ⚠️ Cần xác nhận bằng pdfLaTeX (xem bên dưới) |
+
+## Còn cần điền
+1. **Bìa:** tên + MSHV 4 thành viên, tên GVHD.
+2. **Mục 4.5 — baseline:** chạy `dummy` + `randomforest` (đã có trong
+   `scripts/orchestrator.py`) rồi điền Bảng 4.6. Đây là yêu cầu bắt buộc của đề bài.
+3. **Phụ lục B:** bảng ghi chú công cụ AI đã sử dụng.
+4. **Bảng 4.2:** liên kết Kaggle nguồn của 12 bộ dữ liệu (thêm entry `@misc` vào
+   `references.bib`).
+
+## Lưu ý về số trang
+Bản dựng thử bằng tectonic/XeTeX cho **61 trang** (nội dung Chương 1–5 = 46 trang).
+Tuy nhiên engine này thay thế font và **làm rơi phần lớn dấu tiếng Việt**, nên
+dòng chữ ngắn lại và số trang bị **đếm thiếu**. Bản pdfLaTeX thật (đúng font T5)
+sẽ dài hơn đáng kể. **Hãy compile trên Overleaf và kiểm tra lại** phần Chương 1–5
+có đạt mốc 50 trang hay chưa; nếu thiếu, phần dễ mở rộng nhất là Mục 4.5 (baseline)
+sau khi có số liệu thật.
+
+Phân bố hiện tại (đo bằng tectonic): Ch1 = 6, Ch2 = 10, Ch3 = 10, Ch4 = 16, Ch5 = 4.
+
+## Tính trung thực của số liệu
+Toàn bộ số liệu trong Chương 4 lấy từ `report/report_v2.md` (nhánh `phat`): 4
+framework × 12 dataset × 5 fold, ngân sách 60s và 300s. Các ô `[ ]` là phần chưa
+có dữ liệu — không suy đoán hay điền số giả.

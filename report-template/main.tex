@@ -24,6 +24,9 @@
 \onehalfspacing                 % Giãn dòng 1.5
 \usepackage{indentfirst}        % Thụt đầu dòng cho cả đoạn đầu tiên của mỗi mục
 \setlength{\parindent}{1cm}
+% Cho phép TeX co giãn thêm ở bước cuối để tránh chữ tràn ra ngoài lề, đặc biệt
+% với các tên định danh dài ở dạng \texttt (vd: santander_satisfaction).
+\setlength{\emergencystretch}{3em}
 \setcounter{secnumdepth}{3}
 \setcounter{tocdepth}{3}
 
@@ -65,6 +68,10 @@
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.17}
 \usepackage{tikz}
+% Các thư viện TikZ bắt buộc: positioning (định vị "below=of"), shapes.geometric
+% (khối hình trụ), arrows.meta (đầu mũi tên Latex), fit/backgrounds (khung nhóm).
+\usetikzlibrary{positioning, shapes.geometric, arrows.meta, fit, backgrounds, calc}
+\usepgfplotslibrary{groupplots}
 
 % ------------------------- Màu / liên kết -----------------------------
 \usepackage{xcolor}

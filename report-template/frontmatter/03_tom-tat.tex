@@ -2,30 +2,40 @@
 \chapter*{Tóm tắt}
 \addcontentsline{toc}{chapter}{Tóm tắt}
 
-Học máy tự động (\textit{Automated Machine Learning}, AutoML) giúp tự động hoá
-quá trình lựa chọn thuật toán và tinh chỉnh siêu tham số, nhờ đó rút ngắn đáng
-kể công sức xây dựng mô hình. Tuy nhiên, việc so sánh các thư viện AutoML trong
-thực tế thường thiếu công bằng và khó tái lập: mỗi thư viện được chạy với ngân
-sách thời gian, cách chia dữ liệu, độ đo và tài nguyên khác nhau, đồng thời các
-lần chạy thất bại thường bị bỏ qua thay vì được ghi nhận. Điều này khiến kết quả
-so sánh dễ gây hiểu nhầm và khó kiểm chứng.
+Học máy tự động (\textit{Automated Machine Learning}, AutoML) tự động hoá quá
+trình lựa chọn thuật toán và tinh chỉnh siêu tham số, nhờ đó rút ngắn đáng kể công
+sức xây dựng mô hình. Sự phát triển nhanh của lĩnh vực này đã tạo ra nhiều thư
+viện mã nguồn mở theo những triết lý thiết kế khác nhau, kéo theo nhu cầu so sánh
+chúng một cách khách quan. Tuy nhiên, các phép so sánh trong thực tế thường thiếu
+công bằng và khó tái lập: ngân sách thời gian, cách chia dữ liệu và độ đo không
+đồng nhất giữa các thư viện, môi trường cài đặt xung đột lẫn nhau, và các lần chạy
+thất bại thường bị loại bỏ thay vì được ghi nhận, tạo ra thiên lệch có lợi cho
+chính những thư viện kém ổn định nhất.
 
-Trong đồ án này, nhóm tái hiện và mở rộng phương pháp đánh giá công bằng theo
-chuẩn \textit{AutoML Benchmark} (AMLB) của Gijsbers và cộng sự, áp dụng cùng một
-giao thức thống nhất (cùng cách chia fold, cùng ngân sách thời gian, cùng độ đo
-và cùng tài nguyên) cho mọi thư viện trên mỗi tập dữ liệu, đồng thời ghi nhận
-đầy đủ các lần chạy thất bại. Nhóm xây dựng một hệ thống \textit{AutoML Bench
-Console} cho phép nạp dữ liệu (tải lên tệp CSV, lấy từ OpenML hoặc nhập liên kết
-Kaggle công khai), tích hợp thư viện AutoML dưới dạng ảnh Docker, chạy đánh giá
-và trực quan hoá kết quả, với dữ liệu được lưu trữ trên PostgreSQL và MinIO.
+Báo cáo trình bày một quy trình đánh giá công bằng kế thừa tinh thần của
+\textit{AutoML Benchmark}, trong đó phân hoạch fold được sinh một lần từ hạt giống
+cố định và dùng chung cho mọi thư viện, mỗi thư viện được cô lập trong môi trường
+ảo riêng, ngân sách thời gian được áp đặt đồng nhất, và mọi lần chạy thất bại đều
+được ghi nhận kèm phân loại nguyên nhân. Nhóm xây dựng hạ tầng thực nghiệm theo mô
+hình tiến trình điều phối --- tiến trình thực thi, cho phép phân tán khối lượng
+tính toán trên nhiều máy, khôi phục sau gián đoạn và hợp nhất kết quả từng phần.
 
-Nhóm tiến hành thực nghiệm so sánh ba thư viện AutoML tiêu biểu là FLAML,
-H2O~AutoML và AutoGluon trên các tập dữ liệu phân lớp và hồi quy, sử dụng các độ
-đo AUC, log-loss và RMSE, và xếp hạng các thư viện theo thứ hạng trung bình. Kết
-quả sơ bộ cho thấy [tóm tắt phát hiện chính sau khi hoàn tất lần chạy đầy đủ], và
-làm rõ sự đánh đổi giữa chất lượng mô hình và chi phí thời gian/tài nguyên giữa
-các thư viện.
+Thực nghiệm so sánh bốn thư viện AutoML gồm AutoGluon, FLAML, H2O~AutoML và MLJAR
+trên 12 bộ dữ liệu thực thu thập từ Kaggle, thuộc ba dạng tác vụ (phân loại nhị
+phân, phân loại đa lớp, hồi quy), với kiểm chứng chéo 5 fold và hai mức ngân sách
+thời gian. Kết quả được phân tích trên nhiều chiều: chất lượng dự đoán, thời gian
+huấn luyện, thời gian suy luận, mức tiêu thụ bộ nhớ và tỉ lệ thất bại; việc xếp
+hạng được thực hiện bằng mô hình Bradley--Terry.
+
+Phát hiện chính là không tồn tại thư viện vượt trội toàn diện: thứ hạng đảo chiều
+rõ rệt giữa các dạng tác vụ, với H2O~AutoML dẫn đầu ở phân loại đa lớp và hồi quy
+nhưng xếp cuối ở phân loại nhị phân, trong khi MLJAR theo hướng ngược lại. Bên
+cạnh đó, chênh lệch chất lượng giữa các thư viện thường nhỏ hơn độ lệch chuẩn giữa
+các fold, trong khi chênh lệch về chi phí tài nguyên lên tới bốn lần về thời gian
+và hơn mười lần về bộ nhớ, cho thấy các tiêu chí chi phí và độ ổn định cần được
+cân nhắc ngang bằng với chỉ số chất lượng khi lựa chọn thư viện.
 
 \vspace{0.5cm}
 \noindent\textbf{Từ khoá:} học máy tự động (AutoML), đánh giá công bằng
-(benchmark), khả năng tái lập, FLAML, H2O AutoML, AutoGluon.
+(benchmark), khả năng tái lập, mô hình Bradley--Terry, AutoGluon, FLAML,
+H2O AutoML, MLJAR.
