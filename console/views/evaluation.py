@@ -11,12 +11,31 @@ import streamlit as st  # noqa: E402
 
 from analysis import explorer as expl  # noqa: E402 — reuse pure functions (single source of truth)
 from console import state, theme  # noqa: E402
+from storage import ingest  # noqa: E402 — report-JSON import bridge (Phase 4)
 
 theme.inject()
 theme.pagehead("Evaluation", "Benchmark results — from results.csv")
 
+# Import / Export — bring a run_automl.py `reports/run_*.json` under app management (→ runs table)
+# and download the current results. Placed before the empty-state stop so import works when empty.
+with st.expander("Import / Export results", expanded=not state.has_results()):
+    up = st.file_uploader("Import a run report (reports/run_*.json)", type=["json"],
+                          help="Ingest results from the run_automl.py pipeline into the console.")
+    if up is not None and st.button("Ingest report JSON", type="primary"):
+        try:
+            r = ingest.ingest_report_bytes(up.getvalue())
+            st.success(f"Ingested {r['inserted']} run(s) — {r['datasets']} datasets, "
+                       f"{r['methods']} frameworks, budget {r['constraint']}"
+                       + (f"; {r['skipped_duplicate']} duplicate(s) skipped." if r['skipped_duplicate'] else "."))
+            st.rerun()
+        except Exception as exc:
+            st.error(f"Import failed: {exc}")
+    if state.has_results():
+        st.download_button("Export results.csv", state.load_results().to_csv(index=False).encode(),
+                           file_name="results.csv", mime="text/csv")
+
 if not state.has_results():
-    st.info("No results yet — run the benchmark first (quickstart Step 1).")
+    st.info("No results yet — import a report above, or run the benchmark (quickstart Step 1).")
     st.stop()
 
 df = state.load_results()

@@ -85,6 +85,9 @@ def load(csv_fallback=None):
             runs.c.fold, runs.c.metric, runs.c.result, runs.c.score, runs.c.status,
             runs.c.predict_duration, runs.c.training_duration,
             runs.c.models_count, runs.c.seed, runs.c.framework_version.label("version"),
+            # expose the stored error as `info` so analysis.failures can classify DB-sourced
+            # failures the same way it does CSV rows (which carry an `info` column).
+            runs.c.error_message.label("info"),
         ).select_from(j)
         with eng.connect() as c:
             df = pd.read_sql(stmt, c)
