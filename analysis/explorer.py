@@ -77,6 +77,10 @@ def ranking_flips_module():
     return _optional_module("ranking_flips")
 
 
+def score_shapes_module():
+    return _optional_module("score_shapes")
+
+
 def export_headline_figures(df, outdir):
     """Static export of the ranking figure (matplotlib) for the report (FR-016).
 

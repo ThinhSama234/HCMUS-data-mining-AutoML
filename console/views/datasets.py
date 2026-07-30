@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+import plotly.express as px  # noqa: E402
 import streamlit as st  # noqa: E402
 
 from console import theme  # noqa: E402
@@ -86,6 +87,35 @@ if df.empty:
     st.info("No datasets yet — upload a CSV or add an OpenML task above.")
 else:
     df = df.copy()
+
+    # Catalog overview (report figures Hình 1-2): task-type composition + size/#features per dataset.
+    if "task_type" in df.columns and df["task_type"].notna().any():
+        st.subheader("Catalog overview", help=(
+            "Composition of the benchmark suite by task type, and each dataset's scale "
+            "(rows, log scale) and feature count — sourced from the catalog."))
+        oc1, oc2 = st.columns(2)
+        with oc1:
+            comp = df["task_type"].fillna("unknown").value_counts().reset_index()
+            comp.columns = ["task_type", "n"]
+            pfig = px.pie(comp, names="task_type", values="n", hole=0.45)
+            pfig.update_layout(height=280, margin=dict(l=0, r=0, t=10, b=0), legend_title_text="")
+            st.plotly_chart(pfig, use_container_width=True)
+        with oc2:
+            if "n_instances" in df.columns and df["n_instances"].notna().any():
+                sz = df[df["n_instances"].notna()].sort_values("n_instances")
+                bfig = px.bar(sz, x="n_instances", y="name", orientation="h", log_x=True,
+                              color_discrete_sequence=[theme.TEAL],
+                              labels={"n_instances": "Rows (log)", "name": ""})
+                bfig.update_layout(height=280, margin=dict(l=0, r=0, t=10, b=0))
+                st.plotly_chart(bfig, use_container_width=True)
+        if "n_features" in df.columns and df["n_features"].notna().any():
+            ft = df[df["n_features"].notna()].sort_values("n_features")
+            ffig = px.bar(ft, x="n_features", y="name", orientation="h",
+                          color_discrete_sequence=[theme.AMBER],
+                          labels={"n_features": "Features", "name": ""})
+            ffig.update_layout(height=max(180, 26 * len(ft) + 40), margin=dict(l=0, r=0, t=10, b=0))
+            st.plotly_chart(ffig, use_container_width=True)
+
     # presigned download link instead of the opaque s3:// uri (LinkColumn renders it as a button)
     df["download"] = [objectstore.presign(u) if isinstance(u, str) and u else None
                       for u in df.get("storage_uri", [None] * len(df))]

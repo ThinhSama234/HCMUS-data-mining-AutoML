@@ -139,6 +139,57 @@ else:
     st.plotly_chart(cfig, use_container_width=True)
     st.caption("Smoke run = 3 small datasets, so the spread is limited; it widens with the full suite.")
 
+scores = expl.score_shapes_module()
+if scores is not None:
+    ns = scores.normalized_scores(fdf)
+    if not ns.empty:
+        st.subheader("Normalized performance", help=(
+            "Each dataset's scores min-max normalized to [0,1] (1 = best framework on that "
+            "dataset) so quality is comparable across datasets and metrics. Boxplot per framework, "
+            "split by task type."))
+        nfig = px.box(ns, x="framework", y="norm_score", color="framework", points="all",
+                      facet_col="type" if "type" in ns.columns else None,
+                      labels={"norm_score": "Normalized score (1 = best)", "framework": ""})
+        nfig.update_layout(height=340, margin=dict(l=0, r=0, t=30, b=0), showlegend=False)
+        st.plotly_chart(nfig, use_container_width=True)
+
+    sl = scores.score_long(fdf)
+    if not sl.empty:
+        st.subheader("Score distribution", help=(
+            "Raw metric value per dataset across folds, grouped by task type — each cluster is a "
+            "dataset, boxes are frameworks. Metric varies by task type (auc / logloss / rmse)."))
+        sfig = px.box(sl, x="task", y="metric_value", color="framework",
+                      facet_col="type" if "type" in sl.columns else None,
+                      labels={"metric_value": "Metric value", "task": ""})
+        sfig.update_xaxes(matches=None)
+        sfig.update_yaxes(matches=None)
+        sfig.update_layout(height=360, margin=dict(l=0, r=0, t=30, b=0), legend_title_text="")
+        st.plotly_chart(sfig, use_container_width=True)
+
+    svt = scores.score_vs_time(fdf)
+    if not svt.empty:
+        st.subheader("Score vs training time", help=(
+            "Mean metric vs mean training time (log x), one panel per task type. A framework that "
+            "is up/left is better and faster."))
+        tfig = px.scatter(svt, x="mean_train_s", y="mean_score", color="framework", text="task",
+                          facet_col="type" if "type" in svt.columns else None, log_x=True,
+                          labels={"mean_train_s": "Mean training time (s, log)",
+                                  "mean_score": "Mean metric"})
+        tfig.update_traces(textposition="top center")
+        tfig.update_xaxes(matches=None)
+        tfig.update_yaxes(matches=None)
+        tfig.update_layout(height=360, margin=dict(l=0, r=0, t=30, b=0), legend_title_text="")
+        st.plotly_chart(tfig, use_container_width=True)
+
+    inf = scores.inference_times(fdf)
+    if not inf.empty:
+        st.subheader("Inference time", help=(
+            "Distribution of time to predict (seconds, log scale) per framework across folds."))
+        ifig = px.box(inf, x="framework", y="predict_s", color="framework", points="all", log_y=True,
+                      labels={"predict_s": "Inference time (s, log)", "framework": ""})
+        ifig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0), showlegend=False)
+        st.plotly_chart(ifig, use_container_width=True)
+
 st.subheader("Per-task scores", help=(
     "The raw score of every framework on every dataset (and fold) — the underlying numbers the "
     "ranks above are computed from. Metric varies by task type (auc / logloss / rmse)."))
