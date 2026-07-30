@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+import pandas as pd  # noqa: E402
 import plotly.express as px  # noqa: E402
 import streamlit as st  # noqa: E402
 
@@ -173,6 +174,43 @@ else:
         if "constraint" in ftbl.columns:
             st.caption("Failures by category and time budget")
             st.dataframe(ftbl, width="stretch", hide_index=True)
+
+st.subheader("Ranking-flip (Bradley-Terry approximation)", help=(
+    "Where does the framework ranking change with data characteristics? Left: the pairwise "
+    "win-rate matrix — P(row framework beats column framework) across datasets. Right: the "
+    "characteristic that most flips the ranking, shown as global order vs per-group order. "
+    "An honest approximation of the paper's Bradley-Terry trees — no significance test, no "
+    "recursive partitioning."))
+flips = expl.ranking_flips_module()
+if flips is None:
+    st.info("Pending — build `analysis/ranking_flips.py` and this lights up.")
+else:
+    wm = flips.win_matrix(fdf)
+    if wm.empty or len(wm) < 2:
+        st.info("Need at least two frameworks with results to compare pairwise.")
+    else:
+        fl, fr = st.columns(2)
+        with fl:
+            hfig = px.imshow(wm, text_auto=".2f", zmin=0, zmax=1,
+                             color_continuous_scale="Teal",
+                             labels=dict(x="loses to →", y="wins ↓", color="win rate"))
+            hfig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0))
+            st.plotly_chart(hfig, use_container_width=True)
+        with fr:
+            bs = flips.best_split(fdf)
+            st.caption(f"Global order: **{' ▸ '.join(bs['global_order']) or '—'}**")
+            if bs["characteristic"] is None:
+                st.info(f"{bs['reason'].capitalize()} — stabilizes with the full suite.")
+            else:
+                st.caption(f"Biggest ranking flip: **{bs['characteristic']}** "
+                           f"(flip score {bs['flip_score']:.2f})")
+                rows = [{"group": g, "ranking": " ▸ ".join(o)}
+                        for g, o in bs["group_orders"].items()]
+                st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+    st.caption("Approximation of Bradley-Terry trees (Strobl et al., 2011): the heatmap is "
+               "pairwise win rates; the flip score is Kendall-tau between the leaderboard order "
+               "and per-tier average-rank orders (tiers with <2 datasets are skipped, no "
+               "significance test).")
 
 if st.button("Export headline figures"):
     paths = expl.export_headline_figures(fdf, os.path.join(theme.REPO_ROOT, "results", "figures"))

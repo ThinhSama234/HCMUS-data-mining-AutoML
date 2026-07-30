@@ -73,6 +73,10 @@ def failures_module():
     return _optional_module("failures")
 
 
+def ranking_flips_module():
+    return _optional_module("ranking_flips")
+
+
 def export_headline_figures(df, outdir):
     """Static export of the ranking figure (matplotlib) for the report (FR-016).
 
