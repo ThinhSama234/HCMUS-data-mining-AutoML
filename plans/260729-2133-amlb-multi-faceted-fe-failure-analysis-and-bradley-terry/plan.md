@@ -1,72 +1,125 @@
 ---
-title: "AMLB multi-faceted FE - failure analysis and Bradley-Terry"
-description: "Fill the two novel AMLB analysis dimensions the console is missing: failure categorization and ranking-flip (Bradley-Terry) analysis."
-status: pending
+title: "AMLB multi-faceted FE — report↔console E2E reconciliation"
+description: "Make the console reproduce the report's multi-faceted analysis figures end-to-end from real data (Option C): ingest real results, close the analysis gaps (failure, characteristics, Bradley-Terry, score/time/memory/budget figures)."
+status: completed
 priority: P1
-effort: "3-5d"
-tags: [analysis, frontend, evaluation, thesis]
+effort: "6-9d"
+tags: [analysis, frontend, evaluation, thesis, ingest]
 created: 2026-07-29
+updated: 2026-07-30
 ---
 
-# AMLB multi-faceted FE — failure analysis and Bradley-Terry
+# AMLB multi-faceted FE — report↔console E2E reconciliation (Option C)
 
 ## Overview
 
-The console already covers 2 of the paper's 4 "multi-faceted analysis" dimensions
-(accuracy ranking, accuracy-vs-inference-time Pareto). The two **novel** dimensions are
-missing or crude: **failure analysis** (only a raw count today) and **Bradley-Terry
-trees** (only a hardcoded 5-dataset tier grouping). This plan adds both, following the
-existing single-source-of-truth pattern: pure functions in `analysis/*`, discovered by
-`analysis/explorer.py`, rendered in `console/views/evaluation.py`, unit-tested.
+`report_v2.md` already presents 11 figures across the paper's multi-faceted analysis
+(dataset characteristics, normalized/raw scores, score-vs-time, perf-by-budget, inference,
+memory, failures, Bradley-Terry). **The report existed first; the E2E code to produce those
+analyses in the console does not.** The console's live results are a **3-dataset `smoke`**
+run with different frameworks — so the Evaluation page and the report disagree, violating the
+repo's own invariant INV-2 ("the Evaluation page and the report can never disagree",
+`analysis/explorer.py`).
 
-Scope decided with user: build **both** gaps; Bradley-Terry as a **lightweight, honest
-Python approximation** (no R/rpy2 dependency).
+Decision (with user) = **Option C**: make the console the reproducible engine for the report.
+Path: **ingest the real results under app management** (the app manages + downloads data;
+CSV/parquet fallback where a live run isn't feasible), then close each analysis gap as a pure
+`analysis/*` module discovered by `explorer._optional_module` and rendered with graceful
+degrade — the existing single-source-of-truth pattern. Bradley-Terry stays a **lightweight,
+honest Python approximation** (no R/rpy2).
 
-### Map: paper contribution ↔ current system
+### Map: report figure ↔ current E2E code ↔ this plan
 
-| Paper dimension | Current system | This plan |
+| Report figure(s) | Current E2E backing | This plan |
 |---|---|---|
-| Accuracy ranking | `rankings.py` + Overall leaderboard | — done |
-| Inference-time trade-off | `pareto.py` + "Accuracy vs inference time" | — done |
-| **Failure analysis** (Memory/Time/Data/Implementation) | Raw `N failures` KPI only | **Phase 1** |
-| **Bradley-Terry** (auto-find ranking-flip task subsets) | Hardcoded 5-dataset tiers | **Phase 2 → Phase 3** |
+| Overall ranking | `rankings.py` + leaderboard | done |
+| Inference Pareto | `pareto.py` | done |
+| Failures (Hình 10) | `failures.py` + view | **Phase 1 (done)**; enriched in Phase 6 |
+| Dataset characteristics grouping | `by_characteristics.py`, **5 hardcoded tasks** | **Phase 2** (catalog) |
+| Bradley-Terry (Hình 11) | none | **Phase 3** |
+| Real 12-ds / 4-fw / 2-budget data | **not in repo** (smoke only) | **Phase 4 (blocker)** |
+| Dataset overview + score/time (Hình 1,2,4,5,6,8) | none / partial | **Phase 5** |
+| Perf-by-budget (Hình 7) + memory (Hình 9) + failure enrichment (Hình 10) | budget + `peak_memory_mb` in reports JSON | **Phase 6** |
+| Target-dist (Hình 3) | needs raw-file plotting | **out of scope** — static in report |
+
+**Validated scope (2026-07-30, revised for reports-JSON source):** the real pipeline is
+`scripts/run_automl.py` → `reports/run_*.json` (on `origin/main`), whose schema **carries
+`peak_memory_mb` and `time_budget`** — so memory (Hình 9) and budget (Hình 7) are backable
+after all (reverses the earlier AMLB-based non-goal). Direction = **bridge into console**:
+Phase 4 ingests `reports/*.json`; datasets come via the Kaggle pipeline (11/12 refs
+live-verified). Only Hình 3 (target-dist) stays static. Acceptance ≈ **10/11 figures**.
 
 ## Goals
 
 | # | Goal | Priority |
 |---|------|----------|
-| 1 | Categorized failure-analysis view (by category, framework, budget) — a headline paper contribution | P1 |
-| 2 | Dataset characteristics sourced from the real catalog (not 5 hardcoded tasks) so views scale to the 20-dataset suite | P1 |
-| 3 | Ranking-flip / Bradley-Terry-style view that surfaces where framework rankings change by data characteristic | P2 |
+| 1 | Categorized failure-analysis view (by category, framework, budget) | P1 |
+| 2 | Dataset characteristics from the real catalog (not 5 hardcoded tasks) | P1 |
+| 3 | Ranking-flip / Bradley-Terry-style view (honest Python approximation) | P2 |
+| 4 | Real multi-dataset results under app management so views ≡ report (INV-2) | P1 |
+| 5 | Reproduce the remaining score/time/dataset-overview figures E2E | P2 |
+| 6 | Perf-by-budget + enriched failure panels (memory dropped) | P3 |
 
 ## Phases
 
 | # | Phase | Status | Priority | Depends |
 |---|-------|--------|----------|---------|
 | 1 | [Failure analysis view](./phase-01-start.md) | Done | P1 | — |
-| 2 | [Real dataset characteristics from catalog](./phase-02-real-dataset-characteristics-from-catalog.md) | Pending | P1 | — |
-| 3 | [Bradley-Terry ranking-flip (Python approx)](./phase-03-bradley-terry-ranking-flip-python-approximation.md) | Pending | P2 | 2 |
+| 2 | [Real dataset characteristics from catalog](./phase-02-real-dataset-characteristics-from-catalog.md) | Done | P1 | — |
+| 3 | [Bradley-Terry ranking-flip (Python approx)](./phase-03-bradley-terry-ranking-flip-python-approximation.md) | Done | P2 | 2, 4 |
+| 4 | [Ingest real multi-dataset results](./phase-04-ingest-real-multi-dataset-results.md) | Pending | P1 | — |
+| 5 | [Figure-parity analysis views](./phase-05-figure-parity-analysis-views.md) | Done | P2 | 2, 4 |
+| 6 | [Budget dimension + failure enrichment](./phase-06-memory-and-budget-dimension.md) | Done | P3 | 2, 4 |
 
-Recommended order: **1 → 2 → 3**. Phase 1 is independent and highest-ROI; Phase 2
-unblocks Phase 3 (and fixes the existing by-characteristic view's scaling).
+Recommended order: **4 → 2 → 3 → 5 → 6** (Phase 1 already done). Phase 4 is the true blocker —
+without real data every downstream view is smoke and Bradley-Terry/boxplots are meaningless.
+Phases 2/3/5 code can be *written* against fixtures independently, but only *light up* after 4.
+Phase 6 (budget + failure enrichment) is cheap once Phase 4 imports ≥2 budgets and Phase 2
+populates characteristics.
 
 ## Success Criteria
 
-- [ ] Evaluation page shows a **Failure analysis** section: failures split into
-      Memory / Time / Data / Implementation, broken down by framework and by budget.
+- [x] Failure-analysis section: Memory / Time / Data / Implementation, by framework and budget.
+- [ ] **Real results are managed by the app** (imported into `runs` or `results.csv`); the
+      Evaluation page renders the report's datasets/frameworks, not the 3-dataset smoke set.
 - [ ] By-characteristic and ranking-flip views read `n_instances / n_features /
-      minority_fraction / task_type` from the **dataset catalog**, covering all datasets
-      in the results (no hardcoded task list).
-- [ ] Evaluation page shows a **Ranking-flip** section that names the data
-      characteristic and split-point where the framework ranking changes, labelled
-      honestly as an approximation of the paper's Bradley-Terry trees.
-- [ ] All new logic lives in pure `analysis/*` modules with pytest coverage; FE only renders.
-- [ ] Views degrade gracefully (info message) when a module/column is absent — same pattern as US3/US4.
+      minority_fraction / task_type` from the **catalog**, covering all datasets in the results.
+- [ ] **Ranking-flip** section names the characteristic + split where ranking changes, labelled
+      as an approximation of the paper's Bradley-Terry trees.
+- [ ] Evaluation/Datasets reproduce the report's score, score-vs-time, inference, and
+      dataset-overview figures from real data (Hình 1,2,4,5,6,8).
+- [ ] Perf-by-budget renders from ≥2 budgets; failure section gains by-size + by-budget panels.
+- [ ] All new logic in pure `analysis/*` modules with pytest coverage; FE only renders and
+      degrades gracefully when a module/column is absent.
+- [ ] Catalog characteristics (`n_instances/n_features/minority_fraction`) are populated for
+      imported datasets via `infer_metadata` — no `unknown` tiers for the report's datasets.
 
 ## Non-Goals
 
-- Full statistical Bradley-Terry model-based recursive partitioning via R (`partykit`/`psychotree`). Explicitly out of scope per the lightweight decision.
-- Anytime-performance capture (the paper lists this as its own limitation).
-- New result columns or benchmark-runner changes — analysis reads existing AMLB output.
+- Full statistical Bradley-Terry via R (`partykit`/`psychotree`). Out of scope (lightweight decision).
+- Anytime-performance capture (the paper's own stated limitation).
+- Re-running the full 12-dataset suite locally — infeasible on this host (needs CI/Linux; existing
+  runner limitation). Phase 4 uses the import path instead.
+- **Target-distribution figure (Hình 3)** — needs raw dataset-file plotting; stays static in the report.
+- Re-running `run_automl.py` for the full 12-dataset × 60/300s × 4-framework suite — separate
+  effort; this plan ingests whatever `reports/*.json` exists (committed run is small).
+- Competition-capable Kaggle client — our API is datasets-only; competitions use dataset mirrors
+  (`santander` unresolved). Extending the client is separate scope.
+
+**Scope note (revised 2026-07-30, reports-JSON source):** memory is **back in scope** —
+`reports/*.json` carries `peak_memory_mb`, so Phase 6 backs Hình 9 by reading it from
+`runs.metrics` JSON (no results-schema migration; a first-class `peak_memory_mb` column is an
+optional Phase 6 decision). Catalog characteristics come from `infer_metadata` on Kaggle-imported
+dataset files (a catalog write, not a results-schema change).
+
+## Backlog (future enhancements)
+
+- **HTML report export (not just CSV).** Phase 4's Export button currently emits `results.csv`
+  only. Add a "Export HTML report" that renders the full Evaluation output — all charts (leaderboard,
+  Pareto, by-characteristic, failures, and the Phase 3/5/6 figures) plus the score tables — into a
+  single self-contained HTML file, mirroring `report_v2.md`. Reuse the pure `analysis/*` functions
+  and the Plotly figures (`fig.to_html`) or the existing `explorer.export_headline_figures` path;
+  keep it in the console/export layer, not `analysis/*`. Do after the figure phases (5/6) so all
+  charts exist to embed. Requested by user 2026-07-30.
 
 <!-- slug: amlb-multi-faceted-fe-failure-analysis-and-bradley-terry -->

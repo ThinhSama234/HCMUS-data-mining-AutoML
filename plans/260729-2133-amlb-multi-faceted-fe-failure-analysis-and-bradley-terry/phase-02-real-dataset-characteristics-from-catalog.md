@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Real dataset characteristics from catalog"
-status: pending
+status: completed
 priority: P1
 effort: "0.5-1d"
 dependencies: []
@@ -11,10 +11,16 @@ dependencies: []
 
 ## Overview
 
-`analysis/by_characteristics.py` currently hardcodes `TASK_META` for only **5 datasets**,
-so the by-characteristic view (and any Bradley-Terry work in Phase 3) is blind to the other
-15 datasets in the 20-dataset suite. The dataset catalog already stores the exact
-characteristics needed, so replace the hardcoded map with a lookup from the catalog.
+`analysis/by_characteristics.py` currently hardcodes `TASK_META` for only **5 AMLB tasks**
+(credit-g/vehicle/Moneyball/churn/Higgs) — none of which are the report's 12 datasets — so the
+by-characteristic view (and Bradley-Terry in Phase 3) is blind to the real suite. Replace the
+hardcoded map with a lookup from the dataset **catalog**.
+
+**Consistency note (validated 2026-07-30):** the catalog's characteristic columns
+(`n_instances / n_features / minority_fraction`) are currently **NULL** even for the 3 existing
+rows. **Phase 4 populates them** via `infer_metadata` on import — so this phase's UI value
+depends on Phase 4 having run. The code here (the `load_task_meta()` lookup) can still be built
+and unit-tested independently with an injected meta source.
 
 ## Requirements
 
@@ -64,9 +70,24 @@ Keep `analysis/` decoupled from `storage/`: the loader accepts an injectable met
 
 ## Success Criteria
 
-- [ ] By-characteristic view uses catalog data and covers every dataset in the results (no 5-task ceiling).
-- [ ] `grouped_rankings` public signature unchanged; `explorer.py` and Evaluation untouched.
-- [ ] Tests pass offline (no live DB required); DB path exercised when available.
+- [x] By-characteristic view uses catalog data and covers every dataset in the results (no 5-task ceiling).
+- [x] `grouped_rankings` public signature unchanged; `explorer.py` and Evaluation untouched.
+- [x] Tests pass offline (no live DB required); DB path exercised when available.
+
+## Progress (2026-07-30)
+
+Done + tested (`tests/test_by_characteristics.py`, 8 cases; full suite 96 green):
+- `analysis/by_characteristics.load_task_meta(source=None)` — reads characteristics from the
+  catalog (`storage.repo.list_datasets`), merged **field-wise over** the curated `TASK_META`
+  baseline (a NULL catalog value keeps the curated one; absent → `unknown`). Lazy + guarded:
+  importing the module never touches the DB; any failure falls back to `TASK_META`.
+- `with_characteristics` / `grouped_rankings` now default `meta=None` → `load_task_meta()`;
+  public signatures compatible, so `explorer.py` and `console/views/evaluation.py` are untouched.
+- E2E verified: after ingesting the report JSON, `grouped_rankings(by="size_tier")` buckets
+  breast_cancer/wine → small, california_housing → medium from real catalog characteristics (no `unknown`).
+- Code-review fixes: pinned the two fixture tests with explicit `meta=TASK_META` so they stay
+  **hermetic** (the new default reads the live catalog); proven by re-running under a bogus
+  `DATABASE_URL`. Hardened the catalog `name` guard against NaN.
 
 ## Risk Assessment
 

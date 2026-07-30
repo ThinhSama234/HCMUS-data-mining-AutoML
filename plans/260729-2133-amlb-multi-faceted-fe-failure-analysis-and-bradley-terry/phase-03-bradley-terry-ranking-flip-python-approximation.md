@@ -1,10 +1,10 @@
 ---
 phase: 3
 title: "Bradley-Terry ranking-flip (Python approximation)"
-status: pending
+status: completed
 priority: P2
 effort: "1.5-2d"
-dependencies: [2]
+dependencies: [2, 4]
 ---
 
 # Phase 3: Bradley-Terry ranking-flip (Python approximation)
@@ -73,13 +73,29 @@ a shallow 1-level split is enough for the thesis story; deeper trees are a non-g
 
 ## Success Criteria
 
-- [ ] `analysis/ranking_flips.py` computes the pairwise win matrix and identifies the characteristic that most changes the ranking, unit-tested on a synthetic flip.
-- [ ] Evaluation page shows the win matrix + the best split's global-vs-group ranking comparison.
-- [ ] Section is explicitly labelled an approximation of Bradley-Terry trees.
-- [ ] Degrades gracefully when characteristics are missing (falls back to global ranking only).
+- [x] `analysis/ranking_flips.py` computes the pairwise win matrix and identifies the characteristic that most changes the ranking, unit-tested on a synthetic flip.
+- [x] Evaluation page shows the win matrix + the best split's global-vs-group ranking comparison.
+- [x] Section is explicitly labelled an approximation of Bradley-Terry trees.
+- [x] Degrades gracefully when characteristics are missing (falls back to global ranking only).
+
+## Progress (2026-07-30)
+
+Done + tested (`tests/test_ranking_flips.py`, 7 cases; full suite 103 green; verified live in the
+console + on ingested real data):
+- `analysis/ranking_flips.py` — `win_matrix` (pairwise win-rate heatmap, ½-tie, NaN diagonal /
+  never-met), `global_order` / `group_orders` (average-rank order, per tier), `flip_scores`
+  (Kendall-tau vs global), `best_split`, CLI. `explorer.ranking_flips_module()` + Evaluation
+  "Ranking-flip (Bradley-Terry approximation)" section (heatmap + global-vs-group table + honesty
+  caption). Graceful degrade for <2 frameworks / thin tiers / missing characteristics.
+- **Code-review fix (INV-2):** the flip section's global/per-group **ordering now reuses
+  `rankings.average_ranks`** (leaderboard order) instead of a raw win-rate order, so it can never
+  show a contradictory "#1" vs the Overall leaderboard under unequal framework participation.
+  Win matrix stays win-rate (a separate pairwise viz). Verified: `global_order(df) ==` leaderboard
+  order on the ingested run. Replaced the phantom 2-framework test with a 3-framework
+  unequal-participation consistency test; captioned the min-2-datasets-per-tier threshold.
 
 ## Risk Assessment
 
 - **Risk:** overclaiming statistical rigor. **Mitigation:** explicit "approximation, no p-value" caption + cite the paper's BT method as the full version (non-goal).
-- **Risk:** tiny smoke suite → unstable/empty splits. **Mitigation:** require a minimum group size; show "not enough data to split" instead of a spurious flip; note it stabilizes with the full 20-dataset suite.
+- **Risk:** tiny smoke suite → unstable/empty splits. **Mitigation:** require a minimum group size; show "not enough data to split" instead of a spurious flip; note it stabilizes with the full 12-dataset suite.
 - **Risk:** win-rate order disagreeing with `avg_rank` order confuses readers. **Mitigation:** cross-check in tests and reuse `rankings` where possible so the two views stay consistent (INV-2).
