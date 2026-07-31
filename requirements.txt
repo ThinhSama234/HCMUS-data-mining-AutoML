@@ -5,6 +5,7 @@
 # our analysis/console layer verified on 1.5.3.
 pandas>=1.5,<3
 matplotlib>=3.7
+scipy>=1.10          # Friedman + Nemenyi significance (analysis/significance.py)
 seaborn>=0.13
 pytest>=7.4
 # US6 results explorer (FR-016) + product console: interactive Streamlit UI

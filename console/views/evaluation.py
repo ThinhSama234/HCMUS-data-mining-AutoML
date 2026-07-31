@@ -17,37 +17,49 @@ from storage import ingest  # noqa: E402 — report-JSON import bridge (Phase 4)
 theme.inject()
 theme.pagehead("Evaluation", "Benchmark results — from results.csv")
 
-# Import / Export — bring a run_automl.py `reports/run_*.json` under app management (→ runs table)
-# and download the current results. Placed before the empty-state stop so import works when empty.
-with st.expander("Import / Export results", expanded=not state.has_results()):
-    up = st.file_uploader("Import a run report (reports/run_*.json)", type=["json"],
-                          help="Ingest results from the run_automl.py pipeline into the console.")
-    if up is not None and st.button("Ingest report JSON", type="primary"):
-        try:
-            r = ingest.ingest_report_bytes(up.getvalue())
-            st.success(f"Ingested {r['inserted']} run(s) — {r['datasets']} datasets, "
-                       f"{r['methods']} frameworks, budget {r['constraint']}"
-                       + (f"; {r['skipped_duplicate']} duplicate(s) skipped." if r['skipped_duplicate'] else "."))
-            st.rerun()
-        except Exception as exc:
-            st.error(f"Import failed: {exc}")
-    if state.has_results():
-        st.download_button("Export results.csv", state.load_results().to_csv(index=False).encode(),
-                           file_name="results.csv", mime="text/csv")
+# Import / Export tucked into a small top-right "Data" popover — a secondary action, so the
+# results (not the I/O plumbing) lead the page. Kept before the empty-state stop so import works
+# even when there are no results yet.
+_, _data_col = st.columns([5, 1])
+with _data_col:
+    with st.popover("Data", icon=":material/database:", width="stretch"):
+        up = st.file_uploader("Import a run report (reports/run_*.json)", type=["json"],
+                              help="Ingest results from the run_automl.py pipeline into the console.")
+        if up is not None and st.button("Ingest report JSON", type="primary"):
+            try:
+                r = ingest.ingest_report_bytes(up.getvalue())
+                st.success(f"Ingested {r['inserted']} run(s) — {r['datasets']} datasets, "
+                           f"{r['methods']} frameworks, budget {r['constraint']}"
+                           + (f"; {r['skipped_duplicate']} duplicate(s) skipped." if r['skipped_duplicate'] else "."))
+                st.rerun()
+            except Exception as exc:
+                st.error(f"Import failed: {exc}")
+        if state.has_results():
+            st.download_button("Export results.csv",
+                               state.load_results().to_csv(index=False).encode(),
+                               file_name="results.csv", mime="text/csv")
 
 if not state.has_results():
-    st.info("No results yet — import a report above, or run the benchmark (quickstart Step 1).")
+    st.info("No results yet — import a report (**Data** ▾, top-right), or run the benchmark "
+            "(quickstart Step 1).")
     st.stop()
 
 df = state.load_results()
 st.caption(f"data source: **{state.results_source()}** (SQLite cache if present, else results.csv)")
 
-# Filters (mirror the mockup).
+# Filters (mirror the mockup). A framework can be pre-seeded when arriving from a job
+# ("View <framework> in Evaluation" on the Jobs page) via session_state.
+_preset_fw = st.session_state.pop("eval_preset_fw", None)
 opts = expl.filter_options(df)
 cols = st.columns(len(opts) or 1)
 selected = {}
 for c, (col, values) in zip(cols, opts.items()):
-    selected[col] = c.multiselect(col.title(), values, default=[])
+    if col == "framework":
+        if _preset_fw is not None:                       # seed once, on arrival from a job
+            st.session_state["flt_framework"] = [f for f in [_preset_fw] if f in values]
+        selected[col] = c.multiselect(col.title(), values, key="flt_framework")
+    else:
+        selected[col] = c.multiselect(col.title(), values, default=[])
 fdf = expl.apply_filters(df, selected)
 if fdf.empty:
     st.warning("No rows match the current filters.")
@@ -76,9 +88,7 @@ with left:
         "1 = best, then averaged). Bars are a rank score = (N+1) − average rank, so the tallest bar "
         "on the left is #1. The label on each bar is the actual average rank."))
     ov = overall.sort_values("avg_rank").reset_index(drop=True)
-    _MEDAL = {1: "🥇", 2: "🥈", 3: "🥉"}
-    ov["place"] = [f'{_MEDAL.get(i + 1, f"#{i + 1}")} {fw}'
-                   for i, fw in enumerate(ov["framework"])]
+    ov["place"] = [f'#{i + 1}  {fw}' for i, fw in enumerate(ov["framework"])]
     ov["rank_score"] = len(ov) + 1 - ov["avg_rank"]
     fig = px.bar(ov, x="place", y="rank_score", text="avg_rank",
                  category_orders={"place": ov["place"].tolist()},
@@ -87,7 +97,7 @@ with left:
     fig.update_yaxes(showticklabels=False, showgrid=False, zeroline=False,
                      range=[0, ov["rank_score"].max() + 0.6])
     fig.update_layout(height=300, margin=dict(l=0, r=0, t=20, b=0))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 with right:
     st.subheader("Accuracy vs inference time", help=(
         "Speed/quality trade-off: x = median time to predict, y = average rank (1 = best, top). "
@@ -105,7 +115,7 @@ with right:
         pfig.update_traces(textposition="top center", marker=dict(size=13))
         pfig.update_yaxes(autorange="reversed")
         pfig.update_layout(height=260, margin=dict(l=0, r=0, t=10, b=0))
-        st.plotly_chart(pfig, use_container_width=True)
+        st.plotly_chart(pfig, width="stretch")
 
 st.subheader("Ranking by data characteristic", help=(
     "Does a framework do better on certain kinds of data? Pick how to group the datasets "
@@ -136,7 +146,7 @@ else:
     cfig.update_xaxes(dtick=1, range=[0, g["rank_score"].max() + 0.7])
     cfig.update_layout(height=max(220, 70 * g["framework"].nunique() + 60),
                        margin=dict(l=0, r=0, t=10, b=0))
-    st.plotly_chart(cfig, use_container_width=True)
+    st.plotly_chart(cfig, width="stretch")
     st.caption("Smoke run = 3 small datasets, so the spread is limited; it widens with the full suite.")
 
 scores = expl.score_shapes_module()
@@ -151,7 +161,7 @@ if scores is not None:
                       facet_col="type" if "type" in ns.columns else None,
                       labels={"norm_score": "Normalized score (1 = best)", "framework": ""})
         nfig.update_layout(height=340, margin=dict(l=0, r=0, t=30, b=0), showlegend=False)
-        st.plotly_chart(nfig, use_container_width=True)
+        st.plotly_chart(nfig, width="stretch")
 
     sl = scores.score_long(fdf)
     if not sl.empty:
@@ -164,7 +174,7 @@ if scores is not None:
         sfig.update_xaxes(matches=None)
         sfig.update_yaxes(matches=None)
         sfig.update_layout(height=360, margin=dict(l=0, r=0, t=30, b=0), legend_title_text="")
-        st.plotly_chart(sfig, use_container_width=True)
+        st.plotly_chart(sfig, width="stretch")
 
     svt = scores.score_vs_time(fdf)
     if not svt.empty:
@@ -179,7 +189,7 @@ if scores is not None:
         tfig.update_xaxes(matches=None)
         tfig.update_yaxes(matches=None)
         tfig.update_layout(height=360, margin=dict(l=0, r=0, t=30, b=0), legend_title_text="")
-        st.plotly_chart(tfig, use_container_width=True)
+        st.plotly_chart(tfig, width="stretch")
 
     inf = scores.inference_times(fdf)
     if not inf.empty:
@@ -188,7 +198,7 @@ if scores is not None:
         ifig = px.box(inf, x="framework", y="predict_s", color="framework", points="all", log_y=True,
                       labels={"predict_s": "Inference time (s, log)", "framework": ""})
         ifig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0), showlegend=False)
-        st.plotly_chart(ifig, use_container_width=True)
+        st.plotly_chart(ifig, width="stretch")
 
     bp = scores.budget_performance(fdf)
     if not bp.empty:
@@ -200,7 +210,7 @@ if scores is not None:
                       labels={"mean_norm": "Mean normalized score", "framework": "",
                               "constraint": "Budget"})
         bfig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0), legend_title_text="Budget")
-        st.plotly_chart(bfig, use_container_width=True)
+        st.plotly_chart(bfig, width="stretch")
         if n_budgets < 2:
             st.caption("Only one time budget in the current results — the budget comparison fills "
                        "in once runs at a second budget are ingested.")
@@ -218,7 +228,7 @@ if memory is not None:
                           color_discrete_sequence=[theme.TEAL],
                           labels={"mean_mb": "Mean peak memory (MB)", "framework": ""})
             mfig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0))
-            st.plotly_chart(mfig, use_container_width=True)
+            st.plotly_chart(mfig, width="stretch")
         with mr:
             mat = memory.memory_matrix(fdf)
             if not mat.empty:
@@ -226,7 +236,7 @@ if memory is not None:
                                  color_continuous_scale="Oranges",
                                  labels=dict(x="dataset", y="framework", color="MB"))
                 hfig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0))
-                st.plotly_chart(hfig, use_container_width=True)
+                st.plotly_chart(hfig, width="stretch")
 
 st.subheader("Per-task scores", help=(
     "The raw score of every framework on every dataset (and fold) — the underlying numbers the "
@@ -244,7 +254,7 @@ if failures is None:
 else:
     fcat = failures.by_category(fdf)
     if int(fcat["n"].sum()) == 0:
-        st.success("No failed runs in the current selection. 🎉")
+        st.success("No failed runs in the current selection.")
     else:
         _FAILCOLORS = {"memory": "#B5651D", "time": theme.AMBER, "data": "#7D6B9E",
                        "implementation": "#C0504D", "unknown": "#5C6B69"}
@@ -257,7 +267,7 @@ else:
                                   "failure_category": "Category"})
             ffig.update_layout(height=300, margin=dict(l=0, r=0, t=10, b=0),
                                legend_title_text="")
-            st.plotly_chart(ffig, use_container_width=True)
+            st.plotly_chart(ffig, width="stretch")
         # By-budget breakdown, when the results carry a budget/constraint column.
         ftbl = failures.failure_table(fdf)
         if "constraint" in ftbl.columns:
@@ -271,7 +281,7 @@ else:
                            category_orders={"size_tier": ["small", "medium", "large", "unknown"]},
                            labels={"n": "Failed runs", "size_tier": "Dataset size"})
             bsfig.update_layout(height=280, margin=dict(l=0, r=0, t=10, b=0), legend_title_text="")
-            st.plotly_chart(bsfig, use_container_width=True)
+            st.plotly_chart(bsfig, width="stretch")
 
 st.subheader("Ranking-flip (Bradley-Terry approximation)", help=(
     "Where does the framework ranking change with data characteristics? Left: the pairwise "
@@ -293,7 +303,7 @@ else:
                              color_continuous_scale="Teal",
                              labels=dict(x="loses to →", y="wins ↓", color="win rate"))
             hfig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0))
-            st.plotly_chart(hfig, use_container_width=True)
+            st.plotly_chart(hfig, width="stretch")
         with fr:
             bs = flips.best_split(fdf)
             st.caption(f"Global order: **{' ▸ '.join(bs['global_order']) or '—'}**")
@@ -309,6 +319,30 @@ else:
                "pairwise win rates; the flip score is Kendall-tau between the leaderboard order "
                "and per-tier average-rank orders (tiers with <2 datasets are skipped, no "
                "significance test).")
+
+st.subheader("Statistical significance", help=(
+    "The rigorous multi-framework comparison (Demšar 2006): a **Friedman test** asks whether the "
+    "frameworks differ at all; the **Nemenyi** post-hoc + **critical-difference (CD) diagram** show "
+    "which differences are significant — frameworks joined within the CD are statistically "
+    "indistinguishable. Needs several datasets with complete results."))
+sig = expl.significance_module()
+if sig is None:
+    st.info("Pending — build `analysis/significance.py` and this lights up.")
+else:
+    fr = sig.friedman(fdf)
+    if fr.get("significant") is None:
+        st.info(f"Not enough data for a significance test — {fr['reason']}. "
+                "Stabilizes with more datasets (see the dataset-suite expansion).")
+    else:
+        (st.success if fr["significant"] else st.warning)(
+            f"{fr['verdict']} · {fr['n_frameworks']} frameworks × {fr['n_datasets']} datasets.")
+        cdfig = sig.cd_diagram(fdf)
+        if cdfig is not None:
+            st.pyplot(cdfig)
+        pairs = sig.nemenyi(fdf)
+        if not pairs.empty:
+            st.caption("Pairwise Nemenyi (significant = rank gap ≥ CD)")
+            st.dataframe(pairs, width="stretch", hide_index=True)
 
 if st.button("Export headline figures"):
     paths = expl.export_headline_figures(fdf, os.path.join(theme.REPO_ROOT, "results", "figures"))

@@ -85,6 +85,10 @@ def memory_module():
     return _optional_module("memory")
 
 
+def significance_module():
+    return _optional_module("significance")
+
+
 def export_headline_figures(df, outdir):
     """Static export of the ranking figure (matplotlib) for the report (FR-016).
 
