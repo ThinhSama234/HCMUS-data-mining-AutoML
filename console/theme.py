@@ -6,6 +6,7 @@ the mockup regardless of Streamlit's internal class names.
 """
 from __future__ import annotations
 
+import html
 import os
 import sys
 
@@ -75,6 +76,18 @@ h1,h2,h3{ letter-spacing:-.02em; color:var(--ink); }
 .livebadge.live .dot{ animation:pulse 2.2s ease-out infinite; }
 @keyframes pulse{ 0%{box-shadow:0 0 0 0 #0c6e6a55} 70%{box-shadow:0 0 0 6px #0c6e6a00} 100%{box-shadow:0 0 0 0 #0c6e6a00} }
 .subhead{ color:var(--muted); font-size:13px; line-height:1.5; margin:.5rem 0 0; max-width:66ch; }
+/* Overview hero — the one place with a bold branded banner (teal→petrol gradient + an amber glow) */
+.hero{ position:relative; overflow:hidden; border-radius:16px; padding:36px 34px 32px; color:#fff;
+       background:linear-gradient(135deg,#0C6E6A 0%,#0E2A28 100%); margin:0 0 24px; }
+.hero::after{ content:""; position:absolute; right:-70px; top:-70px; width:280px; height:280px;
+       border-radius:50%; background:radial-gradient(circle,#C9620A55,transparent 70%); }
+.hero > *{ position:relative; }
+.hero .hero-kicker{ font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.17em;
+       text-transform:uppercase; color:#8fd0cc; margin:0 0 11px; }
+.hero h1{ font-size:40px; font-weight:800; letter-spacing:-.03em; line-height:1.02; margin:0 0 12px;
+       color:#fff; }
+.hero p{ font-size:14.5px; line-height:1.6; color:#cfe6e3; max-width:64ch; margin:0; }
+@media (max-width:640px){ .hero{ padding:24px 20px; } .hero h1{ font-size:30px; } }
 .cards{ display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); margin:14px 0; }
 .card{ background:#fff; border:1px solid var(--line); border-radius:11px; padding:16px;
        height:100%; box-sizing:border-box; }
@@ -106,6 +119,26 @@ h1,h2,h3{ letter-spacing:-.02em; color:var(--ink); }
 .pill.warn{ background:#b5860b1a; color:var(--warn);}
 .hint{ border-left:3px solid var(--amber); background:#c9620a14; padding:10px 14px; border-radius:0 8px 8px 0;
        font-size:13px; margin:14px 0; }
+/* CSS hover tooltip (title attr is stripped by Streamlit's sanitiser, so use a nested span) */
+.tip{ position:relative; display:inline-block; }
+.tip .tip-text{ visibility:hidden; opacity:0; position:absolute; left:0; top:calc(100% + 7px); z-index:1000;
+       width:max-content; max-width:340px; background:var(--ink); color:#fff; font-size:12px; font-weight:500;
+       line-height:1.5; padding:9px 11px; border-radius:8px; box-shadow:0 6px 18px #0000002e;
+       transition:opacity .12s ease; pointer-events:none; white-space:normal; }
+.tip .tip-text::before{ content:""; position:absolute; bottom:100%; left:14px; border:5px solid transparent;
+       border-bottom-color:var(--ink); }
+.tip:hover .tip-text{ visibility:visible; opacity:1; }
+/* compact status callout — soft tint + accent (never a loud full-bleed banner); states its own
+   meaning + reason + next action inline, so nothing hides behind a hover */
+.statusnote{ display:flex; gap:9px; align-items:flex-start; padding:10px 13px; border-radius:9px;
+       font-size:13px; line-height:1.5; margin:4px 0 6px; border:1px solid; }
+.statusnote svg{ flex:none; margin-top:2px; }
+.statusnote .sn-title{ font-weight:700; }
+.statusnote .sn-detail{ color:var(--ink); }
+.statusnote .sn-act{ display:block; color:var(--muted); margin-top:3px; }
+.statusnote.fail{ background:#b23a480f; border-color:#b23a4833; color:var(--fail); }
+.statusnote.warn{ background:#b5860b0f; border-color:#b5860b33; color:var(--warn); }
+.statusnote.ok{ background:#2e7d5b0f; border-color:#2e7d5b33; color:var(--ok); }
 /* ---- mobile (≤640px): tighter gutters, 2-up cards, calmer type ---- */
 @media (max-width:640px){
   section.main .block-container{ padding-top:1rem; padding-left:1rem; padding-right:1rem; }
@@ -138,9 +171,9 @@ def pagehead(title, subtitle=None, live=True, kicker=None):
     ``kicker`` is an optional uppercase eyebrow (e.g. the section name) shown above the title.
     """
     import streamlit as st
-    kind = "live" if live else "mock"
-    label = "Live" if live else "Preview"
-    badge = f'<span class="livebadge {kind}"><span class="dot"></span>{label}</span>'
+    # Only flag a not-yet-live (Preview) page — a "Live" badge on every real page is redundant noise.
+    badge = ('<span class="livebadge mock"><span class="dot"></span>Preview</span>'
+             if not live else "")
     eyebrow = f'<span class="kicker">{kicker}</span>' if kicker else ""
     sub = f'<div class="subhead">{subtitle}</div>' if subtitle else ""
     st.markdown(
@@ -154,14 +187,56 @@ def pill(text, kind):
     return f'<span class="pill {kind}">{text}</span>'
 
 
+# small inline warning triangle (inherits the pill's text colour via currentColor)
+_WARN_SVG = ('<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"'
+             ' style="vertical-align:-1px;margin-right:4px">'
+             '<path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>')
+
+
+_NOTE_ICON = {
+    "fail": '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+            '<path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>',
+    "warn": '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+            '<path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>',
+    "ok":   '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+            '<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm-2 15l-5-5 1.4-1.4L10 12.2l5.6-5.6'
+            'L17 8l-7 9z"/></svg>',
+}
+
+
+def status_note(kind, title, detail=None, action=None):
+    """A compact, self-explanatory status callout (kind ∈ fail/warn/ok): plain-language **title**,
+    the **detail** (why) and an optional **action** (what to do) — all visible inline, no hover.
+    Soft tinted, accent-bordered; deliberately quieter than a full-width st.error/warning banner."""
+    ico = _NOTE_ICON.get(kind, _NOTE_ICON["warn"])
+    body = f'<span class="sn-title">{html.escape(title)}</span>'
+    if detail:
+        body += f' <span class="sn-detail">{html.escape(detail)}</span>'
+    if action:
+        body += f'<span class="sn-act">{html.escape(action)}</span>'
+    return f'<div class="statusnote {kind}">{ico}<div>{body}</div></div>'
+
+
+def status_pill(label, kind, tooltip=None):
+    """A compact status chip (colour-coded by ``kind`` ∈ ok/warn/fail/run/queue). warn/fail get a
+    leading warning triangle; the long explanation shows in a CSS hover tooltip (a nested span —
+    Streamlit's HTML sanitiser strips the `title` attribute, so we can't rely on it) instead of a
+    full-width coloured banner."""
+    ico = _WARN_SVG if kind in ("warn", "fail") else ""
+    chip = f'<span class="pill {kind}">{ico}{label}</span>'
+    if not tooltip:
+        return chip
+    return f'<span class="tip">{chip}<span class="tip-text">{html.escape(tooltip)}</span></span>'
+
+
 def coming_soon(note):
     """A centered 'coming soon' placeholder for sections without a backend yet."""
     import streamlit as st
     st.markdown(
         '<div class="card" style="text-align:center;padding:48px 24px;border-style:dashed;'
         'border-color:var(--line)">'
-        '<div style="font-size:34px;margin-bottom:6px">🚧</div>'
-        '<div style="font-weight:700;font-size:16px;margin-bottom:6px">Coming soon</div>'
+        '<span class="kicker" style="justify-content:center">In development</span>'
+        '<div style="font-weight:700;font-size:16px;margin:2px 0 6px">Coming soon</div>'
         f'<div class="note" style="max-width:440px;margin:0 auto">{note}</div></div>',
         unsafe_allow_html=True,
     )
@@ -179,16 +254,18 @@ def table(headers, rows):
     )
 
 
-def sidebar_footer(title="AutoML Bench", sub="AMLB-style framework benchmark", meta="v0.1 · thesis build"):
+def sidebar_footer(title="AMLB Studio", sub="Multi-framework AutoML benchmark", meta=None):
     """Pin a small identity footer to the bottom of the sidebar nav.
 
     Call once, before ``nav.run()`` — pages may ``st.stop()`` mid-render, so anything placed
     after ``nav.run()`` can be skipped. The bottom-pinning is handled by CSS (margin-top:auto).
+    ``meta`` is an optional third line (e.g. a version); omitted when falsy.
     """
     import streamlit as st
+    meta_html = f'<div class="nf-meta">{meta}</div>' if meta else ""
     st.sidebar.markdown(
         f'<div class="navfoot"><div class="nf-title">{title}</div>'
-        f'<div class="nf-sub">{sub}</div><div class="nf-meta">{meta}</div></div>',
+        f'<div class="nf-sub">{sub}</div>{meta_html}</div>',
         unsafe_allow_html=True,
     )
 

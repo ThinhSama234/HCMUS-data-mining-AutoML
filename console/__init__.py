@@ -1,4 +1,4 @@
-"""AutoML Bench Console — product-track multipage Streamlit app (prototype).
+"""AMLB Studio — product-track multipage Streamlit console (prototype).
 
 The Evaluation page is the thesis US6 results explorer (FR-016): LIVE, reusing `analysis/*` +
 the tested `analysis.explorer` pure functions. The other pages are UI shells over mock data,

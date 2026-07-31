@@ -17,7 +17,7 @@ captured not hidden. The original benchmark spec lives in [`specs/002-automl-ben
   status + a per-machine **compatibility** badge; built-in **disk management**.
 - **Training** — pick a framework + datasets + budget → a real Dockerized AMLB run → results land
   in the database (with timeout, stop, and auto-reap so jobs never hang).
-- **Evaluation** — ranking, accuracy-vs-time Pareto, and by-characteristic views over the results.
+- **Evaluation** — ranking, accuracy-vs-time Pareto, by-characteristic, and failure-analysis (Memory/Time/Data/Implementation) views over the results.
 
 ## Quickstart
 
@@ -58,6 +58,28 @@ upload, and OpenML ingest work without containers (only benchmark *runs* need Do
 > **Apple Silicon:** AMLB images are amd64. Enable **Rosetta** in Rancher/Docker Desktop
 > (`rdctl set --virtual-machine.use-rosetta=true`) — light frameworks (flaml, constantpredictor)
 > run; heavy ones (AutoGluon, autosklearn) belong on an x86_64 host. See [docs/docker.md](docs/docker.md).
+
+## Reproduce a run
+
+A run is pinned by three things, all recorded so a result can be reproduced:
+
+- **Framework version** — captured per run (`runs.framework_version`, from AMLB's `version`) and shown
+  in Evaluation → *Frameworks & versions*; the **Docker image tag** on each method (e.g.
+  `0.8.0-v2.1.3` = framework + AMLB version) is the pin of record. Exported `results.csv` carries it.
+- **Constraint** — folds · time budget · cores, applied equally to every framework (Evaluation and
+  the Training *resource plan* show it).
+- **Seed** — AMLB uses a **fixed per-fold seed** (classification splits on OpenML tasks are stratified).
+
+To reproduce, integrate the **same image tag** on **Methods**, then **Training** → pick the same
+framework + **constraint** + datasets → **Launch** (one detached `docker run`); results land in
+Evaluation. Same tag + same constraint + same datasets ⇒ same run.
+
+## Backend API (spec 007)
+
+An additive **FastAPI** service exposes the same backend over HTTP/JSON for non-Streamlit clients
+(a future web UI, a decision assistant): `uvicorn api.main:app --port 8000` → interactive docs at
+`/api/v1/docs`. It runs beside the console (`docker-compose up api`) on the same backend — a thin
+layer over `storage/`, no logic duplicated.
 
 ## Feature tour
 

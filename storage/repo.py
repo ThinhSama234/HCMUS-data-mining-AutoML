@@ -82,9 +82,15 @@ def load(csv_fallback=None):
             datasets.c.name.label("task"),
             datasets.c.task_type.label("type"),
             constraints.c.name.label("constraint"),
+            constraints.c.max_runtime_seconds.label("budget_s"),   # allocated time budget (Phase 3)
             runs.c.fold, runs.c.metric, runs.c.result, runs.c.score, runs.c.status,
             runs.c.predict_duration, runs.c.training_duration,
             runs.c.models_count, runs.c.seed, runs.c.framework_version.label("version"),
+            # expose the stored error as `info` so analysis.failures can classify DB-sourced
+            # failures the same way it does CSV rows (which carry an `info` column).
+            runs.c.error_message.label("info"),
+            # per-run metrics JSON (carries peak_memory_mb for report-ingested runs → Phase 6 memory view).
+            runs.c.metrics,
         ).select_from(j)
         with eng.connect() as c:
             df = pd.read_sql(stmt, c)
@@ -95,3 +101,33 @@ def load(csv_fallback=None):
 
     from analysis.load_results import load_results
     return load_results(csv_fallback)
+
+
+def load_job(training_run_id):
+    """Per-job tidy results frame — the SAME columns as load(), filtered to one training run.
+
+    Powers the Jobs → job-detail dashboard (a per-job slice of the Evaluation view). DB-only:
+    jobs exist only in the DB, so there is no CSV fallback here.
+    """
+    eng = db.init_db()
+    j = (runs
+         .join(datasets, runs.c.dataset_id == datasets.c.dataset_id, isouter=True)
+         .join(methods, runs.c.method_id == methods.c.method_id, isouter=True)
+         .join(constraints, runs.c.constraint_id == constraints.c.constraint_id, isouter=True))
+    stmt = select(
+        methods.c.name.label("framework"),
+        datasets.c.name.label("task"),
+        datasets.c.task_type.label("type"),
+        datasets.c.size_tier.label("size_tier"),
+        constraints.c.name.label("constraint"),
+        runs.c.fold, runs.c.metric, runs.c.result, runs.c.score, runs.c.status,
+        runs.c.predict_duration, runs.c.training_duration,
+        runs.c.error_message.label("info"), runs.c.metrics,
+    ).select_from(j).where(runs.c.training_run_id == training_run_id)
+    with eng.connect() as c:
+        df = pd.read_sql(stmt, c)
+    if not df.empty:
+        df["success"] = df["status"] == "success"
+        df["result_num"] = pd.to_numeric(df["result"], errors="coerce")
+        df["score"] = pd.to_numeric(df["score"], errors="coerce")
+    return df
