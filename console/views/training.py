@@ -29,20 +29,29 @@ c1, c2 = st.columns(2)
 fw = c1.selectbox("Framework", runnable)
 cons = runner.list_constraints() or [runner.DEFAULT_CONSTRAINT]
 ci = cons.index(runner.DEFAULT_CONSTRAINT) if runner.DEFAULT_CONSTRAINT in cons else 0
-con = c2.selectbox("Constraint", cons, index=ci)
+con = c2.selectbox(
+    "Constraint", cons, index=ci,
+    help="A preset resource plan (AMLB-style), the **same for every framework** so the comparison is "
+         "fair. The time is the budget **per dataset fold** (not total):\n\n"
+         "- **smoke** — 60s / fold, single split · a quick pipeline test, not real results\n"
+         "- **1h** — 1 hour / fold × 10-fold CV\n"
+         "- **4h** — 4 hours / fold × 10-fold CV\n\n"
+         "So a `1h` run on one dataset = up to 10 h of AutoML search (10 folds); heavy → run on CI/Linux.")
 
 # Resource plan for the chosen constraint — surfaced up front so `smoke`/`1h`/`4h` isn't an opaque
 # label. The SAME plan (folds + budget + cores + memory) is applied to every framework, which is
 # what makes the benchmark a fair comparison.
 _rp = runner.constraint_info(con)
 if _rp:
-    _bud = f"{_rp['seconds']}s" if (_rp["seconds"] or 0) < 120 else f"{(_rp['seconds'] or 0) // 60} min"
+    _secs = _rp["seconds"] or 0
+    _bud = (f"{_secs}s" if _secs < 120 else f"{_secs // 60} min" if _secs < 3600 else f"{_secs // 3600} h")
     _folds = _rp["folds"] or 1
     # AMLB enforces folds/budget/cores per its constraint; memory is shown only when configured.
     _fields = [
         ("CV folds", str(_folds), "Cross-validation folds per dataset (1 = single split). "
          ">1 → Evaluation reports mean ± std over folds, with lower variance."),
-        ("Time budget", _bud, "Max training time per dataset per fold."),
+        ("Time budget", f"{_bud} / fold", "Max time the AutoML search gets on each dataset fold "
+         "(not total) — the same for every framework. Total ≈ budget × folds × datasets."),
         ("Cores", str(_rp["cores"] or "—"), "CPU cores AMLB gives the framework."),
     ]
     if _rp.get("max_mem_mb"):
