@@ -52,8 +52,9 @@ nghĩa khi ngân sách được kiểm soát chặt chẽ và đồng nhất.
 \section{Các chiến lược tìm kiếm trong AutoML}
 \label{sec:chienluoc}
 Do bài toán CASH không cho phép sử dụng thông tin đạo hàm, các thư viện AutoML
-phải dựa vào những chiến lược tìm kiếm gián tiếp. Phần này trình bày ba nhóm chiến
-lược có liên quan trực tiếp tới các thư viện được khảo sát.
+phải dựa vào những chiến lược tìm kiếm gián tiếp. Ba nhóm chiến lược dưới đây chi
+phối hành vi của các thư viện được khảo sát, và sự khác biệt giữa chúng giải thích
+phần lớn những chênh lệch quan sát được ở Chương~\ref{ch:thucnghiem}.
 
 \subsection{Tối ưu Bayes}
 Tối ưu Bayes xây dựng một \emph{mô hình thay thế} (\textit{surrogate model}) xấp
@@ -95,9 +96,9 @@ chất ngẫu nhiên của các toán tử.
 
 \section{Cơ sở của phương pháp học tổ hợp}
 \label{sec:ensemble}
-Ba trong bốn thư viện được khảo sát đều dựa vào việc kết hợp nhiều mô hình, do đó
-việc hiểu cơ sở lý thuyết của học tổ hợp là cần thiết để giải thích kết quả thực
-nghiệm ở Chương~\ref{ch:thucnghiem}.
+Ba trong bốn thư viện được khảo sát đều đặt trọng tâm vào việc kết hợp nhiều mô
+hình thay vì tinh chỉnh một mô hình đơn lẻ. Lợi ích của lựa chọn này không hiển
+nhiên, và điều kiện để nó thành hiện thực sẽ được làm rõ dưới đây.
 
 Xét bài toán hồi quy với hàm mục tiêu thật $f$. Sai số bình phương kỳ vọng của một
 mô hình $\hat{f}$ tại điểm $x$ có thể phân rã thành ba thành phần:
@@ -259,12 +260,12 @@ Xét theo \emph{log-loss}:
     = -\tfrac{1}{2}\big[(-0.051) + (-0.916)\big] \approx 0.484.
 \]
 Kết quả cho thấy $M_B$ có log-loss \emph{thấp hơn} (tốt hơn) mặc dù độ chính xác
-chỉ bằng một nửa. Nguyên nhân là $M_B$ rất tự tin và đúng ở mẫu thứ nhất
-($0.95$), trong khi sai lầm ở mẫu thứ hai là sai lầm ``nhẹ'' vì mô hình vẫn gán
-xác suất $0.40$ cho lớp đúng. Ví dụ này minh hoạ rằng hai độ đo nắm bắt những khía
-cạnh khác nhau của chất lượng mô hình, và việc lựa chọn độ đo phải xuất phát từ
-mục đích sử dụng: nếu đầu ra được dùng làm xác suất để ra quyết định theo ngưỡng
-thì log-loss phù hợp hơn, còn nếu chỉ cần nhãn cuối cùng thì độ chính xác đủ dùng.
+chỉ bằng một nửa. Nguyên nhân nằm ở chỗ $M_B$ rất tự tin và đúng ở mẫu thứ nhất
+($0.95$), còn sai lầm ở mẫu thứ hai chỉ ở mức biên: mô hình vẫn gán xác suất
+$0.40$ cho lớp đúng, tức chỉ thua lớp được chọn $0.15$. Hai độ đo do đó nắm bắt
+những khía cạnh khác nhau của chất lượng mô hình, và việc lựa chọn phải xuất phát
+từ mục đích sử dụng: log-loss phù hợp khi đầu ra được dùng làm xác suất để ra
+quyết định theo ngưỡng, còn độ chính xác đủ dùng khi chỉ cần nhãn cuối cùng.
 \end{vidu}
 
 \subsection{Căn bậc hai sai số bình phương trung bình}
@@ -298,7 +299,7 @@ quy có phân phối mục tiêu đuôi dài thường cho độ lệch chuẩn 
 \subsection{Chuẩn hoá chiều tối ưu}
 Ba độ đo trên có chiều tối ưu khác nhau: AUC và độ chính xác càng lớn càng tốt,
 trong khi log-loss và RMSE càng nhỏ càng tốt. Để tổng hợp được trên cùng một
-thang, mọi độ đo được quy về dạng ``lớn hơn là tốt hơn'' bằng cách lấy dấu âm với
+thang, mọi độ đo được quy về dạng \emph{càng lớn càng tốt} bằng cách lấy dấu âm với
 hai độ đo sau:
 \[
     \tilde{s} =
@@ -339,9 +340,10 @@ trong một phép so sánh ngẫu nhiên là
     \Pr(F_1 \succ F_2) = \frac{0.446}{0.446 + 0.197} = \frac{0.446}{0.643}
     \approx 0.694.
 \]
-Nghĩa là thư viện thứ nhất được kỳ vọng thắng khoảng $69\%$ số lần đối đầu. Cách
-diễn giải này cụ thể và hữu ích hơn so với việc chỉ nói thư viện thứ nhất ``xếp
-trên'', vì nó lượng hoá được mức độ cách biệt.
+Nghĩa là thư viện thứ nhất được kỳ vọng thắng khoảng $69\%$ số lần đối đầu. Con số
+này lượng hoá được mức độ cách biệt, điều mà một thứ hạng đơn thuần không làm
+được: vị trí thứ nhất và thứ hai có thể ứng với $69\%$ như ở đây, nhưng cũng có
+thể chỉ ứng với $51\%$.
 \end{vidu}
 
 Mô hình Bradley--Terry còn có thể mở rộng thành \emph{cây Bradley--Terry}, trong

@@ -34,8 +34,9 @@ một ngân sách tài nguyên cho trước, đâu là thư viện nên chọn?}
 
 \section{Tổng quan về học máy tự động}
 \label{sec:tongquan-automl}
-Để định vị chính xác phạm vi của đồ án, phần này phác hoạ cấu trúc của lĩnh vực
-AutoML và chỉ ra thành phần mà nghiên cứu tập trung vào.
+AutoML không phải một khối thống nhất mà là tập hợp nhiều nhánh khác nhau về đối
+tượng tự động hoá. Việc phân định các nhánh này là cần thiết để xác định chính xác
+phạm vi mà đồ án làm việc.
 
 \subsection{Các giai đoạn của một quy trình học máy}
 Một quy trình học máy có giám sát trên dữ liệu dạng bảng thường được chia thành
@@ -131,7 +132,7 @@ những trường hợp mà thư viện chạy thành công, tạo ra thiên l�
 những thư viện kém ổn định nhất. Trong khi đó, với người dùng thực tế, một thư
 viện thất bại trên dữ liệu lớn là một nhược điểm quan trọng cần được ghi nhận.
 
-Để thấy rõ mức độ nghiêm trọng của vấn đề thứ ba, xét một tình huống minh hoạ. Giả
+Hệ quả của vấn đề thứ ba nghiêm trọng hơn vẻ ngoài của nó. Giả
 sử hai thư viện $F_1$ và $F_2$ cùng được đánh giá trên mười bộ dữ liệu, trong đó
 có ba bộ có quy mô rất lớn. Thư viện $F_1$ hoàn tất cả mười bộ với điểm trung bình
 $0.80$. Thư viện $F_2$ thất bại trên đúng ba bộ dữ liệu lớn nhưng đạt $0.85$ trên

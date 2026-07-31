@@ -84,17 +84,18 @@ $300$ giây. Các nghiên cứu quy mô lớn thường sử dụng ngân sách 
 tự giữa các thư viện có thể thay đổi --- đặc biệt với những thư viện còn nhiều dư
 địa cải thiện như MLJAR.
 
-\textbf{Về mức độ cô lập môi trường.} Việc sử dụng môi trường ảo Python thay vì
-container cho phép chạy phân tán trên nhiều máy khác nhau, song mức độ cô lập ở
-tầng thư viện hệ thống thấp hơn. Điều kiện công bằng vẫn được bảo toàn trong mỗi
-lượt chạy vì mọi thư viện dùng chung một cấu hình phần cứng, nhưng việc tái lập
-chính xác trên máy khác đòi hỏi thêm thao tác thiết lập.
+\textbf{Về mức độ cô lập môi trường.} Bộ kết quả trong báo cáo được tạo bằng đường
+dòng lệnh, vốn cô lập các thư viện ở mức môi trường ảo Python. Lựa chọn này cho
+phép chạy phân tán trên nhiều máy nhưng không cô lập tầng thư viện hệ thống như
+container. Điều kiện công bằng vẫn được bảo toàn trong mỗi lượt chạy vì mọi thư
+viện dùng chung một cấu hình phần cứng; đổi lại, việc tái lập chính xác trên máy
+khác đòi hỏi thêm thao tác thiết lập. Đường chạy trên nền Docker của AMLB Studio
+khắc phục hạn chế này nhưng chưa được dùng cho lượt đánh giá hiện tại.
 
-\textbf{Về ý nghĩa thống kê.} Với 5 fold trên mỗi cặp (thư viện, bộ dữ liệu), các
-chênh lệch nhỏ giữa những thư viện dẫn đầu chưa được kiểm chứng bằng kiểm định
-thống kê hình thức. Báo cáo đã thận trọng không tuyên bố thắng thua trong những
-trường hợp chênh lệch nằm dưới ngưỡng độ lệch chuẩn, song một kết luận chặt chẽ
-đòi hỏi công cụ kiểm định phù hợp.
+\textbf{Về ý nghĩa thống kê.} Các chênh lệch nhỏ giữa những thư viện dẫn đầu chưa
+được kiểm chứng bằng kiểm định hình thức. Báo cáo đã thận trọng không tuyên bố
+thắng thua khi chênh lệch nằm dưới ngưỡng độ lệch chuẩn giữa các fold, nhưng đây
+là biện pháp phòng vệ chứ không thay thế được một kiểm định đúng nghĩa.
 
 \textbf{Về phạm vi bài toán.} Nghiên cứu giới hạn ở dữ liệu dạng bảng với ba dạng
 tác vụ học có giám sát; các kết luận không mở rộng trực tiếp sang dữ liệu ảnh, văn
@@ -103,16 +104,21 @@ bản hay chuỗi thời gian.
 \section{Hướng phát triển tương lai}
 \label{sec:huongphattrien}
 
-\subsection{Bổ sung kiểm định thống kê cho xếp hạng}
-Hạn chế về ý nghĩa thống kê nêu trên có thể được khắc phục bằng quy trình kiểm
-định chuẩn cho bài toán so sánh nhiều thuật toán trên nhiều bộ dữ liệu do Dem\v{s}ar
-đề xuất~\cite{demsar2006statistical}: kiểm định Friedman để bác bỏ giả thuyết mọi
-thư viện có hiệu năng như nhau, tiếp theo là hậu kiểm Nemenyi để xác định những
-cặp thư viện thực sự khác biệt, và biểu diễn kết quả bằng biểu đồ khoảng cách tới
-hạn. Bổ sung này sẽ cho phép phát biểu chắc chắn
-rằng cách biệt giữa H2O và FLAML ở nhóm hồi quy là có ý nghĩa thống kê, đồng thời
-xác nhận rằng khoảng cách $0.004$ giữa H2O và MLJAR ở mức toàn cục là không đáng
-kể --- điều mà hiện tại báo cáo mới chỉ nhận định dựa trên độ lệch chuẩn quan sát.
+\subsection{Áp dụng kiểm định thống kê lên bộ kết quả hiện có}
+Quy trình kiểm định Friedman và hậu kiểm Nemenyi đã được hiện thực trong lớp phân
+tích của hệ thống (Mục~\ref{sec:console}) nhưng chưa được áp dụng lên bộ kết quả ở
+Chương~\ref{ch:thucnghiem}, do hai phần được phát triển song song trên hai nhánh
+khác nhau. Kết nối chúng là bước tiếp theo trực tiếp nhất và không đòi hỏi chạy
+lại thực nghiệm.
+
+Với bốn thư viện trên 12 bộ dữ liệu, sau khi thu về tập con đầy đủ vẫn còn chín bộ,
+vượt ngưỡng tối thiểu mà kiểm định yêu cầu. Kết quả sẽ cho phép phát biểu dứt khoát
+hai điều mà báo cáo hiện chỉ nhận định dựa trên độ lệch chuẩn quan sát: cách biệt
+giữa H2O và FLAML ở nhóm hồi quy có phải khác biệt thực hay không, và khoảng cách
+$0.004$ giữa H2O và MLJAR ở mức toàn cục có nằm dưới ngưỡng phân biệt hay không.
+Biểu đồ khoảng cách tới hạn đi kèm sẽ thay cách trình bày thứ hạng hiện tại bằng
+một hình thức chặt chẽ hơn, trong đó những thư viện không phân biệt được về mặt
+thống kê được nối với nhau thay vì bị xếp thứ tự dứt khoát.
 
 \subsection{Mở rộng thang ngân sách và khảo sát đường cong hội tụ}
 Thay vì chỉ so sánh hai mức ngân sách rời rạc, hướng phát triển tiếp theo là ghi

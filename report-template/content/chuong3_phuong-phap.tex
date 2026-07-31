@@ -4,12 +4,14 @@
 \chapter{Phương pháp và hệ thống thực nghiệm}
 \label{ch:phuongphap}
 
-Chương này trình bày giao thức đánh giá công bằng mà đồ án áp dụng, kiến trúc hạ
-tầng thực nghiệm hiện thực hoá giao thức đó, cùng các thuật toán tổng hợp và xếp
-hạng kết quả. Đồ án theo hướng \emph{trình bày lại và tái thực nghiệm}: nền tảng
-phương pháp luận kế thừa từ AMLB~\cite{gijsbers2024amlb}, còn đóng góp kỹ thuật
-nằm ở hạ tầng thực thi phân tán và quy trình phân tích đa chiều được xây dựng
-riêng cho tập dữ liệu do nhóm thu thập.
+Một giao thức đánh giá chỉ có giá trị khi được hiện thực đúng. Bốn điều kiện công
+bằng phát biểu ở Định nghĩa~\ref{def:congbang} đều dễ bị vi phạm một cách vô tình
+trong quá trình triển khai, và mỗi điều kiện vì thế cần một cơ chế kiểm soát cụ
+thể chứ không thể chỉ là nguyên tắc trên giấy. Chương này đi từ các cơ chế đó đến
+kiến trúc hiện thực chúng, rồi đến những thuật toán tổng hợp và xếp hạng kết quả.
+Nền tảng phương pháp luận kế thừa từ AMLB~\cite{gijsbers2024amlb}; đóng góp kỹ
+thuật của nhóm nằm ở hạ tầng thực thi phân tán và quy trình phân tích đa chiều xây
+dựng riêng cho tập dữ liệu tự thu thập.
 
 \section{Giao thức đánh giá công bằng}
 \label{sec:giaothuc}
@@ -123,7 +125,7 @@ Mỗi tiến trình thực thi đọc phân hoạch fold đã lưu, tách tập 
 kiểm thử theo đúng chỉ số được chỉ định, gọi thư viện AutoML tương ứng với ngân
 sách thời gian đã cho, rồi tính điểm trên tập kiểm thử. Song song với quá trình
 huấn luyện, tiến trình ghi nhận thời gian huấn luyện, thời gian suy luận và mức
-sử dụng bộ nhớ đỉnh. Điểm số được quy về chiều ``lớn hơn là tốt hơn'' ngay tại
+sử dụng bộ nhớ đỉnh. Điểm số được quy về chiều \emph{càng lớn càng tốt} ngay tại
 bước này theo quy tắc chuẩn hoá ở Mục~\ref{sec:dodo-lythuyet}.
 
 \subsection{Hợp nhất kết quả phân tán}
@@ -163,13 +165,30 @@ bị dồn về phía trên.
 
 \subsection{Xếp hạng bằng mô hình Bradley--Terry}
 Phép quy đổi thứ hai khắc phục nhược điểm trên bằng cách chỉ giữ lại thông tin thứ
-tự. Với mỗi bộ dữ liệu và mỗi cặp thư viện $(F_i, F_j)$, ta ghi nhận một trận đối
-đầu mà $F_i$ thắng nếu $\tilde{s}_{ij} > \tilde{s}_{jj'}$ trên cùng bộ dữ liệu đó.
-Tổng hợp trên toàn bộ tập dữ liệu thu được ma trận thắng -- thua, từ đó ước lượng
-tham số cường độ $\lambda_i$ của mô hình Bradley--Terry
-(Định nghĩa~\ref{def:bt}) bằng phương pháp hợp lý cực đại. Do chỉ dựa trên quan hệ
-thứ tự, cách tiếp cận này bền vững trước các giá trị ngoại lai và trước sự khác
-biệt về thang đo giữa các bộ dữ liệu.
+tự. Các trận đối đầu được ghi nhận ở \emph{mức fold}: với mỗi bộ dữ liệu $D_j$,
+mỗi fold $t$ và mỗi cặp thư viện $(F_i, F_l)$ cùng hoàn tất fold đó, ta ghi một
+trận mà $F_i$ thắng nếu $\tilde{s}^{(t)}_{ij} > \tilde{s}^{(t)}_{lj}$, và bỏ qua
+khi hai điểm số bằng nhau. Gọi $W$ là ma trận với $W_{il}$ là số lần $F_i$ thắng
+$F_l$ trên toàn bộ các fold.
+
+Việc đếm ở mức fold thay vì mức bộ dữ liệu mang lại hai lợi ích. Số quan sát tăng
+gấp $K$ lần, giúp ước lượng ổn định hơn khi số bộ dữ liệu còn khiêm tốn. Quan
+trọng hơn, cách đếm này phản ánh được \emph{mức độ nhất quán}: một thư viện thắng
+sít sao ở cả năm fold sẽ có $W$ khác hẳn một thư viện thắng áp đảo ở ba fold nhưng
+thua ở hai fold, trong khi cách đếm ở mức trung bình gộp hai trường hợp đó làm
+một.
+
+Tham số cường độ $\lambda_i$ của mô hình Bradley--Terry (Định nghĩa~\ref{def:bt})
+được ước lượng từ $W$ bằng phương pháp hợp lý cực đại, sử dụng thuật toán lặp
+minorization--maximization với bước cập nhật
+\[
+    \lambda_i^{(\text{mới})} = \frac{\sum_{l \neq i} W_{il}}
+    {\displaystyle\sum_{l \neq i} \frac{W_{il} + W_{li}}{\lambda_i + \lambda_l}},
+\]
+sau mỗi vòng lặp chuẩn hoá lại để $\sum_i \lambda_i = 1$, và dừng khi thay đổi lớn
+nhất giữa hai vòng liên tiếp nhỏ hơn ngưỡng cho trước. Do chỉ dựa trên quan hệ thứ
+tự, cách tiếp cận này bền vững trước các giá trị ngoại lai và trước sự khác biệt về
+thang đo giữa các bộ dữ liệu.
 
 Việc phân tách mô hình theo dạng tác vụ tạo thành cây Bradley--Terry, cho phép
 kiểm tra giả thuyết rằng thứ hạng giữa các thư viện là ổn định trên mọi dạng bài
@@ -248,19 +267,33 @@ thiên bằng $0.038$:
     z_{32} = \frac{-0.455 + 0.470}{0.038} = \frac{0.015}{0.038} \approx 0.395.
 \]
 
-\textbf{Bước 3 --- lập ma trận thắng -- thua.} Trên $D_1$ thứ tự là
-$F_3 \succ F_1 \succ F_2$, trên $D_2$ là $F_2 \succ F_3 \succ F_1$. Tổng hợp sáu
-trận đối đầu: $F_1$ thắng $1$ (trước $F_2$ ở $D_1$) và thua $3$; $F_2$ thắng $2$
-(trước $F_1$ và $F_3$ ở $D_2$) và thua $2$; $F_3$ thắng $3$ và thua $1$.
+\textbf{Bước 3 --- lập ma trận thắng -- thua ở mức fold.} Giả sử mỗi bộ dữ liệu
+được đánh giá trên $K = 5$ fold, và thứ tự quan sát được trên từng fold là:
+trên $D_1$, $F_3 \succ F_1 \succ F_2$ ở cả $5$ fold; trên $D_2$,
+$F_2 \succ F_3 \succ F_1$ ở $4$ fold còn fold còn lại cho
+$F_3 \succ F_2 \succ F_1$. Đếm theo từng cặp:
+\[
+    W = \begin{pmatrix}
+        \cdot & 5 & 0 \\
+        5 & \cdot & 4 \\
+        10 & 6 & \cdot
+    \end{pmatrix},
+\]
+với hàng và cột theo thứ tự $F_1, F_2, F_3$. Chẳng hạn $W_{32} = 6$ vì $F_3$
+thắng $F_2$ ở cả $5$ fold của $D_1$ cộng thêm $1$ fold của $D_2$.
 
-\textbf{Bước 4 --- diễn giải.} Cường độ Bradley--Terry ước lượng từ ma trận này
-xếp $F_3$ đầu bảng, $F_2$ thứ hai và $F_1$ cuối. Đáng chú ý, nếu chỉ lấy trung
-bình điểm chuẩn hoá thì $F_3$ đạt $(1 + 0.395)/2 \approx 0.698$ còn $F_2$ đạt
-$(0 + 1)/2 = 0.5$; kết luận về thứ tự là như nhau, song giá trị trung bình của
-$F_2$ bị chi phối mạnh bởi khoảng cách rất hẹp giữa các thư viện trên $D_1$
-(chênh lệch AUC chỉ $0.006$ nhưng sau chuẩn hoá bị kéo giãn thành khoảng cách tối
-đa). Đây chính là lý do mô hình Bradley--Terry được dùng làm căn cứ xếp hạng
-chính, còn điểm chuẩn hoá chỉ đóng vai trò bổ trợ trực quan.
+\textbf{Bước 4 --- diễn giải.} Ước lượng Bradley--Terry từ $W$ xếp $F_3$ đầu bảng,
+$F_2$ thứ hai và $F_1$ cuối. Điều mà cách đếm ở mức fold bộc lộ thêm là mức độ
+chắc chắn của từng kết luận: ưu thế của $F_3$ trước $F_1$ là tuyệt đối ($10$ thắng,
+$0$ thua) trong khi ưu thế trước $F_2$ chỉ là $6$ trên $4$ --- một khác biệt mà
+bảng điểm trung bình không thể hiện.
+
+So sánh với điểm chuẩn hoá cho thấy vì sao Bradley--Terry được chọn làm căn cứ
+xếp hạng chính. Trung bình điểm chuẩn hoá của $F_3$ là
+$(1 + 0.395)/2 \approx 0.698$ và của $F_2$ là $(0 + 1)/2 = 0.5$; thứ tự tuy trùng
+nhau nhưng giá trị của $F_2$ bị chi phối bởi khoảng cách rất hẹp trên $D_1$, nơi
+chênh lệch AUC chỉ $0.006$ đã bị phép chuẩn hoá kéo giãn thành khoảng cách tối đa.
+Điểm chuẩn hoá vì vậy chỉ giữ vai trò bổ trợ trực quan.
 \end{vidu}
 
 \section{Phân tích độ phức tạp}
@@ -291,66 +324,107 @@ tiến trình thực thi, phụ thuộc vào kích thước bộ dữ liệu và
 thư viện --- đây chính là đại lượng được đo và phân tích ở
 Mục~\ref{sec:bonho}.
 
-\section{Công cụ quản trị thực nghiệm}
+\section{Hệ thống AMLB Studio}
 \label{sec:console}
-Bên cạnh bộ công cụ dòng lệnh phục vụ chạy thực nghiệm quy mô lớn, nhóm phát triển
-một giao diện quản trị dạng ứng dụng web nhằm hạ thấp rào cản sử dụng cho người
-không quen thao tác dòng lệnh. Giao diện được tổ chức thành bốn khu vực chức năng
-tương ứng với bốn giai đoạn của quy trình đánh giá.
+Hạ tầng dòng lệnh mô tả ở Mục~\ref{sec:kientruc} được thiết kế cho một mục tiêu
+hẹp: chạy trọn một lượt đánh giá quy mô lớn trên nhiều máy. Nó phục vụ tốt mục
+tiêu đó nhưng đòi hỏi người dùng thao tác qua dòng lệnh và tự quản lý các tệp kết
+quả. Nhóm vì vậy phát triển song song \textit{AMLB Studio}, một ứng dụng web đóng
+vai trò lớp vận hành thống nhất cho toàn bộ vòng đời đánh giá.
 
-Khu vực quản lý dữ liệu (Hình~\ref{fig:console-datasets}) cho phép nạp bộ dữ liệu
-theo ba con đường: tải trực tiếp tệp CSV, lấy từ kho tác vụ OpenML theo định danh,
-hoặc nhập liên kết tới một bộ dữ liệu Kaggle công khai. Mỗi bộ dữ liệu sau khi nạp
-được ghi vào danh mục kèm dạng tác vụ, nguồn gốc và trạng thái xử lý.
+Hai hạ tầng khác nhau ở cơ chế cô lập môi trường. Đường dòng lệnh dùng môi trường
+ảo Python cho mỗi thư viện, đủ để loại trừ xung đột phụ thuộc ở tầng gói Python và
+chạy được trên các nền tảng đám mây miễn phí. AMLB Studio đi xa hơn, gọi trực tiếp
+các ảnh Docker dựng sẵn của AMLB nên cô lập được cả tầng thư viện hệ thống. Toàn
+bộ số liệu trình bày ở Chương~\ref{ch:thucnghiem} được tạo ra bằng đường dòng
+lệnh; đường Docker là kiến trúc đích cho các lượt đánh giá về sau, khi hạ tầng cho
+phép.
+
+\subsection{Tổ chức giao diện}
+Ứng dụng được chia thành các nhóm chức năng theo đúng trình tự công việc: nạp dữ
+liệu và tích hợp thư viện, khởi chạy và theo dõi, rồi phân tích kết quả.
+
+Trang quản lý dữ liệu (Hình~\ref{fig:console-datasets}) nhận bộ dữ liệu qua ba
+đường: tải lên tệp CSV, lấy theo định danh tác vụ OpenML, hoặc nhập liên kết tới
+một bộ dữ liệu Kaggle công khai. Đường thứ ba chính là đường mà 12 bộ dữ liệu ở
+Chương~\ref{ch:thucnghiem} đi qua; mỗi bộ sau khi nạp được ghi vào danh mục kèm
+dạng tác vụ, nguồn gốc và trạng thái xử lý.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.88\linewidth]{image/console-datasets.png}
-    \caption{Khu vực quản lý dữ liệu: nạp bộ dữ liệu từ tệp CSV, tác vụ OpenML
-    hoặc liên kết Kaggle công khai.}
+    \includegraphics[width=0.92\linewidth]{image/console-datasets.png}
+    \caption{Trang quản lý dữ liệu: nạp bộ dữ liệu từ tệp CSV, tác vụ OpenML hoặc
+    liên kết Kaggle công khai, kèm danh mục đã nạp.}
     \label{fig:console-datasets}
 \end{figure}
 
-Khu vực quản lý thư viện (Hình~\ref{fig:console-methods}) hiển thị danh mục các
-thư viện AutoML kèm trạng thái tích hợp và mức độ tương thích với cấu hình máy
-hiện tại. Trạng thái được báo cáo trung thực theo kết quả kiểm tra thực tế thay vì
-giả định, nhờ đó người dùng biết trước thư viện nào có thể chạy được trên máy của
-mình trước khi khởi động một lượt đánh giá kéo dài nhiều giờ.
+Trang quản lý thư viện (Hình~\ref{fig:console-methods}) hiển thị danh mục các thư viện
+AutoML kèm trạng thái tích hợp thực tế. Trạng thái phản ánh kết quả kiểm tra trên
+máy hiện tại chứ không phải khai báo tĩnh, nên người dùng biết trước thư viện nào
+chạy được trước khi khởi động một lượt đánh giá kéo dài nhiều giờ. Danh mục bao
+gồm cả hai phương pháp cơ sở \texttt{constantpredictor} và \texttt{RandomForest}
+dùng cho phần đối chiếu ở Mục~\ref{sec:baseline}.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.88\linewidth]{image/console-methods.png}
-    \caption{Khu vực quản lý thư viện: danh mục các thư viện AutoML kèm trạng thái
-    tích hợp và phù hiệu tương thích theo cấu hình máy.}
+    \includegraphics[width=0.92\linewidth]{image/console-methods.png}
+    \caption{Trang quản lý thư viện: danh mục AutoML kèm trạng thái tích hợp được
+    kiểm tra trực tiếp trên máy đang chạy.}
     \label{fig:console-methods}
 \end{figure}
 
-Khu vực khởi chạy (Hình~\ref{fig:console-training}) cho phép chọn tổ hợp thư viện,
-bộ dữ liệu và ngân sách thời gian, sau đó khởi động lượt đánh giá và theo dõi
-trạng thái từng công việc theo thời gian thực. Cuối cùng, khu vực tổng hợp kết quả
-(Hình~\ref{fig:console-eval}) trình bày bảng xếp hạng, biểu đồ đánh đổi giữa chất
-lượng và thời gian, cùng khung nhìn phân tích theo đặc trưng bộ dữ liệu.
+\subsection{Ràng buộc công bằng hiển thị tường minh}
+Trang khởi chạy (Hình~\ref{fig:console-training}) trình bày rõ ba đại lượng quyết
+định tính công bằng của phép so sánh: số fold, ngân sách thời gian trên mỗi fold
+và số nhân CPU. Giao diện nêu trực tiếp rằng kế hoạch tài nguyên này được áp dụng
+như nhau cho mọi thư viện và phép chia fold dùng hạt giống cố định, có phân tầng
+với bài toán phân loại.
+
+Việc đưa các ràng buộc lên bề mặt giao diện không chỉ là lựa chọn trình bày. Ngân
+sách và cấu hình tài nguyên là những tham số dễ bị đặt khác nhau giữa các lần chạy
+mà không ai nhận ra, và đó chính là nguồn gốc phổ biến nhất của những so sánh
+không công bằng đã phân tích ở Mục~\ref{sec:dongluc}. Hiển thị chúng cạnh nút khởi
+chạy khiến sai lệch loại này khó xảy ra.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.88\linewidth]{image/console-training.png}
-    \caption{Khu vực khởi chạy: lựa chọn thư viện, bộ dữ liệu và ngân sách thời
-    gian, đồng thời theo dõi trạng thái các công việc đang thực thi.}
+    \includegraphics[width=0.92\linewidth]{image/console-training.png}
+    \caption{Trang khởi chạy: số fold, ngân sách thời gian trên mỗi fold và số
+    nhân CPU được hiển thị tường minh, kèm khẳng định kế hoạch tài nguyên áp dụng
+    như nhau cho mọi thư viện.}
     \label{fig:console-training}
 \end{figure}
 
+\subsection{Lớp phân tích}
+Trang tổng hợp kết quả (Hình~\ref{fig:console-eval}) trình bày bảng xếp hạng theo
+thứ hạng trung bình, biểu đồ đánh đổi giữa chất lượng và thời gian suy luận cùng
+đường bao Pareto, và khung nhìn xếp hạng theo đặc trưng bộ dữ liệu. Hai chỉ số
+\textit{coverage} và số lần thất bại được đặt ngay cạnh điểm số, nhờ đó người đọc
+không thể diễn giải bảng xếp hạng mà bỏ qua việc một thư viện đã bỏ lỡ bao nhiêu
+lần chạy.
+
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.88\linewidth]{image/eval-dashboard.png}
-    \caption{Khu vực tổng hợp kết quả: bảng xếp hạng, biểu đồ đánh đổi chất lượng
-    -- thời gian và khung nhìn theo đặc trưng bộ dữ liệu.}
+    \includegraphics[width=0.92\linewidth]{image/eval-dashboard.png}
+    \caption{Trang tổng hợp kết quả: bảng xếp hạng, đường bao Pareto giữa chất
+    lượng và thời gian suy luận, xếp hạng theo đặc trưng bộ dữ liệu, kèm chỉ số
+    coverage và số lần thất bại.}
     \label{fig:console-eval}
 \end{figure}
 
-Cần lưu ý rằng giao diện này đóng vai trò công cụ hỗ trợ khảo sát và trình diễn;
-toàn bộ kết quả trình bày ở Chương~\ref{ch:thucnghiem} được tạo ra bằng bộ công cụ
-dòng lệnh mô tả ở Mục~\ref{sec:kientruc}, vốn phù hợp hơn với việc chạy phân tán
-trên nhiều máy trong thời gian dài.
+Lớp phân tích còn cung cấp quy trình kiểm định thống kê theo chuẩn so sánh nhiều
+thuật toán trên nhiều bộ dữ liệu của Dem\v{s}ar~\cite{demsar2006statistical}:
+kiểm định Friedman xác định liệu có tồn tại khác biệt giữa các thư viện, tiếp theo
+là hậu kiểm Nemenyi với khoảng cách tới hạn
+\[
+    \mathrm{CD} = q_{\alpha}\sqrt{\frac{k(k+1)}{6N}},
+\]
+trong đó $k$ là số thư viện, $N$ là số bộ dữ liệu và $q_{\alpha}$ là giá trị tới
+hạn của phân phối studentized range chia cho $\sqrt{2}$. Hai thư viện có chênh
+lệch thứ hạng trung bình nhỏ hơn $\mathrm{CD}$ được xem là không phân biệt được về
+mặt thống kê. Quy trình này đòi hỏi các khối quan sát đầy đủ, nghĩa là mọi thư
+viện phải có điểm trên cùng tập bộ dữ liệu; khi dữ liệu khuyết, lớp phân tích thu
+hẹp về tập con đầy đủ lớn nhất thay vì loại bỏ toàn bộ phép so sánh.
 
 \section{Thảo luận về các lựa chọn thiết kế}
 \label{sec:thaoluan-pp}

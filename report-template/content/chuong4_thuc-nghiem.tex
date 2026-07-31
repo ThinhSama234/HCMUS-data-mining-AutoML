@@ -112,8 +112,8 @@ trong chương này ứng với mức $B = 300$ giây.
 
 \textbf{Độ đo.} AUC cho phân loại nhị phân, log-loss cho phân loại đa lớp
 (riêng \texttt{wine} báo cáo bằng độ chính xác do số lớp nhỏ và các thư viện đều
-đạt mức gần bão hoà), và RMSE cho hồi quy. Mọi độ đo được quy về chiều ``lớn hơn
-là tốt hơn'' trước khi tổng hợp.
+đạt mức gần bão hoà), và RMSE cho hồi quy. Mọi độ đo được quy về chiều
+\emph{càng lớn càng tốt} trước khi tổng hợp.
 
 \textbf{Đại lượng đo đạc.} Với mỗi lần chạy, hệ thống ghi nhận điểm số trên tập
 kiểm thử, thời gian huấn luyện, thời gian suy luận, mức sử dụng bộ nhớ đỉnh quan
@@ -314,10 +314,10 @@ này hẹp, việc triển khai AutoML có thể không tương xứng với chi
 
 \section{Hiệu năng chuẩn hoá theo dạng tác vụ}
 \label{sec:scaled}
-Để so sánh xuyên suốt các bộ dữ liệu có thang đo khác nhau, điểm số được chuẩn hoá
-về đoạn $[0,1]$ theo công thức ở Mục~\ref{sec:xephang}.
-Hình~\ref{fig:scaled-perf} trình bày phân phối điểm chuẩn hoá của từng thư viện,
-tổng hợp toàn cục và tách theo dạng tác vụ.
+Các nhận xét ở mục trước đều gắn với từng bộ dữ liệu riêng lẻ. Để nói được điều gì
+về xu hướng chung, điểm số cần được đưa về một thang chung theo phép chuẩn hoá ở
+Mục~\ref{sec:xephang}. Hình~\ref{fig:scaled-perf} trình bày phân phối thu được,
+vừa ở mức tổng hợp vừa tách theo dạng tác vụ.
 
 \begin{figure}[H]
     \centering
@@ -460,17 +460,24 @@ $1.0$ giây do đường ống tuỳ biến bao gồm nhiều bước biến đ�
 xuất hiện các giá trị ngoại lai lên tới hơn $10$ giây, tương ứng với những trường
 hợp tổ hợp nhiều tầng được xây dựng đầy đủ.
 
-Một điểm đáng lưu ý là quan hệ nghịch giữa tốc độ suy luận và chất lượng dự đoán:
-FLAML nhanh nhất khi suy luận nhưng xếp cuối về chất lượng ở nhóm hồi quy, trong
-khi AutoGluon chậm nhất ở phần đuôi phân phối nhưng ổn định nhất về chất lượng.
-Trong bối cảnh triển khai đòi hỏi độ trễ thấp, chênh lệch này là một tiêu chí lựa
-chọn thực chất. Tuy vậy, cần đặt các con số vào đúng bối cảnh: mọi thư viện đều có
-trung vị dưới $2$ giây cho toàn bộ tập kiểm thử, mức hoàn toàn chấp nhận được với
-phần lớn ứng dụng không yêu cầu thời gian thực.
+Thứ tự về tốc độ suy luận không phản chiếu thứ tự về chất lượng. FLAML nhanh nhất
+nhưng xếp cuối ở nhóm hồi quy, điều dễ khiến người đọc kết luận rằng mô hình gọn
+thì kém chính xác. H2O bác bỏ cách đọc đó: thư viện này có trung vị suy luận nhanh
+thứ hai mà vẫn dẫn đầu cả nhóm đa lớp lẫn nhóm hồi quy. Yếu tố quyết định độ trễ ở
+đây là \emph{cấu trúc} mô hình được trả về chứ không phải chất lượng của nó --- một
+tổ hợp xếp chồng nhiều tầng buộc phải chạy qua toàn bộ các mô hình thành phần,
+trong khi một tổ hợp phẳng cố định thì không.
+
+Điều này giữ cho tốc độ suy luận là một tiêu chí lựa chọn độc lập, không thể suy ra
+từ bảng xếp hạng chất lượng. Dù vậy, cần đặt các con số vào đúng quy mô: trung vị
+của cả bốn thư viện đều dưới $2$ giây cho toàn bộ tập kiểm thử, nên khác biệt này
+chỉ thực sự quan trọng với các hệ thống có ràng buộc độ trễ chặt.
 
 \section{Mức tiêu thụ bộ nhớ}
 \label{sec:bonho}
-Hình~\ref{fig:memory} trình bày mức sử dụng bộ nhớ đỉnh đo từ tiến trình Python,
+Bộ nhớ là ràng buộc quyết định thư viện nào chạy được trên một cấu hình máy cho
+trước, và như phần sau sẽ chỉ ra, cũng là nguyên nhân của một phần đáng kể các lần
+thất bại. Hình~\ref{fig:memory} trình bày mức sử dụng đỉnh đo từ tiến trình Python
 theo từng cặp (bộ dữ liệu, thư viện) và trung bình theo thư viện.
 
 \begin{figure}[H]
