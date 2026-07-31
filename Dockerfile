@@ -11,7 +11,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY analysis/ ./analysis/
 COPY storage/ ./storage/
 COPY console/ ./console/
+COPY api/ ./api/
 COPY results/ ./results/
+COPY .streamlit/ ./.streamlit/
 
 EXPOSE 8501
 # `migrate` (schema + ingest) is run as a one-off: docker-compose run --rm console python -m storage.migrate

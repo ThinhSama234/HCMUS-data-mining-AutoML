@@ -1,0 +1,6 @@
+# Console theme — align Streamlit's built-in accents with the teal-ink identity.
+# primaryColor recolors every default accent (input focus border, segmented control,
+# radio/checkbox, slider, spinner) from Streamlit's red (#FF4B4B) to the brand teal,
+# so no widget clashes with console/theme.py. Amber primary buttons are styled there.
+[theme]
+primaryColor = "#0C6E6A"

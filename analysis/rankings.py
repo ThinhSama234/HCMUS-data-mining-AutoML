@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import sys
 
+import pandas as pd
+
 from analysis.load_results import load_results
 
 
@@ -21,6 +23,27 @@ def per_task_scores(df):
         .agg(score_mean="mean", score_std="std", folds_completed="count")
         .reset_index()
     )
+
+
+def mean_std_table(df):
+    """Display frame: per (dataset × framework) metric as ``mean ± std`` over folds + fold count.
+
+    Columns: [task, (type), (metric), framework, score, folds]. ``score`` is ``"{mean} ± {std}"``
+    (just the mean when there is one fold / std is NaN). Presentation-only; reuses per_task_scores.
+    """
+    pts = per_task_scores(df)
+    if pts.empty:
+        return pd.DataFrame(columns=["task", "framework", "score", "folds"])
+
+    def _fmt(r):
+        m, s = r["score_mean"], r["score_std"]
+        return f"{m:.4f}" if pd.isna(s) else f"{m:.4f} ± {s:.4f}"
+
+    out = pts.copy()
+    out["score"] = out.apply(_fmt, axis=1)
+    keep = [c for c in ["task", "type", "metric", "framework"] if c in out.columns] + \
+           ["score", "folds_completed"]
+    return out[keep].rename(columns={"folds_completed": "folds"})
 
 
 def average_ranks(df):

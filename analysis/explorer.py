@@ -69,6 +69,26 @@ def characteristics_module():
     return _optional_module("by_characteristics")
 
 
+def failures_module():
+    return _optional_module("failures")
+
+
+def ranking_flips_module():
+    return _optional_module("ranking_flips")
+
+
+def score_shapes_module():
+    return _optional_module("score_shapes")
+
+
+def memory_module():
+    return _optional_module("memory")
+
+
+def significance_module():
+    return _optional_module("significance")
+
+
 def export_headline_figures(df, outdir):
     """Static export of the ranking figure (matplotlib) for the report (FR-016).
 

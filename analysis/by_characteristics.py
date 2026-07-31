@@ -23,7 +23,9 @@ import pandas as pd
 from analysis.load_results import load_results
 from analysis.rankings import average_ranks
 
-# task name -> (n_instances, n_features, minority_fraction | None for non-binary)
+# Curated baseline + offline fallback: task name -> (n_instances, n_features,
+# minority_fraction | None for non-binary). The live catalog (load_task_meta) is the primary
+# source; this covers the smoke tasks and any catalog row whose characteristics are still NULL.
 TASK_META = {
     "credit-g": (1000, 20, 0.30),
     "vehicle": (846, 18, None),       # multiclass
@@ -31,6 +33,57 @@ TASK_META = {
     "churn": (5000, 20, 0.14),
     "Higgs": (1_000_000, 28, 0.47),
 }
+
+
+def _opt_num(v, cast):
+    """Coerce a catalog value to int/float, or None (handles NaN / NULL / Decimal)."""
+    if v is None or pd.isna(v):
+        return None
+    try:
+        return cast(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def load_task_meta(source=None):
+    """`{task_name: (n_instances, n_features, minority_fraction)}` for tier derivation.
+
+    Sourced from the dataset **catalog** (via ``storage.repo.list_datasets``) so the by-
+    characteristic view scales to every ingested dataset — not the 5 hardcoded tasks. Catalog
+    values are merged **over** the curated ``TASK_META`` baseline field-by-field, so a catalog
+    row whose characteristics are still NULL keeps any curated value instead of going ``unknown``.
+
+    Analysis stays decoupled from storage: the DB read is lazy, guarded, and optional — any
+    failure (no DB, import error, empty catalog) falls back to ``TASK_META``. ``source`` is a
+    test seam: a zero-arg callable returning a datasets-like DataFrame (columns
+    ``name / n_instances / n_features / minority_fraction``).
+    """
+    meta = dict(TASK_META)
+    try:
+        if source is None:
+            from storage import repo
+            cat = repo.list_datasets()
+        else:
+            cat = source()
+    except Exception:
+        return meta
+    if cat is None or getattr(cat, "empty", True):
+        return meta
+    for _, r in cat.iterrows():
+        name = r.get("name")
+        if name is None or pd.isna(name) or not str(name).strip():
+            continue
+        name = str(name)
+        n = _opt_num(r.get("n_instances"), int)
+        p = _opt_num(r.get("n_features"), int)
+        minority = _opt_num(r.get("minority_fraction"), float)
+        if n is None and p is None and minority is None:
+            continue  # catalog knows nothing about this dataset → keep any curated baseline
+        base = meta.get(str(name), (None, None, None))
+        meta[str(name)] = (n if n is not None else base[0],
+                           p if p is not None else base[1],
+                           minority if minority is not None else base[2])
+    return meta
 
 
 def size_tier(n):
@@ -51,8 +104,14 @@ def balance_tier(minority):
     return "imbalanced" if minority < 0.20 else "balanced"
 
 
-def with_characteristics(df, meta=TASK_META):
-    """Add size_tier / dim_tier / balance_tier columns derived from task metadata."""
+def with_characteristics(df, meta=None):
+    """Add size_tier / dim_tier / balance_tier columns derived from task metadata.
+
+    ``meta`` defaults to the live catalog via ``load_task_meta()`` (resolved lazily so importing
+    this module never touches the DB); pass an explicit dict to inject a fixed source in tests.
+    """
+    if meta is None:
+        meta = load_task_meta()
     out = df.copy()
 
     def tiers(task):
@@ -64,11 +123,12 @@ def with_characteristics(df, meta=TASK_META):
     return out
 
 
-def grouped_rankings(df, by="size_tier", meta=TASK_META):
+def grouped_rankings(df, by="size_tier", meta=None):
     """Average rank per framework within each group of `by`. Returns long df: [by, framework, avg_rank].
 
     `by` may be a derived tier (size_tier/dim_tier/balance_tier) or the raw `type` column
     (binary/multiclass/regression) — the latter folds the old "by task type" table into this view.
+    `meta` defaults to the live catalog (see `with_characteristics`); pass a dict to inject in tests.
     """
     if by not in {"size_tier", "dim_tier", "balance_tier", "type"}:
         raise ValueError(f"unknown characteristic: {by}")

@@ -63,42 +63,42 @@ _DEMO_HTML = """
     <span class="lbl"><span class="live"></span>DEMO · TỰ LẶP</span></div>
   <div class="frames">
     <div class="frame on" data-i="0"><div class="rail"><div class="grp">Build</div>
-      <div class="it act">🗂 Datasets</div><div class="it">🧩 Methods</div><div class="it">🚀 Training</div></div>
+      <div class="it act">Datasets</div><div class="it">Methods</div><div class="it">Training</div></div>
       <div class="screen"><div class="t">Datasets</div><div class="sub">Tải dữ liệu vào catalog</div>
-        <div class="drop">⬆ Kéo–thả CSV · hoặc “Browse files”</div>
+        <div class="drop">Kéo–thả CSV · hoặc “Browse files”</div>
         <div class="tbl"><div class="tr"><span>loan_binary</span><span>upload</span><span>binary</span></div>
           <div class="tr"><span>iris</span><span>openml</span><span>multiclass</span></div></div>
         <span class="cta">Add from OpenML</span></div></div>
     <div class="frame" data-i="1"><div class="rail"><div class="grp">Build</div>
-      <div class="it">🗂 Datasets</div><div class="it act">🧩 Methods</div><div class="it">🚀 Training</div></div>
+      <div class="it">Datasets</div><div class="it act">Methods</div><div class="it">Training</div></div>
       <div class="screen"><div class="t">Methods</div><div class="sub">Tích hợp framework (kéo image AMLB)</div>
         <div class="cards"><div class="mcard"><div class="nm">flaml</div><span class="pill ok">integrated</span></div>
           <div class="mcard"><div class="nm">gama</div><span class="pill q">available</span></div>
           <div class="mcard"><div class="nm">autosklearn</div><span class="pill ok">integrated</span></div></div>
         <span class="cta">Integrate</span></div></div>
     <div class="frame" data-i="2"><div class="rail"><div class="grp">Build</div>
-      <div class="it">🗂 Datasets</div><div class="it">🧩 Methods</div><div class="it act">🚀 Training</div></div>
+      <div class="it">Datasets</div><div class="it">Methods</div><div class="it act">Training</div></div>
       <div class="screen"><div class="t">Training</div><div class="sub">Chọn framework + dataset → chạy thật</div>
         <div class="sel">flaml <span>▾</span></div>
         <div class="chips"><span class="chip">credit-g</span><span class="chip">vehicle</span><span class="chip">phoneme</span></div>
-        <span class="cta">🚀 Launch on 3 dataset(s)</span></div></div>
+        <span class="cta">Launch on 3 dataset(s)</span></div></div>
     <div class="frame" data-i="3"><div class="rail"><div class="grp">Analyze</div>
-      <div class="it act">📊 Evaluation</div><div class="it">🗂 Datasets</div><div class="it">🧩 Methods</div></div>
+      <div class="it act">Evaluation</div><div class="it">Datasets</div><div class="it">Methods</div></div>
       <div class="screen"><div class="t">Evaluation</div><div class="sub">Bảng xếp hạng &amp; biểu đồ</div>
-        <div class="bars"><div class="bar"><i>🥇 flaml</i><div class="track" style="width:62%"></div></div>
-          <div class="bar"><i>🥈 RandomForest</i><div class="track" style="width:46%;opacity:.8"></div></div>
-          <div class="bar"><i>🥉 constantpredictor</i><div class="track" style="width:20%;opacity:.6"></div></div></div></div></div>
+        <div class="bars"><div class="bar"><i>#1 flaml</i><div class="track" style="width:62%"></div></div>
+          <div class="bar"><i>#2 RandomForest</i><div class="track" style="width:46%;opacity:.8"></div></div>
+          <div class="bar"><i>#3 constantpredictor</i><div class="track" style="width:20%;opacity:.6"></div></div></div></div></div>
   </div>
 </div>
 <div class="cap" id="cap" aria-live="polite"></div>
 <div class="dots" id="dots" role="tablist" aria-label="Các bước"></div>
 <script>
   const STEPS=[
-    {s:"Bước 1 / 4 · Datasets",t:"Thêm dữ liệu",d:"Upload CSV của bạn, hoặc Add from OpenML bằng task id — lưu vào object store + catalog."},
-    {s:"Bước 2 / 4 · Methods",t:"Tích hợp framework",d:"Bấm Integrate để kéo Docker image AMLB về; trạng thái chuyển integrated khi sẵn sàng."},
-    {s:"Bước 3 / 4 · Training",t:"Chạy benchmark",d:"Chọn framework đã integrated + dataset → Launch. Job chạy Docker thật, theo dõi ở bảng Jobs."},
-    {s:"Bước 4 / 4 · Evaluation",t:"Xem kết quả",d:"Bảng xếp hạng 🥇🥈🥉, biểu đồ Pareto và phân tích theo đặc trưng — cập nhật khi job xong."},
-  ];
+    {s:"Bước 1 / 4 · Datasets",t:"Thêm dữ liệu",d:"Upload CSV của bạn, hoặc Add from OpenML bằng task id — Hệ thống sẽ lưu vào store."},
+    {s:"Bước 2 / 4 · Methods",t:"Tích hợp framework",d:"Bấm Integrate để chọn framework; trạng thái chuyển integrated khi sẵn sàng."},
+    {s:"Bước 3 / 4 · Training",t:"Chạy benchmark",d:"Chọn framework đã integrated + dataset → Launch. Job chạy bạn theo dõi ở bảng Jobs."},
+    {s:"Bước 4 / 4 · Evaluation",t:"Xem kết quả",d:"Bảng xếp hạng, biểu đồ Pareto và phân tích theo đặc trưng — cập nhật khi job xong."},
+  ];  
   const frames=[...document.querySelectorAll('.frame')],cap=document.getElementById('cap'),db=document.getElementById('dots');
   let i=0,timer=null;const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   STEPS.forEach((_,k)=>{const b=document.createElement('button');b.setAttribute('role','tab');b.onclick=()=>{show(k);rearm()};db.appendChild(b)});
@@ -118,10 +118,10 @@ def maybe_show():
     if st.session_state.get(_SEEN):
         return
 
-    @st.dialog("👋 Chào mừng đến AutoML Bench Console", width="large")
+    @st.dialog("Chào mừng đến AMLB Studio", width="large")
     def _welcome():
         st.markdown("**4 bước để có kết quả benchmark** — thêm dữ liệu → tích hợp framework "
-                    "→ chạy → xem kết quả. Demo dưới đây tự lặp.")
+                    "→ chạy → xem kết quả.")
         components.html(_DEMO_HTML, height=360, scrolling=False)
         c1, c2 = st.columns([3, 1])
         c1.caption("Mẹo: rê chuột vào demo để tạm dừng · bấm vạch để nhảy bước.")
