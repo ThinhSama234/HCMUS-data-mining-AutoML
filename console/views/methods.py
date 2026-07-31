@@ -30,7 +30,7 @@ def _ver_from_tag(tag):
 def _kick(name):
     with st.spinner(f"Starting {name}…"):
         integration.integrate(name)
-    st.session_state["_toast"] = (f"Integrating {name}…", "⏳")   # survive the st.rerun
+    st.session_state["_toast"] = (f"Integrating {name}…", ":material/hourglass_top:")  # survive rerun
     st.session_state["_watch"] = name                            # toast again when it finishes
 
 
@@ -42,7 +42,8 @@ _w = st.session_state.get("_watch")
 if _w:
     _ws = integration.integration_status(_w)["status"]
     if _ws in ("integrated", "failed"):
-        st.toast(f"{_w}: {_ws}", icon="✅" if _ws == "integrated" else "⚠️")
+        st.toast(f"{_w}: {_ws}",
+                 icon=":material/check_circle:" if _ws == "integrated" else ":material/warning:")
         del st.session_state["_watch"]
 
 # make seeded 'integrated' statuses truthful against actual local images (once per session)
@@ -94,20 +95,21 @@ if selected and (df_all["name"] == selected).any():
             for _, _j in _busy_jobs.iterrows():
                 _jid = int(_j["training_run_id"])
                 st.warning(f"Job #{_jid} is running this framework — stop it to free the image.")
-                if st.button(f"⏹ Stop job #{_jid}", key=f"stopm_{_jid}"):
+                if st.button(f"Stop job #{_jid}", key=f"stopm_{_jid}", icon=":material/stop:"):
                     runner.cancel(_jid)
-                    st.toast(f"Stopped job #{_jid}", icon="⏹️")
+                    st.toast(f"Stopped job #{_jid}", icon=":material/stop_circle:")
                     st.rerun()
 
         if status == "failed" and m.get("last_error"):
             st.error(f"Last error: {m['last_error']}")
         if status in ("available", "failed"):
-            if st.button("↻ Retry integration" if status == "failed" else "Integrate",
-                         type="primary", key=f"int_{selected}", disabled=not _docker_up):
+            if st.button("Retry integration" if status == "failed" else "Integrate",
+                         type="primary", key=f"int_{selected}", disabled=not _docker_up,
+                         icon=":material/refresh:" if status == "failed" else ":material/download:"):
                 _kick(selected)
                 st.rerun()
             if not _docker_up:
-                st.caption("⚠️ Docker engine isn't running — start Docker/Rancher to integrate.")
+                st.caption("Docker engine isn't running — start Docker/Rancher to integrate.")
         elif status == "integrating":
             st.info("Pulling image… this view auto-refreshes.")
         elif status == "integrated":
@@ -116,7 +118,7 @@ if selected and (df_all["name"] == selected).any():
                 # the limitation NOW (post-pull) instead of letting it fail/skip at launch time
                 caps = runner.framework_caps(selected)
                 if not caps["constraint"]:
-                    st.error("⚠️ Image is present, but its bundled **AMLB has no constraint support** "
+                    st.error("Image is present, but its bundled **AMLB has no constraint support** "
                              "(typical of `:stable` tags) — it **can't be launched one-click** on the "
                              "Training page. Integrate a newer image tag to run it here.")
                 elif not caps["file_datasets"]:
@@ -127,11 +129,12 @@ if selected and (df_all["name"] == selected).any():
                     st.success("Image present — runnable on the Training page.")
                 _sz = integration.image_size_bytes(m.get("docker_image"))
                 _free = f" (free {_sz / 1e9:.1f} GB)" if _sz else ""
-                if st.button(f"🗑 Remove image{_free}", key=f"rmi_{selected}"):
+                if st.button(f"Remove image{_free}", key=f"rmi_{selected}",
+                             icon=":material/delete:"):
                     ok = integration.remove_image(m.get("docker_image"))
                     integration.reconcile()           # image gone → status back to 'available'
                     st.toast(f"Removed {selected} image" if ok else f"Could not remove {selected}",
-                             icon="🗑️" if ok else "⚠️")
+                             icon=":material/delete:" if ok else ":material/warning:")
                     st.rerun()
             else:
                 st.warning("Marked integrated, but the image isn't pulled locally — click Integrate to pull it.")
@@ -158,33 +161,31 @@ if selected and (df_all["name"] == selected).any():
 
 # ===================== LIST =====================
 theme.pagehead("Methods", "Framework catalog &amp; integration — from database")
-st.caption(runner.host_summary())
 
 integratable = df_all.query("integration_status in ('available','failed')")["name"].tolist()
-st.subheader("Integrate / retry a framework")
-cc = st.columns([7, 1.5])
-pick = cc[0].selectbox("Available or failed (pull its AMLB Docker image)",
+st.subheader("Integrate a framework")
+
+# One toolbar row: pick a framework · Integrate (primary) · Re-check (secondary). Re-check re-syncs
+# the labels with reality (status is a label; the truth is whether `docker image inspect` finds the
+# image — a Docker restart/crash can leave an 'integrated' label stale).
+tb = st.columns([6, 1.6, 1.6], vertical_alignment="bottom")
+pick = tb[0].selectbox("Available or failed (pull its AMLB Docker image)",
                        integratable or ["— none —"], label_visibility="collapsed",
                        disabled=not integratable)
-if cc[1].button("Integrate", type="primary", use_container_width=True,
+if tb[1].button("Integrate", type="primary", use_container_width=True,
                 disabled=not (integratable and _docker_up)):
     _kick(pick)
     st.rerun()
-if integratable and not _docker_up:
-    st.caption("⚠️ Docker engine isn't running — start Docker/Rancher to integrate (pull) images.")
-
-# status is only a label — the truth is whether `docker image inspect` finds the image.
-# After a Docker restart/crash an 'integrated' label can go stale; re-check re-syncs it.
-rc1, rc2 = st.columns([7, 1.5])
-rc1.caption("Status = whether the image is actually pulled locally. After a Docker restart/crash, "
-            "re-check to re-sync the labels with reality.")
-if rc2.button("↻ Re-check", use_container_width=True):
+if tb[2].button("Re-check", icon=":material/refresh:", use_container_width=True,
+                help="Re-sync each framework's status against the images actually pulled locally."):
     changed = integration.reconcile()
     st.toast(f"Re-checked — {len(changed)} status updated" if changed else "Re-checked — all in sync",
-             icon="✅")
+             icon=":material/check_circle:")
     st.rerun()
+st.caption("Status = whether the image is actually pulled locally."
+           + ("" if _docker_up else " Docker engine isn't running — start Docker/Rancher to integrate."))
 
-with st.expander("💾 Docker storage — disk usage & cleanup"):
+with st.expander("Docker storage — disk usage & cleanup", icon=":material/storage:"):
     disk = integration.docker_disk()
     if disk:
         theme.table(["Type", "Size", "Reclaimable"],
@@ -193,10 +194,10 @@ with st.expander("💾 Docker storage — disk usage & cleanup"):
     dc1, dc2 = st.columns([5, 2])
     dc1.caption("Reclaim = prune build cache + stopped containers + dangling layers. "
                 "Framework images are kept — free those individually on a method's detail page.")
-    if dc2.button("🧹 Reclaim space", use_container_width=True):
+    if dc2.button("Reclaim space", use_container_width=True, icon=":material/cleaning_services:"):
         with st.spinner("Pruning…"):
             summary = integration.reclaim_space()
-        st.toast(f"Reclaimed — {summary}", icon="🧹")
+        st.toast(f"Reclaimed — {summary}", icon=":material/check_circle:")
         st.rerun()
 
 _busy = bool((df_all["integration_status"] == "integrating").any())

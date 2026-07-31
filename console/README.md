@@ -1,4 +1,4 @@
-# AutoML Bench Console
+# AMLB Studio (console)
 
 Multipage Streamlit app over the benchmark (spec 003). Shows **only sections backed by real
 data** — Evaluation, Datasets, Methods. Mock-only sections (Training jobs, Compute pricing,

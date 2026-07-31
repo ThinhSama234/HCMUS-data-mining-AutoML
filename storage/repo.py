@@ -100,3 +100,33 @@ def load(csv_fallback=None):
 
     from analysis.load_results import load_results
     return load_results(csv_fallback)
+
+
+def load_job(training_run_id):
+    """Per-job tidy results frame — the SAME columns as load(), filtered to one training run.
+
+    Powers the Jobs → job-detail dashboard (a per-job slice of the Evaluation view). DB-only:
+    jobs exist only in the DB, so there is no CSV fallback here.
+    """
+    eng = db.init_db()
+    j = (runs
+         .join(datasets, runs.c.dataset_id == datasets.c.dataset_id, isouter=True)
+         .join(methods, runs.c.method_id == methods.c.method_id, isouter=True)
+         .join(constraints, runs.c.constraint_id == constraints.c.constraint_id, isouter=True))
+    stmt = select(
+        methods.c.name.label("framework"),
+        datasets.c.name.label("task"),
+        datasets.c.task_type.label("type"),
+        datasets.c.size_tier.label("size_tier"),
+        constraints.c.name.label("constraint"),
+        runs.c.fold, runs.c.metric, runs.c.result, runs.c.score, runs.c.status,
+        runs.c.predict_duration, runs.c.training_duration,
+        runs.c.error_message.label("info"), runs.c.metrics,
+    ).select_from(j).where(runs.c.training_run_id == training_run_id)
+    with eng.connect() as c:
+        df = pd.read_sql(stmt, c)
+    if not df.empty:
+        df["success"] = df["status"] == "success"
+        df["result_num"] = pd.to_numeric(df["result"], errors="coerce")
+        df["score"] = pd.to_numeric(df["score"], errors="coerce")
+    return df

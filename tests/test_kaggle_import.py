@@ -165,6 +165,10 @@ def test_multi_file_pick(env):
 def test_datasets_page_renders_with_kaggle_control(env):
     pytest.importorskip("streamlit.testing.v1")
     from streamlit.testing.v1 import AppTest
-    app = AppTest.from_file("console/views/datasets.py", default_timeout=60).run()
+    # Ingest sources now sit behind a segmented control (default "Upload CSV"); select the Kaggle
+    # source via its widget key so the Kaggle URL input renders, then assert the page + control.
+    app = AppTest.from_file("console/views/datasets.py", default_timeout=60)
+    app.session_state["ds_source"] = "Kaggle"
+    app.run()
     assert not app.exception
     assert any("Kaggle" in (t.label or "") for t in app.text_input)

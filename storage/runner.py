@@ -219,27 +219,38 @@ def compat(name, kind=None, hist=None):
     h = (hist or {}).get(name, {})
     done, failed = h.get("done", 0), h.get("failed", 0)
 
+    # Plain-language explanations (audience: newcomers, not Docker experts). "amd64/emulation"
+    # boils down to: the framework's image is built for Intel CPUs, so an Apple-silicon Mac has to
+    # translate it as it runs — slower and more memory-hungry, and heavy frameworks can crash.
     if hp["native"]:
-        level, label, why = "ok", "Native", "Host is amd64 — images run natively."
+        level, label, why = "ok", "Runs natively", \
+            "Your machine runs this framework's image directly — no translation needed."
     elif hp["backend"] == "qemu":
-        level, label, why = (("ok", "OK (light)", "Light image runs even under qemu.") if w == "light"
-                             else ("fail", "qemu — risky",
-                                   "amd64 image under qemu emulation usually segfaults. Enable Rosetta."))
+        level, label, why = (("ok", "Runs", "This is a lightweight framework, so it runs fine.")
+                             if w == "light" else
+                             ("fail", "Likely to crash",
+                              "This framework is built for Intel CPUs and Docker is using its basic "
+                              "translator, which usually crashes heavy frameworks. Turning on Rosetta "
+                              "in Docker's settings makes it far more reliable."))
     else:  # rosetta / emulated / unknown
         level, label, why = {
-            "light": ("ok", "Light", "Light image — fine under emulation."),
-            "medium": ("warn", "Medium · emulated", "Runs under emulation but slower; usually OK."),
-            "heavy": ("warn", "Heavy · emulated",
-                      "Heavy amd64 image under emulation — may time out or exhaust the Docker VM's RAM."),
+            "light": ("ok", "Runs",
+                      "A lightweight framework — runs fine even though it's translated for your CPU."),
+            "medium": ("warn", "A bit slower",
+                       "Built for Intel CPUs, so it's translated as it runs on your machine — a little "
+                       "slower, but usually fine."),
+            "heavy": ("warn", "May be slow",
+                      "Built for Intel CPUs, so it's translated as it runs — heavy frameworks like this "
+                      "can be slow and sometimes run out of time or memory."),
         }[w]
 
     note = ""
     if done:                                            # empirical truth wins
-        level, label = "ok", "Runs here"
-        note = f" Confirmed: completed here {done}×."
+        level, label = "ok", "Verified"
+        note = f" It has already finished here {done}× before."
     elif failed:
-        level, label = "fail", "Failed here"
-        note = f" Confirmed: failed here {failed}× (timeout/crash)."
+        level, label = "fail", "Failed before"
+        note = f" It already failed here {failed}× (ran out of time or crashed)."
 
     return {"level": level, "label": label, "weight": w, "backend": hp["backend"],
             "msg": (why + note).strip()}

@@ -58,20 +58,20 @@ rows = []
 for r in est["by_instance"]:                     # shared estimator (storage/cost.py) — no duplication
     rate, is_gpu = r["rate_per_hour"], bool(r["gpu_type"])
     spec = f'{r["vcpus"]} vCPU · {r["memory_gb"]} GB' + (f' · {r["gpu_type"]}' if is_gpu else "")
-    name = f'{r["name"]}' + (' <span class="note">⚠ no speed-up modelled</span>' if is_gpu else "")
+    name = f'{r["name"]}' + (' <span class="note">no GPU speed-up modelled</span>' if is_gpu else "")
     rows.append([f'<b>{name}</b>', f'<span class="mono">{spec}</span>',
                  f'<span class="mono">${rate:,.2f}/h</span>',
                  f'<span class="mono">${r["est_cost"]:,.2f}</span>'])
 theme.table(["Instance", "Spec", "Rate (illustrative)", "Est. cost"], rows)
 
 st.markdown(
-    '<div class="hint"><b>How to read this (not fake, but simplified):</b><br>'
-    '• Formula is real: <span class="mono">cost = compute_hours × rate</span>, '
+    '<div class="hint"><b>How to read this</b><br>'
+    '• <span class="mono">cost = compute_hours × rate</span>, '
     '<span class="mono">compute_hours = datasets × frameworks × folds × budget</span>.<br>'
-    '• <b>Rates are illustrative</b> defaults (≈ cloud tiers), not live pricing — edit in '
+    '• Rates are illustrative cloud-tier defaults — set in '
     '<span class="mono">storage/seed.py</span>.<br>'
-    '• <b>Upper bound</b>: assumes every run uses its full budget, serially on one instance. '
-    'Real cost is usually lower (early stopping) or faster wall-clock if parallelised.<br>'
-    '• <b>GPU is not accelerated here</b> — GPU rows are just a higher rate over the same hours, '
-    'so they only make sense for frameworks that actually use a GPU.</div>',
+    '• Upper bound: assumes every run uses its full budget, serially on one instance. '
+    'Actual cost is usually lower with early stopping.<br>'
+    '• GPU rows apply a higher rate over the same hours — meaningful only for GPU-capable '
+    'frameworks.</div>',
     unsafe_allow_html=True)
