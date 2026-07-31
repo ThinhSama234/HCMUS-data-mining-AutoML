@@ -11,6 +11,7 @@ import plotly.express as px  # noqa: E402
 import streamlit as st  # noqa: E402
 
 from analysis import explorer as expl  # noqa: E402 — reuse pure functions (single source of truth)
+from analysis import rankings  # noqa: E402 — mean±std table (Phase 2)
 from console import state, theme  # noqa: E402
 from storage import ingest  # noqa: E402 — report-JSON import bridge (Phase 4)
 
@@ -68,7 +69,7 @@ if fdf.empty:
 # KPI row.
 per_task, overall, by_type = expl.ranking_tables(fdf)
 best = overall.iloc[0]
-k = st.columns(4)
+k = st.columns(5)
 ok = int(fdf["success"].sum()) if "success" in fdf else len(fdf)
 k[0].metric("Best overall", str(best["framework"]), f"avg rank {best['avg_rank']:.2f}",
             help="The framework with the lowest average rank across all tasks "
@@ -77,7 +78,12 @@ k[1].metric("Datasets", fdf["task"].nunique(),
             help="Number of distinct datasets/tasks in the current results.")
 k[2].metric("Runs", len(fdf),
             help="Total result rows = framework × dataset × fold (each scored run).")
-k[3].metric("Coverage", f"{100*ok//max(len(fdf),1)}%", f"{len(fdf)-ok} failures",
+# how many folds each (dataset×framework) score averages — 1 = single split, >1 = k-fold CV
+_folds = int(per_task["folds_completed"].median()) if not per_task.empty else 0
+k[3].metric("Folds / result", _folds,
+            help="Median number of CV folds each per-dataset score averages. 1 = single split; "
+                 ">1 = k-fold cross-validation (report shows mean ± std over these folds).")
+k[4].metric("Coverage", f"{100*ok//max(len(fdf),1)}%", f"{len(fdf)-ok} failures",
             help="Share of runs that finished successfully. The chip counts failed runs "
                  "(timeout / error / crash) — those are excluded from rankings.")
 
@@ -238,10 +244,11 @@ if memory is not None:
                 hfig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0))
                 st.plotly_chart(hfig, width="stretch")
 
-st.subheader("Per-task scores", help=(
-    "The raw score of every framework on every dataset (and fold) — the underlying numbers the "
-    "ranks above are computed from. Metric varies by task type (auc / logloss / rmse)."))
-st.dataframe(per_task, width="stretch", hide_index=True)
+st.subheader("Per-task scores (mean ± std)", help=(
+    "Each framework's metric on each dataset as **mean ± std over the CV folds** (single split → just "
+    "the mean). The `folds` column is how many folds were averaged. Metric varies by task type "
+    "(auc / logloss / rmse)."))
+st.dataframe(rankings.mean_std_table(fdf), width="stretch", hide_index=True)
 
 st.subheader("Failure analysis", help=(
     "Failed runs are excluded from the rankings but not hidden (AMLB §6.4): a framework that "

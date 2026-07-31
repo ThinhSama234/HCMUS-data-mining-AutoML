@@ -88,8 +88,12 @@ if _incompat:
 _c = runner.constraint_info(con)
 if _c:
     budget = f"{_c['seconds']}s" if (_c["seconds"] or 0) < 120 else f"{(_c['seconds'] or 0)//60} min"
-    st.caption(f"Each dataset is trained with a **{budget}** time budget · **{_c['folds']}** fold "
-               f"· **{_c['cores']}** cores. Results flow to Evaluation.")
+    _folds = _c["folds"] or 1
+    _cv = (f"**{_folds}-fold** cross-validation" if _folds > 1 else "a **single split**")
+    _agg = "**mean ± std** over the folds" if _folds > 1 else "the single-split score"
+    st.caption(f"Each dataset is evaluated with {_cv} · **{budget}** time budget · **{_c['cores']}** "
+               f"cores, applied equally to every framework. AMLB uses a **fixed per-fold seed** "
+               f"(classification splits on OpenML tasks are stratified); Evaluation reports {_agg}.")
 
 _ids = [d["dataset_id"] for d in _run_ds if d["name"] in picked]
 
