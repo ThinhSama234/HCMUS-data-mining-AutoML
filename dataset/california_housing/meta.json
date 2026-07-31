@@ -1,0 +1,6 @@
+{
+  "label": "MedHouseVal",
+  "task": "regression",
+  "metric": "rmse",
+  "drop_cols": []
+}

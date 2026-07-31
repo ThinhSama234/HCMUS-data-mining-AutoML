@@ -1,0 +1,200 @@
+{
+  "run_id": "20260702_211007_f0f0d1",
+  "time_budget": 30,
+  "frameworks": [
+    "flaml",
+    "autogluon",
+    "h2o"
+  ],
+  "started_at": "2026-07-02T21:10:07.041948",
+  "results": [
+    {
+      "dataset": "breast_cancer",
+      "framework": "flaml",
+      "status": "done",
+      "label": "target",
+      "task": "classification",
+      "metric_name": "auc",
+      "metric_score": 0.995742,
+      "best_model": "catboost",
+      "best_config": {
+        "early_stopping_rounds": 10,
+        "learning_rate": 0.06233639237958607,
+        "n_estimators": 8192
+      },
+      "metric_direction": "higher_is_better",
+      "metric_score_raw": 0.995742,
+      "resource_usage": {
+        "duration_s": 68.21,
+        "peak_memory_mb": 218.22
+      },
+      "completed_at": "2026-07-02T21:11:15.545632",
+      "error": null
+    },
+    {
+      "dataset": "breast_cancer",
+      "framework": "autogluon",
+      "status": "done",
+      "label": "target",
+      "task": "classification",
+      "metric_name": "auc",
+      "metric_score": 0.996069,
+      "best_model": "CatBoost",
+      "best_config": {},
+      "metric_direction": "higher_is_better",
+      "metric_score_raw": 0.996069,
+      "resource_usage": {
+        "duration_s": 37.35,
+        "peak_memory_mb": 15.91
+      },
+      "completed_at": "2026-07-02T21:11:52.924637",
+      "error": null
+    },
+    {
+      "dataset": "breast_cancer",
+      "framework": "h2o",
+      "status": "done",
+      "label": "target",
+      "task": "classification",
+      "metric_name": "auc",
+      "metric_score": 0.99738,
+      "best_model": "GLM_1_AutoML_1_20260702_211218",
+      "best_config": {},
+      "metric_direction": "higher_is_better",
+      "metric_score_raw": 0.99738,
+      "resource_usage": {
+        "duration_s": 57.4,
+        "peak_memory_mb": 11.36
+      },
+      "completed_at": "2026-07-02T21:12:50.339288",
+      "error": null
+    },
+    {
+      "dataset": "california_housing",
+      "framework": "flaml",
+      "status": "done",
+      "label": "MedHouseVal",
+      "task": "regression",
+      "metric_name": "rmse",
+      "metric_score": -0.469257,
+      "best_model": "catboost",
+      "best_config": {
+        "early_stopping_rounds": 12,
+        "learning_rate": 0.04171721859304757,
+        "n_estimators": 8192
+      },
+      "metric_direction": "lower_is_better",
+      "metric_score_raw": 0.469257,
+      "resource_usage": {
+        "duration_s": 33.83,
+        "peak_memory_mb": 12.71
+      },
+      "completed_at": "2026-07-02T21:13:24.195051",
+      "error": null
+    },
+    {
+      "dataset": "california_housing",
+      "framework": "autogluon",
+      "status": "done",
+      "label": "MedHouseVal",
+      "task": "regression",
+      "metric_name": "rmse",
+      "metric_score": -0.432034,
+      "best_model": "WeightedEnsemble_L2",
+      "best_config": {},
+      "metric_direction": "lower_is_better",
+      "metric_score_raw": 0.432034,
+      "resource_usage": {
+        "duration_s": 31.48,
+        "peak_memory_mb": 377.88
+      },
+      "completed_at": "2026-07-02T21:13:55.713933",
+      "error": null
+    },
+    {
+      "dataset": "california_housing",
+      "framework": "h2o",
+      "status": "done",
+      "label": "MedHouseVal",
+      "task": "regression",
+      "metric_name": "rmse",
+      "metric_score": -0.438914,
+      "best_model": "StackedEnsemble_AllModels_2_AutoML_2_20260702_211432",
+      "best_config": {},
+      "metric_direction": "lower_is_better",
+      "metric_score_raw": 0.438914,
+      "resource_usage": {
+        "duration_s": 125.86,
+        "peak_memory_mb": 7.85
+      },
+      "completed_at": "2026-07-02T21:16:01.606559",
+      "error": null
+    },
+    {
+      "dataset": "wine",
+      "framework": "flaml",
+      "status": "done",
+      "label": "target",
+      "task": "classification",
+      "metric_name": "log_loss",
+      "metric_score": -0.048707,
+      "best_model": "lgbm",
+      "best_config": {
+        "n_estimators": 7,
+        "num_leaves": 4,
+        "min_child_samples": 11,
+        "learning_rate": 1.0,
+        "log_max_bin": 8,
+        "colsample_bytree": 0.8738690148807652,
+        "reg_alpha": 0.0024415861906246783,
+        "reg_lambda": 0.10660447077843813
+      },
+      "metric_direction": "lower_is_better",
+      "metric_score_raw": 0.048707,
+      "resource_usage": {
+        "duration_s": 161.42,
+        "peak_memory_mb": 2.05
+      },
+      "completed_at": "2026-07-02T21:18:43.046555",
+      "error": null
+    },
+    {
+      "dataset": "wine",
+      "framework": "autogluon",
+      "status": "done",
+      "label": "target",
+      "task": "classification",
+      "metric_name": "log_loss",
+      "metric_score": -0.009867,
+      "best_model": "WeightedEnsemble_L2",
+      "best_config": {},
+      "metric_direction": "lower_is_better",
+      "metric_score_raw": 0.009867,
+      "resource_usage": {
+        "duration_s": 31.51,
+        "peak_memory_mb": 22.03
+      },
+      "completed_at": "2026-07-02T21:19:14.576555",
+      "error": null
+    },
+    {
+      "dataset": "wine",
+      "framework": "h2o",
+      "status": "done",
+      "label": "target",
+      "task": "classification",
+      "metric_name": "log_loss",
+      "metric_score": -0.00384,
+      "best_model": "GBM_grid_1_AutoML_3_20260702_211952_model_20",
+      "best_config": {},
+      "metric_direction": "lower_is_better",
+      "metric_score_raw": 0.00384,
+      "resource_usage": {
+        "duration_s": 130.7,
+        "peak_memory_mb": 1.37
+      },
+      "completed_at": "2026-07-02T21:21:25.285296",
+      "error": null
+    }
+  ]
+}

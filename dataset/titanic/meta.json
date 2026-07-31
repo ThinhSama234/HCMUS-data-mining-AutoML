@@ -1,0 +1,6 @@
+{
+  "label": "Survived",
+  "task": "classification",
+  "metric": "auc",
+  "drop_cols": ["PassengerId", "Name", "Ticket", "Cabin"]
+}
