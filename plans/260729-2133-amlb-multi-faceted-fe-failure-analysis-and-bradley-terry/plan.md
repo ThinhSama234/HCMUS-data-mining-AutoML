@@ -122,4 +122,47 @@ dataset files (a catalog write, not a results-schema change).
   keep it in the console/export layer, not `analysis/*`. Do after the figure phases (5/6) so all
   charts exist to embed. Requested by user 2026-07-30.
 
+### Evaluation-protocol hardening — a rigorous, reproducible AMLB-style benchmark (2026-07-31)
+
+Gap analysis vs the paper's evaluation-rigor checklist (see `plans/reports/` if captured). **Decision:**
+the in-process `scripts/run_automl.py` (single-split, sklearn, 3 frameworks) is **frozen** — it only
+backs the *current* `report_v2.md`. The **AMLB console runner** (`storage/runner.py` + Docker
+per-framework, k-fold, baselines, `predict_duration`) is the **final code**; all items below target it.
+
+Already satisfied by the AMLB path (no work): per-framework Docker isolation, default presets (no
+hand-tune), failure capture + categorization + coverage% (`analysis/failures.py`), cross-task score
+normalization (`load_results.score` / `score_shapes.normalized_scores`), separate inference time
+(`predict_duration` → Pareto), constant/RandomForest baselines.
+
+- **[Protocol] k-fold CV → mean ± std, with an explicit split/eval config on the Training page.**
+  Closes checklist §1. Surface & persist the evaluation protocol as run config: number of folds
+  (k-fold CV, not single split), **stratified** split for classification, a fixed split **seed**
+  (+ optional multi-seed repetition to capture AutoML non-determinism), and shared fold indices
+  across frameworks. Report per-(dataset×framework) **mean ± std** over folds. AMLB already produces
+  folds; the work is (a) a Training-page config surface for folds/seed/stratify, (b) making the
+  Evaluation tables/charts show mean ± std from the multi-fold `runs`. Fixes checklist item #1.
+
+- **[Fairness] Redesign the Training budget & resource model, made explicit.** Closes checklist §3.
+  Rework the budget UX/config so every framework provably gets the **same time budget + the same
+  CPU/RAM allocation**, and log the allocated + actual resources per run to prove it (today
+  `constraints` has `max_runtime_seconds`/`cores`/`max_mem_mb` but the Training page doesn't surface
+  or enforce/record them clearly). Make the budget a first-class, visible part of the run plan.
+
+- **[Statistics] Significance testing + confidence on charts.** Closes checklist §5 (biggest gap —
+  none today beyond avg-rank + the Bradley-Terry approximation). Add `analysis/significance.py`:
+  **Friedman test** across frameworks + **Nemenyi post-hoc** → a **critical-difference (CD) diagram**
+  (via `scipy.stats` and/or `autorank`), rendered as an Evaluation section. Add **CI / ±std error
+  bars** to the mean charts (normalization is already done). New dep: `scipy` (+ optional `autorank`).
+
+- **[Reproducibility] Pin & record framework versions; one-command rerun.** Closes checklist §6.
+  Pin AutoML framework versions (image digests already exist on `methods`; surface/record them),
+  write `framework_version` into every `runs` row and into any exported report, and document a
+  single reproduce command with a fixed seed. Today deps use `>=` and the report JSON records no
+  version.
+
+- **[Scope] Expand the suite to ~10–20 datasets spanning 3 task-types × size/dim/class-balance
+  tiers,** recording n / #features / class ratio per dataset (the catalog + `infer_metadata`
+  already compute these; the gap is dataset breadth + committing the data/results). Data-collection
+  task; pairs with the CV item above.
+
 <!-- slug: amlb-multi-faceted-fe-failure-analysis-and-bradley-terry -->
