@@ -133,6 +133,27 @@ def budget_performance(df):
     return g[cols].reset_index(drop=True)
 
 
+def budget_usage(df):
+    """Allocated-vs-actual time per framework: [framework, (constraint), mean_train_s, budget_s, pct_used].
+
+    ``budget_s`` is the constraint's allocated ``max_runtime_seconds`` (equal for every framework in a
+    run → fairness); ``pct_used`` is how much of it the framework's mean training actually consumed.
+    Empty when the budget/duration columns are absent (e.g. CSV-only data without a constraint).
+    """
+    cols = ["framework", "constraint", "mean_train_s", "budget_s", "pct_used"]
+    ok = _successful(df)
+    if ok.empty or not {"training_duration", "budget_s"}.issubset(ok.columns):
+        return pd.DataFrame(columns=cols)
+    ok = ok[ok["training_duration"].notna() & ok["budget_s"].notna() & (ok["budget_s"] > 0)]
+    if ok.empty:
+        return pd.DataFrame(columns=cols)
+    keys = ["framework"] + (["constraint"] if "constraint" in ok.columns else [])
+    g = ok.groupby(keys, as_index=False).agg(mean_train_s=("training_duration", "mean"),
+                                             budget_s=("budget_s", "median"))
+    g["pct_used"] = (100 * g["mean_train_s"] / g["budget_s"]).round(1)
+    return g[[c for c in cols if c in g.columns]].reset_index(drop=True)
+
+
 def main(argv):
     if len(argv) < 2:
         print("usage: python -m analysis.score_shapes <results.csv>", file=sys.stderr)

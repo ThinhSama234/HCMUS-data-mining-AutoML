@@ -221,6 +221,21 @@ if scores is not None:
             st.caption("Only one time budget in the current results — the budget comparison fills "
                        "in once runs at a second budget are ingested.")
 
+    bu = scores.budget_usage(fdf)
+    if not bu.empty:
+        st.subheader("Budget usage (allocated vs actual)", help=(
+            "Fairness check: every framework gets the **same** time budget; this shows how much of it "
+            "each actually used (mean training time ÷ allocated budget). Bars near 100% ran to the "
+            "limit; low bars finished early. Equal budgets = equal footing."))
+        ufig = px.bar(bu, x="framework", y="pct_used",
+                      color="constraint" if "constraint" in bu.columns else None,
+                      labels={"pct_used": "% of time budget used", "framework": "",
+                              "constraint": "Budget"})
+        ufig.update_layout(height=300, margin=dict(l=0, r=0, t=10, b=0), legend_title_text="Budget")
+        st.plotly_chart(ufig, width="stretch")
+        st.caption("Time budget + CPU cores are allocated **equally to every framework** by the AMLB "
+                   "constraint (AMLB caps cores, not RAM); actual is measured wall-clock training time.")
+
 memory = expl.memory_module()
 if memory is not None:
     mbf = memory.memory_by_framework(fdf)

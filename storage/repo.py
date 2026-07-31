@@ -82,6 +82,7 @@ def load(csv_fallback=None):
             datasets.c.name.label("task"),
             datasets.c.task_type.label("type"),
             constraints.c.name.label("constraint"),
+            constraints.c.max_runtime_seconds.label("budget_s"),   # allocated time budget (Phase 3)
             runs.c.fold, runs.c.metric, runs.c.result, runs.c.score, runs.c.status,
             runs.c.predict_duration, runs.c.training_duration,
             runs.c.models_count, runs.c.seed, runs.c.framework_version.label("version"),

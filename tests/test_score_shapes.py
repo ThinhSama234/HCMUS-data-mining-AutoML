@@ -98,6 +98,24 @@ def test_budget_performance_degrades_without_constraint():
     assert ss.budget_performance(df).empty
 
 
+def test_budget_usage_allocated_vs_actual():
+    df = pd.DataFrame([
+        ("A", "60s", 30.0, 60.0),      # A uses 30 of 60s → 50%
+        ("A", "60s", 30.0, 60.0),
+        ("B", "60s", 6.0, 60.0),       # B finishes early → 10%
+    ], columns=["framework", "constraint", "training_duration", "budget_s"])
+    df["success"] = True
+    bu = ss.budget_usage(df)
+    assert {"framework", "constraint", "mean_train_s", "budget_s", "pct_used"} == set(bu.columns)
+    assert bu.set_index("framework").loc["A", "pct_used"] == 50.0
+    assert bu.set_index("framework").loc["B", "pct_used"] == 10.0
+
+
+def test_budget_usage_degrades_without_budget_column():
+    df = pd.DataFrame({"framework": ["A"], "training_duration": [30.0], "success": [True]})
+    assert ss.budget_usage(df).empty        # no budget_s → empty, no crash
+
+
 def test_all_helpers_degrade_on_empty():
     empty = pd.DataFrame(columns=["task", "type", "framework", "fold",
                                   "score", "result_num", "training_duration",
