@@ -34,7 +34,7 @@ FRAMEWORKS  = [
 TIME_BUDGET = 60          # seconds per (dataset × framework)
 
 DEFAULT_METRIC = {
-    "classification": None,  # auto: "auc" if binary, "log_loss" if multiclass
+    "classification": None,  # auto: "auc" if binary, "accuracy" if multiclass
     "regression":     "rmse",
 }
 

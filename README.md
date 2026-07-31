@@ -126,3 +126,15 @@ OpenML · pandas/plotly. Tests with pytest.
 ## License
 
 [MIT](LICENSE).
+
+
+## Env setup
+
+
+```
+./envs\setup.bat
+```
+
+```
+python scripts/gen_folds.py
+```
