@@ -31,6 +31,31 @@ cons = runner.list_constraints() or [runner.DEFAULT_CONSTRAINT]
 ci = cons.index(runner.DEFAULT_CONSTRAINT) if runner.DEFAULT_CONSTRAINT in cons else 0
 con = c2.selectbox("Constraint", cons, index=ci)
 
+# Resource plan for the chosen constraint — surfaced up front so `smoke`/`1h`/`4h` isn't an opaque
+# label. The SAME plan (folds + budget + cores + memory) is applied to every framework, which is
+# what makes the benchmark a fair comparison.
+_rp = runner.constraint_info(con)
+if _rp:
+    _bud = f"{_rp['seconds']}s" if (_rp["seconds"] or 0) < 120 else f"{(_rp['seconds'] or 0) // 60} min"
+    _folds = _rp["folds"] or 1
+    # AMLB enforces folds/budget/cores per its constraint; memory is shown only when configured.
+    _fields = [
+        ("CV folds", str(_folds), "Cross-validation folds per dataset (1 = single split). "
+         ">1 → Evaluation reports mean ± std over folds, with lower variance."),
+        ("Time budget", _bud, "Max training time per dataset per fold."),
+        ("Cores", str(_rp["cores"] or "—"), "CPU cores AMLB gives the framework."),
+    ]
+    if _rp.get("max_mem_mb"):
+        _fields.append(("Memory", f"{_rp['max_mem_mb']} MB", "Memory cap per run."))
+    for col, (label, val, hlp) in zip(st.columns(len(_fields)), _fields):
+        col.metric(label, val, help=hlp)
+    st.caption("This resource plan is applied **equally to every framework** (same folds · budget · "
+               "cores"
+               + (" · memory" if _rp.get("max_mem_mb") else "")
+               + ") so the comparison is fair. AMLB uses a **fixed per-fold seed** (classification "
+               "splits on OpenML tasks are stratified); Evaluation reports "
+               f"{'**mean ± std** over folds' if _folds > 1 else 'the single-split score'}.")
+
 # what the framework's bundled AMLB image can actually do (community images vary by AMLB version)
 _caps = runner.framework_caps(fw)
 if not _caps["constraint"]:
@@ -85,15 +110,6 @@ if _incompat:
                + " — its AMLB image is too old to run uploaded/file datasets (no OpenML task id). "
                  "Run these on a framework with a current image, or integrate a newer tag.")
 
-_c = runner.constraint_info(con)
-if _c:
-    budget = f"{_c['seconds']}s" if (_c["seconds"] or 0) < 120 else f"{(_c['seconds'] or 0)//60} min"
-    _folds = _c["folds"] or 1
-    _cv = (f"**{_folds}-fold** cross-validation" if _folds > 1 else "a **single split**")
-    _agg = "**mean ± std** over the folds" if _folds > 1 else "the single-split score"
-    st.caption(f"Each dataset is evaluated with {_cv} · **{budget}** time budget · **{_c['cores']}** "
-               f"cores, applied equally to every framework. AMLB uses a **fixed per-fold seed** "
-               f"(classification splits on OpenML tasks are stratified); Evaluation reports {_agg}.")
 
 _ids = [d["dataset_id"] for d in _run_ds if d["name"] in picked]
 

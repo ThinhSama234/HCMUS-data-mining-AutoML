@@ -125,12 +125,14 @@ def list_constraints(eng=None):
 
 
 def constraint_info(constraint=DEFAULT_CONSTRAINT, eng=None):
-    """The constraint's limits (folds / time budget / cores) for the run-plan preview."""
+    """The constraint's resource plan (folds / time budget / cores / memory) for the run preview."""
     eng = db.init_db(eng)
     with eng.connect() as c:
         crow = c.execute(select(constraints.c.folds, constraints.c.max_runtime_seconds,
-                                constraints.c.cores).where(constraints.c.name == constraint)).first()
-    return {"folds": crow[0], "seconds": crow[1], "cores": crow[2]} if crow else None
+                                constraints.c.cores, constraints.c.max_mem_mb)
+                         .where(constraints.c.name == constraint)).first()
+    return ({"folds": crow[0], "seconds": crow[1], "cores": crow[2], "max_mem_mb": crow[3]}
+            if crow else None)
 
 
 def run_history(eng=None):
