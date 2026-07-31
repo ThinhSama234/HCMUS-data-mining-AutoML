@@ -57,7 +57,8 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
       minio: { condition: service_started }
-    ports: ["8000:8000"]
+    # Host port override-able (default 8008; 8000 often taken by other local services).
+    ports: ["${API_PORT:-8008}:8000"]
 
 volumes:
   pgdata: {}

@@ -7,7 +7,7 @@ documented in OpenAPI).
 from typing import List, Optional
 
 import pandas as pd
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # --- whitelisted response fields (explicit — no secrets) ---
 DATASET_FIELDS = ["dataset_id", "name", "source", "task_type", "target_column", "n_instances",
@@ -43,28 +43,38 @@ def pick(record: dict, fields) -> dict:
     return {k: _clean(record.get(k)) for k in fields}
 
 
-# --- request bodies ---
+# --- request bodies (Field descriptions/examples surface in the Swagger docs) ---
 class OpenmlIngestIn(BaseModel):
-    task_id: int
+    task_id: int = Field(description="OpenML task id to ingest", examples=[3573])
 
 
 class KaggleListIn(BaseModel):
-    url: str
+    url: str = Field(description="Public Kaggle dataset URL to screen",
+                     examples=["https://www.kaggle.com/datasets/owner/slug"])
 
 
 class KaggleImportIn(BaseModel):
-    url: str
-    file_name: str
-    target_column: str
+    url: str = Field(description="Public Kaggle dataset URL",
+                     examples=["https://www.kaggle.com/datasets/owner/slug"])
+    file_name: str = Field(description="File within the dataset to import (from /kaggle/list)",
+                           examples=["data.csv"])
+    target_column: str = Field(description="Column to use as the prediction target",
+                               examples=["label"])
 
 
 class LaunchRunIn(BaseModel):
-    method: str
-    dataset_ids: Optional[List[int]] = None
-    constraint: Optional[str] = None
+    method: str = Field(description="Integrated method name to run", examples=["RandomForest"])
+    dataset_ids: Optional[List[int]] = Field(
+        default=None, description="Datasets to run on; omit to use all runnable ones",
+        examples=[[1, 2]])
+    constraint: Optional[str] = Field(
+        default=None, description="Time/resource budget; omit for the default (`smoke`)",
+        examples=["smoke"])
 
 
 class CostEstimateIn(BaseModel):
-    datasets: int
-    frameworks: int
-    constraint: Optional[str] = None
+    datasets: int = Field(description="Number of datasets in the run", examples=[10])
+    frameworks: int = Field(description="Number of frameworks to run", examples=[3])
+    constraint: Optional[str] = Field(
+        default=None, description="Constraint whose time budget drives the estimate",
+        examples=["smoke"])

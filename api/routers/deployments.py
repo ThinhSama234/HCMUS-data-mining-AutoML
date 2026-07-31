@@ -9,8 +9,10 @@ from storage.models import deployments as deployments_tbl
 router = APIRouter(prefix="/deployments", tags=["deployments"])
 
 
-@router.get("")
+@router.get("", summary="List deployments")
 def list_deployments(pg: deps.Pagination = Depends(deps.pagination)):
+    """Paginated catalog of model deployments (read-only): endpoint URL, status, p95 latency,
+    and deploy time, newest first."""
     eng = db.init_db()
     with eng.connect() as c:
         recs = [dict(r._mapping) for r in c.execute(

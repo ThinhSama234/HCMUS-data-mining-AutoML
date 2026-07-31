@@ -17,9 +17,23 @@ from api.routers import cost, datasets, deployments, methods, results, training
 API_VERSION = "v1"
 CONTRACT_VERSION = "0.1.0"
 
+DESCRIPTION = """
+HTTP/JSON access to the AutoML benchmark backend — the same engine the Streamlit console uses,
+exposed for non-Streamlit clients (a web UI, a decision assistant, scripts).
+
+**Thin layer:** every route wraps a `storage/` module; no business logic is duplicated here.
+
+**Conventions**
+- All routes live under `/api/v1`.
+- List endpoints return a page envelope: `{items, total, limit, offset}` (`limit` ≤ 200).
+- Errors share one shape: `{"error": {"code", "message"}}` — never a stack trace or secret.
+- Long jobs (launch a run, integrate a method) return **202** with a `poll` URL; poll it for status.
+"""
+
 app = FastAPI(
     title="AutoML Bench API",
     version=CONTRACT_VERSION,
+    description=DESCRIPTION,
     docs_url=f"/api/{API_VERSION}/docs",
     openapi_url=f"/api/{API_VERSION}/openapi.json",
 )
@@ -35,13 +49,15 @@ register_error_handlers(app)
 v1 = APIRouter(prefix=f"/api/{API_VERSION}")
 
 
-@v1.get("/health", tags=["meta"])
+@v1.get("/health", tags=["meta"], summary="Liveness probe")
 def health():
+    """Return `{"status": "ok"}` if the app is up. Used by Docker/monitoring health checks."""
     return {"status": "ok"}
 
 
-@v1.get("/version", tags=["meta"])
+@v1.get("/version", tags=["meta"], summary="API + contract version")
 def version():
+    """Report the URL version (`v1`) and the response-contract version clients can pin against."""
     return {"api": API_VERSION, "contract": CONTRACT_VERSION}
 
 

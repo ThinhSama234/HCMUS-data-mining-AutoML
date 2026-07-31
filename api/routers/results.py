@@ -6,9 +6,11 @@ from api import deps, schemas
 router = APIRouter(prefix="/results", tags=["results"])
 
 
-@router.get("")
+@router.get("", summary="List benchmark results")
 def list_results(pg: deps.Pagination = Depends(deps.pagination),
                  framework: str = "", type: str = "", dataset: str = ""):
+    """Paginated leaderboard rows (framework, task, metric, score, success). Optional exact-match
+    filters: `framework`, `type` (task type), `dataset` (task name). Empty filter = no filter."""
     from storage import repo
     df = repo.load()
     if df is None or df.empty:
