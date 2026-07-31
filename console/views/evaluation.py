@@ -265,6 +265,21 @@ st.subheader("Per-task scores (mean ± std)", help=(
     "(auc / logloss / rmse)."))
 st.dataframe(rankings.mean_std_table(fdf), width="stretch", hide_index=True)
 
+# Frameworks & versions — reproducibility provenance (which framework version produced these results).
+if "version" in fdf.columns and fdf["version"].notna().any():
+    from storage import repo as _repo
+    _m = _repo.list_methods()
+    _tag = dict(zip(_m["name"], _m["image_tag"])) if (not _m.empty and "image_tag" in _m) else {}
+    fw_ver = (fdf[fdf["version"].notna()].groupby("framework")["version"].first().reset_index()
+              .rename(columns={"version": "framework version"}))
+    fw_ver["docker image tag (pin)"] = fw_ver["framework"].map(_tag)
+    st.subheader("Frameworks & versions", help=(
+        "Reproducibility provenance: the framework version recorded with each run, and the pinned "
+        "Docker **image tag** it ran in. Exported `results.csv` carries the version column too."))
+    st.dataframe(fw_ver, width="stretch", hide_index=True)
+    st.caption("The Docker **image tag** is the pin of record (framework + AMLB version). Reproduce a "
+               "run from **Training**: same framework + constraint → AMLB re-runs with a fixed per-fold seed.")
+
 st.subheader("Failure analysis", help=(
     "Failed runs are excluded from the rankings but not hidden (AMLB §6.4): a framework that "
     "silently drops the hard datasets can look artificially strong. Each failure is categorized "
