@@ -132,7 +132,7 @@ if _sel is not None and _sel.isdigit():
                           labels={"score": "Score", "task": ""})
             sfig.update_layout(height=max(200, 30 * len(byds) + 60),
                                margin=dict(l=0, r=0, t=10, b=0))
-            st.plotly_chart(sfig, width="stretch")
+            st.plotly_chart(sfig)
 
             # training vs predict time per dataset
             dur = ok.melt(id_vars="task", value_vars=["training_duration", "predict_duration"],
@@ -147,7 +147,7 @@ if _sel is not None and _sel.isdigit():
                               labels={"seconds": "Seconds", "task": "", "phase": ""})
                 tfig.update_layout(height=max(220, 34 * dur["task"].nunique() + 60),
                                    margin=dict(l=0, r=0, t=10, b=0), legend_title_text="")
-                st.plotly_chart(tfig, width="stretch")
+                st.plotly_chart(tfig)
 
         # per-run failures — dataset + the actual reason
         bad = df[~df["success"]]
@@ -170,7 +170,7 @@ if _sel is not None and _sel.isdigit():
 
 
 # ================================ LIST =====================================
-theme.pagehead("Jobs", "Monitor benchmark runs — click a job for its status and dashboard.")
+theme.pagehead("Jobs", "Monitor benchmark runs — click a job for its status")
 
 
 def _safe_jobs():

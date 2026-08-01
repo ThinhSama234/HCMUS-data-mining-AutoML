@@ -74,14 +74,50 @@ if selected and (df_all["name"] == selected).any():
         chip = f' &nbsp; {theme.pill(cp["label"], cp["level"])}' if cp["label"] else ""
         st.markdown(f'### {selected} &nbsp; {theme.pill(status, _PILL.get(status, "queue"))}{chip}',
                     unsafe_allow_html=True)
-        if cp["msg"]:
-            {"ok": st.success, "fail": st.error, "warn": st.warning}[cp["level"]](cp["msg"])
-        _sz = integration.image_size_bytes(m.get("docker_image"))
+
+        _img = m.get("docker_image")
+        _present = integration.image_present(_img)
+
+        # readiness note for the current status — paired with the compat note into ONE box below
+        # (rather than two coloured boxes sandwiching the detail table).
+        def _readiness():
+            if status == "failed" and m.get("last_error"):
+                return ("fail", f"Last error: {m['last_error']}")
+            if status == "integrating":
+                return ("info", "Pulling image… this view auto-refreshes.")
+            if status == "setup_pending":
+                return ("warn", "Needs manual setup (e.g. Java for H2O) — not one-click.")
+            if status == "integrated" and not _present:
+                return ("warn", "Marked integrated, but the image isn't pulled locally — "
+                                "click Integrate to pull it.")
+            if status == "integrated" and _present:
+                caps = runner.framework_caps(selected)
+                if not caps["constraint"]:
+                    return ("fail", "Image is present, but its bundled **AMLB has no constraint "
+                                    "support** (typical of `:stable` tags) — it **can't be launched "
+                                    "one-click** on the Training page. Integrate a newer image tag.")
+                if not caps["file_datasets"]:
+                    return ("warn", "Image present, but its bundled AMLB is **too old to run "
+                                    "uploaded/file datasets** (no OpenML task id) — only OpenML "
+                                    "datasets run; uploads are auto-excluded at launch.")
+                return ("ok", "Image present — runnable on the Training page.")
+            return None
+
+        # ONE consolidated notice: compatibility + readiness, coloured by the most severe of the two.
+        _rd = _readiness()
+        _notes = ([(cp["level"], cp["msg"])] if cp["msg"] else []) + ([_rd] if _rd else [])
+        if _notes:
+            _sev = {"fail": 3, "warn": 2, "info": 1, "ok": 0}
+            _lvl = max(_notes, key=lambda x: _sev.get(x[0], 0))[0]
+            {"ok": st.success, "fail": st.error, "warn": st.warning, "info": st.info}[_lvl](
+                "\n\n".join(t for _, t in _notes))
+
+        _sz = integration.image_size_bytes(_img)
         fields = [("Kind", m.get("kind")),
                   ("Version", m.get("version") or _ver_from_tag(m.get("image_tag"))),
                   ("Preset", m.get("preset")),
                   ("Resource class", f'{cp["weight"]} ({"amd64 / emulated" if cp["backend"] not in ("native",) else "native"})'),
-                  ("Image", m.get("docker_image")), ("Tag", m.get("image_tag")),
+                  ("Image", _img), ("Tag", m.get("image_tag")),
                   ("Image size", f"{_sz / 1e9:.2f} GB" if _sz else None),
                   ("Last integration", m.get("last_integration_at")), ("Project", m.get("project_url"))]
         theme.table(["Field", "Value"],
@@ -100,8 +136,7 @@ if selected and (df_all["name"] == selected).any():
                     st.toast(f"Stopped job #{_jid}", icon=":material/stop_circle:")
                     st.rerun()
 
-        if status == "failed" and m.get("last_error"):
-            st.error(f"Last error: {m['last_error']}")
+        # action buttons (the status/compat messages are already shown in the notice box above)
         if status in ("available", "failed"):
             if st.button("Retry integration" if status == "failed" else "Integrate",
                          type="primary", key=f"int_{selected}", disabled=not _docker_up,
@@ -110,36 +145,14 @@ if selected and (df_all["name"] == selected).any():
                 st.rerun()
             if not _docker_up:
                 st.caption("Docker engine isn't running — start Docker/Rancher to integrate.")
-        elif status == "integrating":
-            st.info("Pulling image… this view auto-refreshes.")
-        elif status == "integrated":
-            if integration.image_present(m.get("docker_image")):
-                # the image's bundled AMLB version decides what it can actually run here — surface
-                # the limitation NOW (post-pull) instead of letting it fail/skip at launch time
-                caps = runner.framework_caps(selected)
-                if not caps["constraint"]:
-                    st.error("Image is present, but its bundled **AMLB has no constraint support** "
-                             "(typical of `:stable` tags) — it **can't be launched one-click** on the "
-                             "Training page. Integrate a newer image tag to run it here.")
-                elif not caps["file_datasets"]:
-                    st.warning("Image present. Its bundled AMLB is **too old to run uploaded/file "
-                               "datasets** (no OpenML task id) — only OpenML datasets run; uploads are "
-                               "auto-excluded at launch.")
-                else:
-                    st.success("Image present — runnable on the Training page.")
-                _sz = integration.image_size_bytes(m.get("docker_image"))
-                _free = f" (free {_sz / 1e9:.1f} GB)" if _sz else ""
-                if st.button(f"Remove image{_free}", key=f"rmi_{selected}",
-                             icon=":material/delete:"):
-                    ok = integration.remove_image(m.get("docker_image"))
-                    integration.reconcile()           # image gone → status back to 'available'
-                    st.toast(f"Removed {selected} image" if ok else f"Could not remove {selected}",
-                             icon=":material/delete:" if ok else ":material/warning:")
-                    st.rerun()
-            else:
-                st.warning("Marked integrated, but the image isn't pulled locally — click Integrate to pull it.")
-        elif status == "setup_pending":
-            st.warning("Needs manual setup (e.g. Java for H2O) — not one-click.")
+        elif status == "integrated" and _present:
+            _free = f" (free {_sz / 1e9:.1f} GB)" if _sz else ""
+            if st.button(f"Remove image{_free}", key=f"rmi_{selected}", icon=":material/delete:"):
+                ok = integration.remove_image(_img)
+                integration.reconcile()           # image gone → status back to 'available'
+                st.toast(f"Removed {selected} image" if ok else f"Could not remove {selected}",
+                         icon=":material/delete:" if ok else ":material/warning:")
+                st.rerun()
 
     m0 = df_all.query("name == @selected").iloc[0]      # reuse loaded row — no extra query
     if m0["integration_status"] == "integrating":
@@ -160,7 +173,7 @@ if selected and (df_all["name"] == selected).any():
     st.stop()
 
 # ===================== LIST =====================
-theme.pagehead("Methods", "Framework catalog &amp; integration — from database")
+theme.pagehead("Methods", "Framework catalog &amp; integration")
 
 integratable = df_all.query("integration_status in ('available','failed')")["name"].tolist()
 st.subheader("Integrate a framework")
@@ -200,12 +213,32 @@ with st.expander("Docker storage — disk usage & cleanup", icon=":material/stor
         st.toast(f"Reclaimed — {summary}", icon=":material/check_circle:")
         st.rerun()
 
+# Browse the catalog — search by name + filter by status. Widgets live OUTSIDE the auto-refresh
+# fragment (so a periodic rerun can't reset them); the fragment reads their values from session.
+st.subheader("Catalog")
+_fc = st.columns([2, 3])
+_fc[0].text_input("Search frameworks", placeholder="Filter by name…",
+                  label_visibility="collapsed", key="m_q")
+_fc[1].segmented_control("Filter by status",
+                         ["integrated", "available", "failed", "setup_pending"],
+                         selection_mode="multi", label_visibility="collapsed", key="m_status")
+
 _busy = bool((df_all["integration_status"] == "integrating").any())
 
 
 @st.fragment(run_every=("2s" if _busy else None))
 def _catalog():
     df = repo.list_methods()
+    total = len(df)
+    _q = (st.session_state.get("m_q") or "").strip().lower()
+    _sf = st.session_state.get("m_status") or []
+    if _q:
+        df = df[df["name"].str.lower().str.contains(_q, na=False)]
+    if _sf:
+        df = df[df["integration_status"].isin(_sf)]
+    st.caption(f"Showing **{len(df)}** of {total} frameworks"
+               + (" — none match the filter." if df.empty else ""))
+
     hist = runner.run_history()
     cards = ""
     for _, m in df.iterrows():

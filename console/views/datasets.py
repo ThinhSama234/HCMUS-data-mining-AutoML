@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+import pandas as pd  # noqa: E402
 import plotly.express as px  # noqa: E402
 import streamlit as st  # noqa: E402
 
@@ -42,11 +43,15 @@ if src == "Upload CSV":
             st.toast(f"Rejected: {exc}", icon=":material/warning:")
 
 elif src == "OpenML":
-    tid = st.text_input("OpenML task id", placeholder="e.g. 168757")
+    oc1, oc2 = st.columns(2)
+    tid = oc1.text_input("OpenML task id", placeholder="e.g. 168757")
+    alias = oc2.text_input("Display name (alias)", placeholder="e.g. breast_cancer",
+                           help="Friendly name shown in the catalog instead of OpenML's cryptic "
+                                "one (e.g. breast_cancer instead of wdbc). Optional.")
     if tid and st.button("Add from OpenML", type="primary", icon=":material/download:"):
         try:
             with st.spinner(f"Fetching OpenML task {tid}…"):
-                did = ingest.ingest_openml(int(tid))
+                did = ingest.ingest_openml(int(tid), alias=alias)
             st.toast(f"Added OpenML {tid} → id {did}", icon=":material/check_circle:")
         except Exception as exc:
             st.toast(f"Failed: {exc}", icon=":material/warning:")
@@ -91,8 +96,15 @@ if df.empty:
 else:
     df = df.copy()
 
+    # Archived datasets are hidden by default (from this catalog view AND the Training picker);
+    # toggle to see/unarchive them. Keeps the catalog focused on the sets you're actually testing.
+    _show_arch = st.toggle("Show archived", value=False, key="ds_show_arch",
+                           help="Archived datasets stay in the catalog but are hidden from Training.")
+    if "archived" in df.columns and not _show_arch:
+        df = df[~df["archived"].fillna(False)].reset_index(drop=True)
+
     # Catalog overview (report figures Hình 1-2): task-type composition + size/#features per dataset.
-    if "task_type" in df.columns and df["task_type"].notna().any():
+    if not df.empty and "task_type" in df.columns and df["task_type"].notna().any():
         st.subheader("Catalog overview", help=(
             "Composition of the benchmark suite by task type, and each dataset's scale "
             "(rows, log scale) and feature count — sourced from the catalog."))
@@ -106,7 +118,7 @@ else:
             pfig = px.pie(comp, names="task_type", values="n", hole=0.45,
                           color_discrete_sequence=_TEAL_RAMP)
             pfig.update_layout(height=280, margin=dict(l=0, r=0, t=10, b=0), legend_title_text="")
-            st.plotly_chart(pfig, width="stretch")
+            st.plotly_chart(pfig)
         with oc2:
             if "n_instances" in df.columns and df["n_instances"].notna().any():
                 sz = df[df["n_instances"].notna()].sort_values("n_instances")
@@ -114,40 +126,64 @@ else:
                               color_discrete_sequence=[theme.TEAL],
                               labels={"n_instances": "Rows (log)", "name": ""})
                 bfig.update_layout(height=280, margin=dict(l=0, r=0, t=10, b=0))
-                st.plotly_chart(bfig, width="stretch")
+                st.plotly_chart(bfig)
         if "n_features" in df.columns and df["n_features"].notna().any():
             ft = df[df["n_features"].notna()].sort_values("n_features")
             ffig = px.bar(ft, x="n_features", y="name", orientation="h",
                           color_discrete_sequence=[theme.TEAL],   # teal-led overview; amber is signal-only
                           labels={"n_features": "Features", "name": ""})
             ffig.update_layout(height=max(180, 26 * len(ft) + 40), margin=dict(l=0, r=0, t=10, b=0))
-            st.plotly_chart(ffig, width="stretch")
+            st.plotly_chart(ffig)
 
-    # presigned download link instead of the opaque s3:// uri (LinkColumn renders it as a button)
+    # presigned download URL (per-row Download action) instead of the opaque s3:// uri
     df["download"] = [objectstore.presign(u) if isinstance(u, str) and u else None
                       for u in df.get("storage_uri", [None] * len(df))]
-    cols = [c for c in ["dataset_id", "name", "source", "status", "openml_task_id", "task_type",
-                        "n_instances", "n_features", "n_classes", "minority_fraction",
-                        "size_tier", "download"] if c in df.columns]
-    view = df[cols]
-    total = len(view)
+    total = len(df)
 
-    # Rows/page is a display setting → stays top-left; page navigation (‹ ›) goes in a bottom bar
-    # under the table (standard data-table placement), right-aligned.
+    # Rows/page is a display setting → stays top-left; page navigation (‹ ›) goes in a bottom bar.
     _paginate = total > 10
     start, end, page, n_pages = 0, total, 1, 1
     if _paginate:
         page_size = st.columns([1.3, 5])[0].selectbox("Rows/page", [10, 25, 50, 100], index=0)
         n_pages = (total + page_size - 1) // page_size
-        # clamp the stored page (a smaller page_size / fewer rows can push it out of range)
         page = max(1, min(st.session_state.get("ds_page", 1), n_pages))
         st.session_state["ds_page"] = page
         start, end = (page - 1) * page_size, (page - 1) * page_size + page_size
 
-    st.dataframe(
-        view.iloc[start:end], width="stretch", hide_index=True,
-        column_config={"download": st.column_config.LinkColumn("File", display_text="⬇")},
-    )
+    # Rendered row-by-row (not st.dataframe) so the last "Action" column can hold real per-row
+    # buttons — archive, delete, download — which a canvas-based dataframe can't do.
+    _W = [0.7, 3, 1.2, 1.4, 1.2, 1.1, 2.0]
+    _head = st.columns(_W)
+    for _c, _lbl in zip(_head, ["ID", "Name", "Source", "Task", "Rows", "Size", "Action"]):
+        _c.markdown(f'<span class="section-lbl">{_lbl}</span>', unsafe_allow_html=True)
+
+    for _, r in df.iloc[start:end].iterrows():
+        did = int(r["dataset_id"])
+        c = st.columns(_W, vertical_alignment="center")
+        c[0].write(did)
+        c[1].write(r["name"])
+        c[2].write(r.get("source") or "—")
+        c[3].write(r.get("task_type") or "—")
+        _ni = r.get("n_instances")
+        c[4].write(f"{int(_ni):,}" if pd.notna(_ni) else "—")
+        c[5].write(r.get("size_tier") or "—")
+        with c[6]:
+            b = st.columns(3)
+            _arch = bool(r.get("archived"))
+            if b[0].button("", key=f"arch_{did}",
+                           icon=":material/unarchive:" if _arch else ":material/archive:",
+                           help="Unarchive" if _arch else "Archive — hide from Training"):
+                repo.set_archived([did], not _arch)
+                st.toast(("Unarchived " if _arch else "Archived ") + str(r["name"]),
+                         icon=":material/check_circle:")
+                st.rerun()
+            if b[1].button("", key=f"del_{did}", icon=":material/delete:",
+                           help="Delete permanently (also removes linked runs)"):
+                repo.delete_datasets([did])
+                st.toast(f"Deleted {r['name']}", icon=":material/delete:")
+                st.rerun()
+            if r.get("download"):
+                b[2].link_button("", url=r["download"], icon=":material/download:", help="Download")
 
     # bottom bar: "Showing …" at the left, ‹ Page x / n › pushed to the right
     if _paginate:

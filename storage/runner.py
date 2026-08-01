@@ -268,7 +268,8 @@ def list_trainable_datasets(eng=None):
         rows = c.execute(select(
             datasets.c.dataset_id, datasets.c.name, datasets.c.task_type, datasets.c.source,
             datasets.c.openml_task_id, datasets.c.storage_uri, datasets.c.target_column,
-        ).order_by(datasets.c.name)).all()
+        ).where(datasets.c.archived.is_(False))     # archived datasets are hidden from Training
+         .order_by(datasets.c.name)).all()
     out = []
     for d in rows:
         did, name, ttype, source, task_id, uri, target = d

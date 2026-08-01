@@ -37,8 +37,27 @@ def engine():
     return _engine
 
 
+_migrated = False
+
+
 def init_db(eng=None):
     """Create all tables if absent (correct DDL per dialect). Returns the engine."""
+    global _migrated
     eng = eng or engine()
     metadata.create_all(eng)
+    if not _migrated:
+        _add_missing_columns(eng)   # columns added after a DB was first created (create_all won't ALTER)
+        _migrated = True
     return eng
+
+
+def _add_missing_columns(eng):
+    """Idempotently add newer columns to pre-existing tables (portable across sqlite/postgres)."""
+    from sqlalchemy import inspect, text
+    try:
+        cols = {c["name"] for c in inspect(eng).get_columns("datasets")}
+    except Exception:
+        return
+    if "archived" not in cols:
+        with eng.begin() as c:
+            c.execute(text("ALTER TABLE datasets ADD COLUMN archived BOOLEAN NOT NULL DEFAULT FALSE"))
