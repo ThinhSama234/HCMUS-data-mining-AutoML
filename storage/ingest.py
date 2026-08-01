@@ -64,14 +64,23 @@ def ingest_upload(data: bytes, name: str) -> int:
                            status="ready", **meta)
 
 
-def ingest_openml(task_id: int) -> int:
-    """Fetch an OpenML task's dataset → object store (parquet) + a datasets row. FR-016."""
+def ingest_openml(task_id: int, alias: str = None) -> int:
+    """Fetch an OpenML task's dataset → object store (parquet) + a datasets row. FR-016.
+
+    ``alias`` is an optional friendly display name used instead of OpenML's cryptic name
+    (e.g. show `breast_cancer` rather than `wdbc`); it becomes the dataset's ``name``.
+    """
     import openml
     task = openml.tasks.get_task(int(task_id))
     ds = task.get_dataset()
     X, y, _, _ = ds.get_data(target=task.target_name)
     frame = X.copy()
     frame[task.target_name] = y
+    # some OpenML datasets (e.g. covertype) return SparseDtype columns → pyarrow/parquet can't
+    # write them ("Sparse pandas data … not supported"). Densify before profiling + storing.
+    _sparse = [c for c in frame.columns if isinstance(frame[c].dtype, pd.SparseDtype)]
+    for c in _sparse:
+        frame[c] = frame[c].sparse.to_dense()
     meta = infer_metadata(frame, target_column=task.target_name)
     buf = io.BytesIO()
     frame.to_parquet(buf, index=False)
@@ -83,7 +92,8 @@ def ingest_openml(task_id: int) -> int:
                              .where(datasets.c.openml_task_id == int(task_id))).first()
     if existing:
         return existing[0]
-    return _insert_dataset(eng, name=ds.name, source="openml", openml_task_id=int(task_id),
+    name = (alias or "").strip() or ds.name
+    return _insert_dataset(eng, name=name, source="openml", openml_task_id=int(task_id),
                            file_format="parquet", storage_uri=uri, status="ready", **meta)
 
 

@@ -98,7 +98,7 @@ _DEMO_HTML = """
     {s:"Bước 2 / 4 · Methods",t:"Tích hợp framework",d:"Bấm Integrate để chọn framework; trạng thái chuyển integrated khi sẵn sàng."},
     {s:"Bước 3 / 4 · Training",t:"Chạy benchmark",d:"Chọn framework đã integrated + dataset → Launch. Job chạy bạn theo dõi ở bảng Jobs."},
     {s:"Bước 4 / 4 · Evaluation",t:"Xem kết quả",d:"Bảng xếp hạng, biểu đồ Pareto và phân tích theo đặc trưng — cập nhật khi job xong."},
-  ];  
+  ];                
   const frames=[...document.querySelectorAll('.frame')],cap=document.getElementById('cap'),db=document.getElementById('dots');
   let i=0,timer=null;const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   STEPS.forEach((_,k)=>{const b=document.createElement('button');b.setAttribute('role','tab');b.onclick=()=>{show(k);rearm()};db.appendChild(b)});

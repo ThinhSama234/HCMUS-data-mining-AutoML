@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from sqlalchemy import (
     BigInteger, Boolean, Column, DateTime, ForeignKey, Integer, JSON, MetaData,
-    Numeric, Table, Text, UniqueConstraint, func,
+    Numeric, Table, Text, UniqueConstraint, func, text,
 )
 
 metadata = MetaData()
@@ -30,6 +30,8 @@ datasets = Table(
     Column("storage_uri", Text),
     Column("checksum_sha256", Text),
     Column("status", Text, nullable=False, server_default="ready"),
+    # archived = kept in the catalog but hidden from the Training picker (soft-hide, reversible)
+    Column("archived", Boolean, nullable=False, server_default=text("false")),
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
     UniqueConstraint("name", name="uq_datasets_name"),
 )

@@ -103,6 +103,48 @@ def load(csv_fallback=None):
     return load_results(csv_fallback)
 
 
+def rename_dataset(dataset_id, name):
+    """Set a dataset's display name (alias). Results map by name, so a rename before a run flows
+    straight through to Evaluation/Jobs; after a run, existing runs still link by id."""
+    from sqlalchemy import update
+    name = (name or "").strip()
+    if not name:
+        return False
+    eng = db.init_db()
+    with eng.begin() as c:
+        r = c.execute(update(datasets).where(datasets.c.dataset_id == int(dataset_id))
+                      .values(name=name))
+    return r.rowcount > 0
+
+
+def set_archived(ids, archived=True):
+    """Archive (hide from the Training picker) or un-archive datasets. Non-destructive."""
+    from sqlalchemy import update
+    ids = [int(i) for i in ids]
+    if not ids:
+        return 0
+    eng = db.init_db()
+    with eng.begin() as c:
+        r = c.execute(update(datasets).where(datasets.c.dataset_id.in_(ids))
+                      .values(archived=bool(archived)))
+    return r.rowcount
+
+
+def delete_datasets(ids):
+    """Remove datasets from the catalog, plus any runs/job-links that reference them (FK-safe)."""
+    from sqlalchemy import delete
+    from storage.models import training_run_datasets
+    ids = [int(i) for i in ids]
+    if not ids:
+        return 0
+    eng = db.init_db()
+    with eng.begin() as c:
+        c.execute(delete(runs).where(runs.c.dataset_id.in_(ids)))
+        c.execute(delete(training_run_datasets).where(training_run_datasets.c.dataset_id.in_(ids)))
+        r = c.execute(delete(datasets).where(datasets.c.dataset_id.in_(ids)))
+    return r.rowcount
+
+
 def load_job(training_run_id):
     """Per-job tidy results frame — the SAME columns as load(), filtered to one training run.
 

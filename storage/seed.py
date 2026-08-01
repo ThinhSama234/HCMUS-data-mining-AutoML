@@ -33,7 +33,9 @@ OPENML_SMALL = [
 CURATED = [
     ("flaml", "automl", "2.3.6", "default", "integrated",
      "automlbenchmark/flaml:1.2.4-v2.1.3", "1.2.4-v2.1.3", "https://github.com/microsoft/FLAML"),
-    ("H2OAutoML", "automl", "3.40", "default", "setup_pending",
+    # The AMLB h2oautoml image bundles its own JVM, so it integrates one-click via Docker like the
+    # rest (no host-side Java setup needed) → `available`, not `setup_pending`.
+    ("H2OAutoML", "automl", "3.40", "default", "available",
      "automlbenchmark/h2oautoml:3.40.0.4-v2.1.3", "3.40.0.4-v2.1.3", "https://h2o.ai"),
     ("AutoGluon", "automl", "0.8", "best_quality", "integrated",
      "automlbenchmark/autogluon:0.8.0-v2.1.3", "0.8.0-v2.1.3", "https://auto.gluon.ai"),

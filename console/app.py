@@ -13,7 +13,14 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # repo root
 
+import warnings  # noqa: E402
+
 import streamlit as st  # noqa: E402
+
+# Silence noisy third-party deprecation chatter (matplotlib/pyparsing, plotly, pandas) so it never
+# clutters the console UI or logs — these are library-internal, not actionable by this app.
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 from console import theme  # noqa: E402
 

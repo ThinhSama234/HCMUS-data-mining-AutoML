@@ -13,41 +13,25 @@ import streamlit as st  # noqa: E402
 from analysis import explorer as expl  # noqa: E402 — reuse pure functions (single source of truth)
 from analysis import rankings  # noqa: E402 — mean±std table (Phase 2)
 from console import state, theme  # noqa: E402
-from storage import ingest  # noqa: E402 — report-JSON import bridge (Phase 4)
 
 theme.inject()
-theme.pagehead("Evaluation", "Benchmark results — from results.csv")
+theme.pagehead("Evaluation", "Benchmark results")
 
-# Import / Export tucked into a small top-right "Data" popover — a secondary action, so the
-# results (not the I/O plumbing) lead the page. Kept before the empty-state stop so import works
-# even when there are no results yet.
-_, _data_col = st.columns([5, 1])
-with _data_col:
-    with st.popover("Data", icon=":material/database:", width="stretch"):
-        up = st.file_uploader("Import a run report (reports/run_*.json)", type=["json"],
-                              help="Ingest results from the run_automl.py pipeline into the console.")
-        if up is not None and st.button("Ingest report JSON", type="primary"):
-            try:
-                r = ingest.ingest_report_bytes(up.getvalue())
-                st.success(f"Ingested {r['inserted']} run(s) — {r['datasets']} datasets, "
-                           f"{r['methods']} frameworks, budget {r['constraint']}"
-                           + (f"; {r['skipped_duplicate']} duplicate(s) skipped." if r['skipped_duplicate'] else "."))
-                st.rerun()
-            except Exception as exc:
-                st.error(f"Import failed: {exc}")
-        if state.has_results():
-            st.download_button("Export results.csv",
-                               state.load_results().to_csv(index=False).encode(),
-                               file_name="results.csv", mime="text/csv")
-
-if not state.has_results():
-    st.info("No results yet — import a report (**Data** ▾, top-right), or run the benchmark "
-            "(quickstart Step 1).")
+# Export sits top-right as a plain secondary button — one action needs no popover, and the
+# results (not the I/O plumbing) should lead the page. Only rendered when there IS something to
+# export, so the empty state isn't fronted by a dead control.
+if state.has_results():
+    _, _data_col = st.columns([5, 1])
+    _data_col.download_button(
+        "Export CSV", state.load_results().to_csv(index=False).encode(),
+        file_name="results.csv", mime="text/csv", icon=":material/download:", width="stretch",
+        help="Downloads the **full** result set (every framework/dataset), not the filtered view below.")
+else:
+    st.info("No results yet — launch a benchmark on the **Training** page; it lands here when the "
+            "job finishes.")
     st.stop()
 
 df = state.load_results()
-st.caption(f"data source: **{state.results_source()}** (SQLite cache if present, else results.csv)")
-
 # Filters (mirror the mockup). A framework can be pre-seeded when arriving from a job
 # ("View <framework> in Evaluation" on the Jobs page) via session_state.
 _preset_fw = st.session_state.pop("eval_preset_fw", None)
@@ -103,7 +87,7 @@ with left:
     fig.update_yaxes(showticklabels=False, showgrid=False, zeroline=False,
                      range=[0, ov["rank_score"].max() + 0.6])
     fig.update_layout(height=300, margin=dict(l=0, r=0, t=20, b=0))
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig)
 with right:
     st.subheader("Accuracy vs inference time", help=(
         "Speed/quality trade-off: x = median time to predict, y = average rank (1 = best, top). "
@@ -121,7 +105,7 @@ with right:
         pfig.update_traces(textposition="top center", marker=dict(size=13))
         pfig.update_yaxes(autorange="reversed")
         pfig.update_layout(height=260, margin=dict(l=0, r=0, t=10, b=0))
-        st.plotly_chart(pfig, width="stretch")
+        st.plotly_chart(pfig)
 
 st.subheader("Ranking by data characteristic", help=(
     "Does a framework do better on certain kinds of data? Pick how to group the datasets "
@@ -152,7 +136,7 @@ else:
     cfig.update_xaxes(dtick=1, range=[0, g["rank_score"].max() + 0.7])
     cfig.update_layout(height=max(220, 70 * g["framework"].nunique() + 60),
                        margin=dict(l=0, r=0, t=10, b=0))
-    st.plotly_chart(cfig, width="stretch")
+    st.plotly_chart(cfig)
     st.caption("Smoke run = 3 small datasets, so the spread is limited; it widens with the full suite.")
 
 scores = expl.score_shapes_module()
@@ -167,7 +151,7 @@ if scores is not None:
                       facet_col="type" if "type" in ns.columns else None,
                       labels={"norm_score": "Normalized score (1 = best)", "framework": ""})
         nfig.update_layout(height=340, margin=dict(l=0, r=0, t=30, b=0), showlegend=False)
-        st.plotly_chart(nfig, width="stretch")
+        st.plotly_chart(nfig)
 
     sl = scores.score_long(fdf)
     if not sl.empty:
@@ -180,7 +164,7 @@ if scores is not None:
         sfig.update_xaxes(matches=None)
         sfig.update_yaxes(matches=None)
         sfig.update_layout(height=360, margin=dict(l=0, r=0, t=30, b=0), legend_title_text="")
-        st.plotly_chart(sfig, width="stretch")
+        st.plotly_chart(sfig)
 
     svt = scores.score_vs_time(fdf)
     if not svt.empty:
@@ -195,7 +179,7 @@ if scores is not None:
         tfig.update_xaxes(matches=None)
         tfig.update_yaxes(matches=None)
         tfig.update_layout(height=360, margin=dict(l=0, r=0, t=30, b=0), legend_title_text="")
-        st.plotly_chart(tfig, width="stretch")
+        st.plotly_chart(tfig)
 
     inf = scores.inference_times(fdf)
     if not inf.empty:
@@ -204,7 +188,7 @@ if scores is not None:
         ifig = px.box(inf, x="framework", y="predict_s", color="framework", points="all", log_y=True,
                       labels={"predict_s": "Inference time (s, log)", "framework": ""})
         ifig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0), showlegend=False)
-        st.plotly_chart(ifig, width="stretch")
+        st.plotly_chart(ifig)
 
     bp = scores.budget_performance(fdf)
     if not bp.empty:
@@ -216,7 +200,7 @@ if scores is not None:
                       labels={"mean_norm": "Mean normalized score", "framework": "",
                               "constraint": "Budget"})
         bfig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0), legend_title_text="Budget")
-        st.plotly_chart(bfig, width="stretch")
+        st.plotly_chart(bfig)
         if n_budgets < 2:
             st.caption("Only one time budget in the current results — the budget comparison fills "
                        "in once runs at a second budget are ingested.")
@@ -232,7 +216,7 @@ if scores is not None:
                       labels={"pct_used": "% of time budget used", "framework": "",
                               "constraint": "Budget"})
         ufig.update_layout(height=300, margin=dict(l=0, r=0, t=10, b=0), legend_title_text="Budget")
-        st.plotly_chart(ufig, width="stretch")
+        st.plotly_chart(ufig)
         st.caption("Time budget + CPU cores are allocated **equally to every framework** by the AMLB "
                    "constraint (AMLB caps cores, not RAM); actual is measured wall-clock training time.")
 
@@ -249,7 +233,7 @@ if memory is not None:
                           color_discrete_sequence=[theme.TEAL],
                           labels={"mean_mb": "Mean peak memory (MB)", "framework": ""})
             mfig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0))
-            st.plotly_chart(mfig, width="stretch")
+            st.plotly_chart(mfig)
         with mr:
             mat = memory.memory_matrix(fdf)
             if not mat.empty:
@@ -257,7 +241,7 @@ if memory is not None:
                                  color_continuous_scale="Oranges",
                                  labels=dict(x="dataset", y="framework", color="MB"))
                 hfig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0))
-                st.plotly_chart(hfig, width="stretch")
+                st.plotly_chart(hfig)
 
 st.subheader("Per-task scores (mean ± std)", help=(
     "Each framework's metric on each dataset as **mean ± std over the CV folds** (single split → just "
@@ -304,7 +288,7 @@ else:
                                   "failure_category": "Category"})
             ffig.update_layout(height=300, margin=dict(l=0, r=0, t=10, b=0),
                                legend_title_text="")
-            st.plotly_chart(ffig, width="stretch")
+            st.plotly_chart(ffig)
         # By-budget breakdown, when the results carry a budget/constraint column.
         ftbl = failures.failure_table(fdf)
         if "constraint" in ftbl.columns:
@@ -318,7 +302,7 @@ else:
                            category_orders={"size_tier": ["small", "medium", "large", "unknown"]},
                            labels={"n": "Failed runs", "size_tier": "Dataset size"})
             bsfig.update_layout(height=280, margin=dict(l=0, r=0, t=10, b=0), legend_title_text="")
-            st.plotly_chart(bsfig, width="stretch")
+            st.plotly_chart(bsfig)
 
 st.subheader("Ranking-flip (Bradley-Terry approximation)", help=(
     "Where does the framework ranking change with data characteristics? Left: the pairwise "
@@ -340,7 +324,7 @@ else:
                              color_continuous_scale="Teal",
                              labels=dict(x="loses to →", y="wins ↓", color="win rate"))
             hfig.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0))
-            st.plotly_chart(hfig, width="stretch")
+            st.plotly_chart(hfig)
         with fr:
             bs = flips.best_split(fdf)
             st.caption(f"Global order: **{' ▸ '.join(bs['global_order']) or '—'}**")

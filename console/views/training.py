@@ -122,6 +122,14 @@ if _incompat:
 
 _ids = [d["dataset_id"] for d in _run_ds if d["name"] in picked]
 
+# jobs run via Docker on the host — if this console can't reach the Docker daemon (e.g. it's the
+# containerised build, which has no docker socket), a launch would fail instantly with "Docker
+# engine not running". Block it and point to the host app instead of letting it fail.
+_docker_ok = runner._docker_available()
+if not _docker_ok:
+    st.warning("This console can't reach Docker, so it can't launch benchmark jobs (they run via "
+               "Docker on the host). Open the **host app** at http://localhost:8502 to run.")
+
 # gate: a framework that already FAILED on this machine is blocked unless explicitly overridden
 _failed_here = _cp["level"] == "fail"
 _override = False
@@ -129,7 +137,8 @@ if _failed_here:
     _override = st.checkbox(f"Run **{fw}** anyway — it failed on this machine before "
                             "(likely to fail/hang again)", value=False)
 if st.button(f"Launch on {len(_ids)} dataset(s)", type="primary", icon=":material/play_arrow:",
-             disabled=(not _ids) or (_failed_here and not _override) or (not _caps["constraint"])):
+             disabled=(not _docker_ok) or (not _ids) or (_failed_here and not _override)
+                      or (not _caps["constraint"])):
     with st.spinner(f"Starting {fw}…"):
         tr_id, status = runner.launch(fw, _ids, con)
     _err = {"failed": f"Could not start {fw} — is Docker running?",
