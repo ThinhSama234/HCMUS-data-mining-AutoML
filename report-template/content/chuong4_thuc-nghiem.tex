@@ -267,8 +267,8 @@ tăng vọt.
 \label{sec:baseline}
 Một bảng xếp hạng chỉ gồm các thư viện AutoML không trả lời được câu hỏi nền tảng:
 liệu công sức tìm kiếm tự động có thực sự mang lại giá trị so với những phương
-pháp đơn giản hay không. Vì vậy, giao thức đánh giá bổ sung hai phương pháp cơ sở
-được chạy dưới đúng điều kiện như các thư viện AutoML.
+pháp đơn giản hay không. Vì vậy, giao thức đánh giá bổ sung hai phương pháp cơ sở,
+chạy trên cùng phân hoạch fold với các thư viện AutoML.
 
 \textbf{Bộ dự đoán hằng} (\textit{constant predictor}) luôn trả về cùng một kết
 quả bất kể đầu vào: lớp đa số đối với bài toán phân loại và giá trị trung bình của
@@ -286,37 +286,61 @@ thuật toán mạnh và đáng tin cậy rồi chạy với cấu hình mặc �
 sánh có ý nghĩa thực tiễn hơn, bởi nó lượng hoá chính xác phần giá trị gia tăng mà
 AutoML mang lại so với phương án đơn giản nhất mà vẫn hợp lý.
 
-Bảng~\ref{tab:baseline} trình bày kết quả đối chiếu, tổng hợp theo dạng tác vụ.
+Việc đối chiếu được thực hiện ở mức từng bộ dữ liệu thay vì lấy trung bình theo
+nhóm tác vụ. Lý do là các bộ dữ liệu trong cùng một nhóm có thang đo rất khác
+nhau --- RMSE của \texttt{house\_prices} lớn hơn RMSE của
+\texttt{california\_housing} khoảng năm bậc độ lớn --- nên một giá trị trung bình
+theo nhóm sẽ bị chi phối hoàn toàn bởi bộ dữ liệu có thang lớn nhất và không phản
+ánh được điều gì có ý nghĩa.
+
+Bảng~\ref{tab:baseline} trình bày kết quả trên ba bộ dữ liệu mà bộ dự đoán hằng
+hoàn tất đủ 5 fold.
 
 \begin{table}[H]
   \centering
   \small
-  \caption{Đối chiếu các thư viện AutoML với hai phương pháp cơ sở. Giá trị là
-  điểm số trung bình trên các bộ dữ liệu thuộc từng nhóm tác vụ.}
+  \caption{Đối chiếu bộ dự đoán hằng với bốn thư viện AutoML trên ba bộ dữ liệu.
+  Giá trị là trung bình trên 5 fold; mũi tên chỉ chiều tốt hơn. Bộ dự đoán hằng
+  không thực hiện tìm kiếm nên kết quả của nó độc lập với ngân sách thời gian.}
   \label{tab:baseline}
   \renewcommand{\arraystretch}{1.25}
-  \begin{tabularx}{\linewidth}{@{}X c c c@{}}
+  \begin{tabularx}{\linewidth}{@{}X l r r r r r@{}}
     \toprule
-    \textbf{Phương pháp} & \textbf{Nhị phân (AUC $\uparrow$)} & \textbf{Đa lớp (log-loss $\downarrow$)} & \textbf{Hồi quy (RMSE $\downarrow$)} \\
+    \textbf{Bộ dữ liệu} & \textbf{Độ đo} & \textbf{Hằng} & \textbf{AutoGluon} & \textbf{FLAML} & \textbf{H2O} & \textbf{MLJAR} \\
     \midrule
-    Bộ dự đoán hằng          & [\,] & [\,] & [\,] \\
-    Rừng ngẫu nhiên mặc định & [\,] & [\,] & [\,] \\
-    \midrule
-    AutoGluon  & [\,] & [\,] & [\,] \\
-    FLAML      & [\,] & [\,] & [\,] \\
-    H2O AutoML & [\,] & [\,] & [\,] \\
-    MLJAR      & [\,] & [\,] & [\,] \\
+    adult\_income  & AUC $\uparrow$  & 0,5000 & 0,9299 & 0,9295 & 0,9283 & \textbf{0,9301} \\
+    breast\_cancer & AUC $\uparrow$  & 0,5000 & 0,9945 & 0,9941 & \textbf{0,9947} & 0,9933 \\
+    abalone        & RMSE $\downarrow$ & 3,2181 & 2,1130 & 2,1473 & \textbf{2,1125} & 2,1324 \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
-Kết quả đối chiếu cần được diễn giải theo hai mức. Mức thứ nhất là kiểm tra tính
-hợp lệ: mọi thư viện AutoML phải vượt bộ dự đoán hằng trên mọi bộ dữ liệu; nếu
-không, đó là dấu hiệu của lỗi cấu hình chứ không phải đặc điểm thuật toán. Mức thứ
-hai là đánh giá giá trị gia tăng: khoảng cách giữa các thư viện AutoML và rừng
-ngẫu nhiên mặc định chính là phần lợi ích mà quá trình tìm kiếm tự động mang lại,
-đổi lấy chi phí tính toán lớn hơn nhiều lần. Trên những bộ dữ liệu mà khoảng cách
-này hẹp, việc triển khai AutoML có thể không tương xứng với chi phí bỏ ra.
+Kết quả xác nhận tính hợp lệ của toàn bộ thiết lập thực nghiệm. Trên hai bộ phân
+loại nhị phân, bộ dự đoán hằng đạt AUC đúng bằng $0{,}5000$ với độ lệch chuẩn bằng
+không trên cả 5 fold --- khớp chính xác với giá trị lý thuyết, cho thấy quy trình
+chấm điểm hoạt động đúng. Cả bốn thư viện AutoML đều vượt xa ngưỡng này: trên
+\texttt{breast\_cancer}, AutoGluon thu hẹp được $98{,}9\%$ khoảng cách từ mức ngẫu
+nhiên đến mức hoàn hảo, tính theo $(0{,}9945 - 0{,}5)/(1 - 0{,}5)$. Trên
+\texttt{abalone}, thư viện tốt nhất giảm RMSE từ $3{,}2181$ xuống $2{,}1125$, tức
+cải thiện $34{,}4\%$.
+
+Khoảng cách lớn so với ngưỡng sàn cho thấy các thư viện thực sự khai thác được
+thông tin từ đặc trưng chứ không chỉ học phân phối nhãn. Tuy nhiên, đây mới là
+điều kiện cần: bộ dự đoán hằng chỉ loại trừ khả năng mô hình hoàn toàn vô dụng,
+chứ không cho biết phần giá trị gia tăng của AutoML so với một lựa chọn thủ công
+hợp lý --- vai trò vốn dành cho phương pháp cơ sở thứ hai.
+
+\paragraph{Ghi nhận về phương pháp cơ sở chưa hoàn tất.} Rừng ngẫu nhiên với siêu
+tham số mặc định không cho kết quả nào sử dụng được: toàn bộ các lần chạy đều dừng
+ở lỗi khi khớp mô hình, với thông báo cho thấy dữ liệu đầu vào chưa được mã hoá
+phù hợp cho bộ ước lượng của \texttt{scikit-learn}. Đây là hạn chế của lớp bao
+phương pháp cơ sở trong hạ tầng thực nghiệm chứ không phải đặc điểm của thuật
+toán: khác với các thư viện AutoML vốn tự xử lý biến hạng mục và giá trị khuyết,
+lớp bao này chuyển thẳng dữ liệu thô cho mô hình. Tương tự, bộ dự đoán hằng chưa
+hoàn tất trên nhóm phân loại đa lớp và trên các bộ dữ liệu còn lại. Theo nguyên
+tắc ghi nhận đầy đủ đã nêu ở Mục~\ref{sec:giaothuc}, các trường hợp này được báo
+cáo thay vì lược bỏ; việc bổ sung chúng là một trong những hướng hoàn thiện nêu ở
+Chương~\ref{ch:ketluan}.
 
 \section{Hiệu năng chuẩn hoá theo dạng tác vụ}
 \label{sec:scaled}

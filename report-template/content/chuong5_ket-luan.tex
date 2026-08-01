@@ -104,6 +104,21 @@ bản hay chuỗi thời gian.
 \section{Hướng phát triển tương lai}
 \label{sec:huongphattrien}
 
+\subsection{Hoàn tất tuyến phương pháp cơ sở}
+Như đã ghi nhận ở Mục~\ref{sec:baseline}, bộ dự đoán hằng mới hoàn tất trên ba bộ
+dữ liệu và rừng ngẫu nhiên chưa cho kết quả nào do lớp bao phương pháp cơ sở
+chuyển thẳng dữ liệu thô cho bộ ước lượng mà không mã hoá biến hạng mục. Khắc phục
+điểm này không đòi hỏi thay đổi giao thức: chỉ cần bổ sung một bước tiền xử lý tối
+thiểu và đồng nhất --- mã hoá one-hot cho biến hạng mục và điền giá trị khuyết
+bằng trung vị --- vào đúng lớp bao đó, rồi chạy lại trên toàn bộ 12 bộ dữ liệu.
+
+Giá trị của việc này vượt xa một dòng số liệu bổ sung. Rừng ngẫu nhiên với cấu
+hình mặc định là ngưỡng so sánh có ý nghĩa thực tiễn nhất trong toàn bộ nghiên
+cứu: nó lượng hoá phần lợi ích mà quá trình tìm kiếm tự động mang lại so với
+phương án đơn giản nhất mà một người thực hành có kinh nghiệm sẽ chọn. Nếu khoảng
+cách đó hẹp trên phần lớn bộ dữ liệu, kết luận thực tiễn của đề tài sẽ thay đổi
+đáng kể --- và đó là câu hỏi mà bộ kết quả hiện tại chưa trả lời được.
+
 \subsection{Áp dụng kiểm định thống kê lên bộ kết quả hiện có}
 Quy trình kiểm định Friedman và hậu kiểm Nemenyi đã được hiện thực trong lớp phân
 tích của hệ thống (Mục~\ref{sec:console}) nhưng chưa được áp dụng lên bộ kết quả ở
