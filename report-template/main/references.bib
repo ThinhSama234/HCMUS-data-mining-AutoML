@@ -2,7 +2,7 @@
 %  TÀI LIỆU THAM KHẢO
 %  Trích dẫn trong nội dung bằng \cite{key}. Kiểm tra lại thông tin thư mục
 %  (năm, trang, nhà xuất bản) trước khi nộp; bổ sung các bộ dữ liệu Kaggle vào
-%  phần cuối dưới dạng @misc.
+%  phần cuối dưới dạng entry kiểu misc.
 % =====================================================================
 
 @article{gijsbers2024amlb,
@@ -86,11 +86,15 @@
   year      = {2016}
 }
 
-% --- Bộ dữ liệu Kaggle (bổ sung khi hoàn tất, ví dụ) -------------------
-% @misc{kaggle_dataset_x,
-%   title        = {[Tên bộ dữ liệu]},
-%   author       = {[Tác giả/Người đăng]},
-%   howpublished = {\url{https://www.kaggle.com/...}},
-%   note         = {Truy cập ngày [dd/mm/yyyy]},
-%   year         = {2025}
-% }
+% --- Bộ dữ liệu Kaggle -------------------------------------------------
+% Khi bổ sung, chép mẫu dưới đây ra ngoài vùng chú thích và thêm dấu a-còng
+% vào trước chữ "misc". Lưu ý BibTeX không hiểu % là chú thích, nên tuyệt đối
+% không để dấu a-còng trong bất kỳ dòng nào bắt đầu bằng %.
+%
+%   misc{kaggle_dataset_x,
+%     title        = {Ten bo du lieu},
+%     author       = {Tac gia},
+%     howpublished = {\url{https://www.kaggle.com/...}},
+%     note         = {Truy cap ngay dd/mm/yyyy},
+%     year         = {2025}
+%   }
