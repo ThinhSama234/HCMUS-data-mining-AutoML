@@ -228,26 +228,46 @@ def _run_dummy(X_train, y_train, X_test, task, metric, time_budget) -> tuple:
 def _run_randomforest(X_train, y_train, X_test, task, metric, time_budget) -> tuple:
     from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
     from sklearn.model_selection import RandomizedSearchCV
+    from sklearn.pipeline import Pipeline
+    from sklearn.impute import SimpleImputer
+    from sklearn.preprocessing import OrdinalEncoder
+    from sklearn.compose import ColumnTransformer
+
+    is_clf = task in ("binary", "multiclass", "classification")
+
+    # Encode categoricals + impute NaNs so RF can handle any dataset
+    cat_cols = [c for c in X_train.columns if X_train[c].dtype == object]
+    num_cols = [c for c in X_train.columns if X_train[c].dtype != object]
+    transformers = []
+    if num_cols:
+        transformers.append(("num", SimpleImputer(strategy="median"), num_cols))
+    if cat_cols:
+        transformers.append(("cat", Pipeline([
+            ("imp", SimpleImputer(strategy="most_frequent")),
+            ("enc", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)),
+        ]), cat_cols))
+    pre = ColumnTransformer(transformers, remainder="drop")
 
     param_dist = {
-        "n_estimators": [100, 200, 500],
-        "max_depth":    [None, 10, 20, 30],
-        "max_features": ["sqrt", "log2", 0.5],
-        "min_samples_leaf": [1, 2, 4],
+        "rf__n_estimators":    [100, 200, 500],
+        "rf__max_depth":       [None, 10, 20, 30],
+        "rf__max_features":    ["sqrt", "log2", 0.5],
+        "rf__min_samples_leaf":[1, 2, 4],
     }
     _SCORING = {"auc": "roc_auc", "log_loss": "neg_log_loss",
                 "rmse": "neg_root_mean_squared_error", "accuracy": "accuracy"}
 
-    base  = RandomForestClassifier(random_state=42, n_jobs=-1) if task == "classification" \
-            else RandomForestRegressor(random_state=42, n_jobs=-1)
-    model = RandomizedSearchCV(base, param_dist, n_iter=20, cv=3,
+    base = RandomForestClassifier(random_state=42, n_jobs=-1) if is_clf \
+           else RandomForestRegressor(random_state=42, n_jobs=-1)
+    pipe  = Pipeline([("pre", pre), ("rf", base)])
+    model = RandomizedSearchCV(pipe, param_dist, n_iter=20, cv=3,
                                scoring=_SCORING.get(metric, "accuracy"),
-                               random_state=42, n_jobs=-1)
+                               random_state=42, n_jobs=-1, error_score="raise")
     model.fit(X_train, y_train)
 
     t0      = time.perf_counter()
     y_pred  = model.predict(X_test)
-    y_proba = model.predict_proba(X_test) if task == "classification" else None
+    y_proba = model.predict_proba(X_test) if is_clf else None
     infer_s = time.perf_counter() - t0
 
     return y_pred, y_proba, infer_s, {
