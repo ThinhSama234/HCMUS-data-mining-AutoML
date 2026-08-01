@@ -123,9 +123,15 @@ sát từ tiến trình Python, và trạng thái kết thúc.
 \label{sec:ketqua}
 Bảng~\ref{tab:ketqua} trình bày điểm số trung bình kèm độ lệch chuẩn trên 5 fold,
 cùng thời gian huấn luyện và bộ nhớ đỉnh trung bình của từng cặp (bộ dữ liệu, thư
-viện) ở mức ngân sách 300 giây. Giá trị tốt nhất trên mỗi bộ dữ liệu được in đậm.
-Các ô vắng mặt tương ứng với những cặp mà thư viện không hoàn tất được lần chạy
-nào, được phân tích riêng ở Mục~\ref{sec:thatbai}.
+viện) ở mức ngân sách 300 giây. Trên mỗi bộ dữ liệu, giá trị tốt nhất của cả ba
+chiều đều được in đậm: điểm số cao nhất, thời gian huấn luyện ngắn nhất và mức bộ
+nhớ thấp nhất. Các ô vắng mặt tương ứng với những cặp mà thư viện không hoàn tất
+được lần chạy nào, được phân tích riêng ở Mục~\ref{sec:thatbai}.
+
+Cột bộ nhớ của H2O cần được đọc với lưu ý riêng: giá trị đo từ tiến trình Python
+nên không bao gồm phần bộ nhớ do máy ảo Java cấp phát, vì vậy con số thấp nhất ở
+cột này không đồng nghĩa với việc H2O tiêu thụ ít tài nguyên nhất
+(xem Mục~\ref{sec:bonho}).
 
 \begingroup
 \small
@@ -147,60 +153,60 @@ nào, được phân tích riêng ở Mục~\ref{sec:thatbai}.
 \endfoot
 \bottomrule
 \endlastfoot
-abalone & autogluon & RMSE & 2,1130 $\pm$ 0,1437 & 97,3 & 229,6 \\
+abalone & autogluon & RMSE & 2,1130 $\pm$ 0,1437 & \textbf{97,3} & 229,6 \\
 abalone & flaml     & RMSE & 2,1473 $\pm$ 0,1337 & 326,9 & 107,2 \\
-abalone & h2o       & RMSE & \textbf{2,1125 $\pm$ 0,1308} & 307,6 & 23,0 \\
+abalone & h2o       & RMSE & \textbf{2,1125 $\pm$ 0,1308} & 307,6 & \textbf{23,0} \\
 abalone & mljar     & RMSE & 2,1324 $\pm$ 0,1512 & 335,3 & 234,2 \\
 \midrule
-adult\_income & autogluon & AUC & 0,9299 $\pm$ 0,0016 & 262,0 & 357,0 \\
+adult\_income & autogluon & AUC & 0,9299 $\pm$ 0,0016 & \textbf{262,0} & 357,0 \\
 adult\_income & flaml     & AUC & 0,9295 $\pm$ 0,0015 & 331,4 & 114,4 \\
-adult\_income & h2o       & AUC & 0,9283 $\pm$ 0,0019 & 310,5 & 31,1 \\
+adult\_income & h2o       & AUC & 0,9283 $\pm$ 0,0019 & 310,5 & \textbf{31,1} \\
 adult\_income & mljar     & AUC & \textbf{0,9301 $\pm$ 0,0018} & 369,3 & 285,9 \\
 \midrule
-breast\_cancer & autogluon & AUC & 0,9945 $\pm$ 0,0045 & 78,9 & 205,5 \\
+breast\_cancer & autogluon & AUC & 0,9945 $\pm$ 0,0045 & \textbf{78,9} & 205,5 \\
 breast\_cancer & flaml     & AUC & 0,9941 $\pm$ 0,0042 & 327,2 & 103,6 \\
-breast\_cancer & h2o       & AUC & \textbf{0,9947 $\pm$ 0,0059} & 308,7 & 24,6 \\
+breast\_cancer & h2o       & AUC & \textbf{0,9947 $\pm$ 0,0059} & 308,7 & \textbf{24,6} \\
 breast\_cancer & mljar     & AUC & 0,9933 $\pm$ 0,0066 & 353,5 & 214,2 \\
 \midrule
 california\_housing & autogluon & RMSE & 0,4408 $\pm$ 0,0104 & 325,0 & 528,8 \\
 california\_housing & flaml     & RMSE & 0,4528 $\pm$ 0,0106 & 329,0 & 120,7 \\
-california\_housing & h2o       & RMSE & 0,4383 $\pm$ 0,0101 & 309,6 & 28,9 \\
+california\_housing & h2o       & RMSE & 0,4383 $\pm$ 0,0101 & \textbf{309,6} & \textbf{28,9} \\
 california\_housing & mljar     & RMSE & \textbf{0,4324 $\pm$ 0,0114} & 334,2 & 212,5 \\
 \midrule
-forest\_cover & autogluon & log-loss & 0,4593 $\pm$ 0,0127 & 113,2 & 1284,8 \\
-forest\_cover & flaml     & log-loss & \textbf{0,4501 $\pm$ 0,1409} & 103,3 & 1481,3 \\
+forest\_cover & autogluon & log-loss & 0,4593 $\pm$ 0,0127 & 113,2 & \textbf{1284,8} \\
+forest\_cover & flaml     & log-loss & \textbf{0,4501 $\pm$ 0,1409} & \textbf{103,3} & 1481,3 \\
 \midrule
 give\_me\_credit & autogluon & AUC & 0,8654 $\pm$ 0,0053 & 320,0 & 839,9 \\
 give\_me\_credit & flaml     & AUC & \textbf{0,8659 $\pm$ 0,0038} & 280,9 & 153,1 \\
-give\_me\_credit & h2o       & AUC & 0,8592 $\pm$ 0,0034 & 327,4 & 88,8 \\
-give\_me\_credit & mljar     & AUC & 0,8654 $\pm$ 0,0044 & 72,6 & 223,6 \\
+give\_me\_credit & h2o       & AUC & 0,8592 $\pm$ 0,0034 & 327,4 & \textbf{88,8} \\
+give\_me\_credit & mljar     & AUC & 0,8654 $\pm$ 0,0044 & \textbf{72,6} & 223,6 \\
 \midrule
 house\_prices & autogluon & RMSE & \textbf{28708,5 $\pm$ 7647,3} & 87,4 & 220,3 \\
 house\_prices & flaml     & RMSE & 29053,1 $\pm$ 9052,3 & 113,2 & 104,1 \\
-house\_prices & h2o       & RMSE & 29362,7 $\pm$ 11357,0 & 308,7 & 23,8 \\
-house\_prices & mljar     & RMSE & 30737,5 $\pm$ 9153,3 & 83,4 & 158,9 \\
+house\_prices & h2o       & RMSE & 29362,7 $\pm$ 11357,0 & 308,7 & \textbf{23,8} \\
+house\_prices & mljar     & RMSE & 30737,5 $\pm$ 9153,3 & \textbf{83,4} & 158,9 \\
 \midrule
-obesity & autogluon & log-loss & 0,0851 $\pm$ 0,0201 & 75,1 & 245,3 \\
-obesity & h2o       & log-loss & \textbf{0,0737 $\pm$ 0,0246} & 311,6 & 22,9 \\
+obesity & autogluon & log-loss & 0,0851 $\pm$ 0,0201 & \textbf{75,1} & 245,3 \\
+obesity & h2o       & log-loss & \textbf{0,0737 $\pm$ 0,0246} & 311,6 & \textbf{22,9} \\
 obesity & mljar     & log-loss & 0,0861 $\pm$ 0,0222 & 90,7 & 168,9 \\
 \midrule
 santander\_satisfaction & autogluon & AUC & 0,8373 $\pm$ 0,0071 & 343,9 & 1132,3 \\
-santander\_satisfaction & flaml     & AUC & 0,8323 $\pm$ 0,0097 & 89,8 & 1200,1 \\
-santander\_satisfaction & mljar     & AUC & \textbf{0,8383 $\pm$ 0,0054} & 90,1 & 703,7 \\
+santander\_satisfaction & flaml     & AUC & 0,8323 $\pm$ 0,0097 & \textbf{89,8} & 1200,1 \\
+santander\_satisfaction & mljar     & AUC & \textbf{0,8383 $\pm$ 0,0054} & 90,1 & \textbf{703,7} \\
 \midrule
-telco\_churn & autogluon & AUC & 0,8439 $\pm$ 0,0138 & 68,0 & 213,8 \\
+telco\_churn & autogluon & AUC & 0,8439 $\pm$ 0,0138 & \textbf{68,0} & 213,8 \\
 telco\_churn & flaml     & AUC & 0,8475 $\pm$ 0,0136 & 87,1 & 103,2 \\
-telco\_churn & h2o       & AUC & \textbf{0,8486 $\pm$ 0,0130} & 335,9 & 25,3 \\
+telco\_churn & h2o       & AUC & \textbf{0,8486 $\pm$ 0,0130} & 335,9 & \textbf{25,3} \\
 telco\_churn & mljar     & AUC & 0,8475 $\pm$ 0,0129 & 95,9 & 174,2 \\
 \midrule
-wine & autogluon & accuracy & 0,9660 $\pm$ 0,0314 & 43,5 & 203,9 \\
+wine & autogluon & accuracy & 0,9660 $\pm$ 0,0314 & \textbf{43,5} & 203,9 \\
 wine & flaml     & accuracy & \textbf{0,9722 $\pm$ 0,0000} & 108,5 & 101,4 \\
-wine & h2o       & accuracy & 0,9721 $\pm$ 0,0340 & 321,1 & 22,9 \\
+wine & h2o       & accuracy & 0,9721 $\pm$ 0,0340 & 321,1 & \textbf{22,9} \\
 wine & mljar     & accuracy & 0,9717 $\pm$ 0,0350 & 93,0 & 170,9 \\
 \midrule
-wine\_quality & autogluon & RMSE & 0,5852 $\pm$ 0,0369 & 41,3 & 212,7 \\
+wine\_quality & autogluon & RMSE & 0,5852 $\pm$ 0,0369 & \textbf{41,3} & 212,7 \\
 wine\_quality & flaml     & RMSE & 0,5906 $\pm$ 0,0342 & 84,4 & 103,6 \\
-wine\_quality & h2o       & RMSE & \textbf{0,5706 $\pm$ 0,0242} & 320,9 & 22,9 \\
+wine\_quality & h2o       & RMSE & \textbf{0,5706 $\pm$ 0,0242} & 320,9 & \textbf{22,9} \\
 wine\_quality & mljar     & RMSE & 0,5866 $\pm$ 0,0345 & 88,2 & 158,3 \\
 \end{longtable}
 \endgroup

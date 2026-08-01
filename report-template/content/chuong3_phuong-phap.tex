@@ -57,41 +57,46 @@ phân tích.
 
 \begin{figure}[H]
     \centering
+    % Sơ đồ dùng TOẠ ĐỘ TUYỆT ĐỐI (at (x,y)) thay vì định vị tương đối
+    % (below=of ...). Nhờ vậy hình vẫn vẽ đúng ngay cả khi thư viện
+    % tikz "positioning" chưa được nạp trong preamble.
     \begin{tikzpicture}[
-        node distance=1.0cm,
+        x=1cm, y=1cm,
         every node/.style={font=\small},
-        stage/.style={draw, rounded corners=2pt, align=center, minimum height=0.9cm,
-                      minimum width=3.4cm, inner sep=5pt, fill=blue!5},
-        store/.style={draw, cylinder, shape aspect=0.25, shape border rotate=90,
-                      align=center, minimum height=1.0cm, minimum width=1.9cm,
-                      inner sep=3pt, fill=gray!10},
-        wk/.style={draw, rounded corners=2pt, align=center, minimum height=0.8cm,
-                   minimum width=2.1cm, inner sep=3pt, fill=orange!10},
-        arr/.style={-{Latex[length=2.2mm]}, thick}]
+        stage/.style={draw, rounded corners=2pt, align=center,
+                      minimum height=0.95cm, minimum width=3.9cm,
+                      inner sep=4pt, fill=blue!5},
+        store/.style={draw, rounded corners=2pt, align=center,
+                      minimum height=0.95cm, minimum width=2.4cm,
+                      inner sep=4pt, fill=gray!12},
+        wk/.style={draw, rounded corners=2pt, align=center,
+                   minimum height=0.85cm, minimum width=2.5cm,
+                   inner sep=3pt, fill=orange!12},
+        arr/.style={->, >=stealth, thick}]
 
-      \node[stage] (raw)  {Dữ liệu thô Kaggle};
-      \node[stage, below=of raw] (prep) {Tiền xử lý\\\texttt{prep.py}};
-      \node[store, right=1.6cm of prep] (meta) {\texttt{train.csv}\\\texttt{meta.json}};
-      \node[stage, below=of prep] (fold) {Sinh phân hoạch fold\\\texttt{gen\_folds.py}};
-      \node[stage, below=of fold] (orch) {Điều phối\\\texttt{orchestrator.py}};
+      \node[stage] (raw)   at (0,  0)    {Dữ liệu thô Kaggle};
+      \node[stage] (prep)  at (0, -1.75) {Tiền xử lý\\\texttt{prep.py}};
+      \node[store] (meta)  at (4.3,-1.75){\texttt{train.csv}\\\texttt{meta.json}};
+      \node[stage] (fold)  at (0, -3.50) {Sinh phân hoạch fold\\\texttt{gen\_folds.py}};
+      \node[stage] (orch)  at (0, -5.25) {Điều phối\\\texttt{orchestrator.py}};
 
-      \node[wk, below left=1.1cm and 1.5cm of orch] (w1) {Worker\\\texttt{flaml}};
-      \node[wk, below=1.1cm of orch] (w2) {Worker\\\texttt{h2o}};
-      \node[wk, below right=1.1cm and 1.5cm of orch] (w3) {Worker\\\texttt{autogluon}, \ldots};
+      \node[wk] (w1) at (-3.2, -7.30) {Worker\\\texttt{flaml}};
+      \node[wk] (w2) at ( 0.0, -7.30) {Worker\\\texttt{h2o}};
+      \node[wk] (w3) at ( 3.2, -7.30) {Worker\\\texttt{autogluon}, \ldots};
 
-      \node[stage, below=2.6cm of orch] (merge) {Hợp nhất kết quả\\\texttt{merge.py}};
-      \node[stage, below=of merge] (ana)  {Phân tích và trực quan hoá};
+      \node[stage] (merge) at (0, -9.35)  {Hợp nhất kết quả\\\texttt{merge.py}};
+      \node[stage] (ana)   at (0, -11.10) {Phân tích và trực quan hoá};
 
-      \draw[arr] (raw)  -- (prep);
-      \draw[arr] (prep) -- (meta);
-      \draw[arr] (prep) -- (fold);
-      \draw[arr] (fold) -- (orch);
-      \draw[arr] (orch) -- (w1);
-      \draw[arr] (orch) -- (w2);
-      \draw[arr] (orch) -- (w3);
-      \draw[arr] (w1) -- (merge);
-      \draw[arr] (w2) -- (merge);
-      \draw[arr] (w3) -- (merge);
+      \draw[arr] (raw)   -- (prep);
+      \draw[arr] (prep)  -- (meta);
+      \draw[arr] (prep)  -- (fold);
+      \draw[arr] (fold)  -- (orch);
+      \draw[arr] (orch.south) -- (w1.north);
+      \draw[arr] (orch.south) -- (w2.north);
+      \draw[arr] (orch.south) -- (w3.north);
+      \draw[arr] (w1.south) -- (merge.north);
+      \draw[arr] (w2.south) -- (merge.north);
+      \draw[arr] (w3.south) -- (merge.north);
       \draw[arr] (merge) -- (ana);
     \end{tikzpicture}
     \caption{Luồng xử lý của hệ thống thực nghiệm. Mỗi tiến trình thực thi

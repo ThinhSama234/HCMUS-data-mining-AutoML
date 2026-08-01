@@ -85,14 +85,33 @@ như mã nguồn nộp kèm.
   \small
   \caption{Ghi chú sử dụng công cụ hỗ trợ trong đồ án.}
   \label{tab:ai-usage}
-  \renewcommand{\arraystretch}{1.25}
-  \begin{tabularx}{\linewidth}{@{}l l X@{}}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{3.1cm} >{\raggedright\arraybackslash}p{2.4cm} X@{}}
     \toprule
-    \textbf{Hạng mục} & \textbf{Công cụ} & \textbf{Mức độ sử dụng và cách kiểm chứng} \\
+    \textbf{Hạng mục} & \textbf{Công cụ} & \textbf{Phạm vi sử dụng và cách kiểm chứng} \\
     \midrule
-    {[}Soạn thảo báo cáo{]} & {[}tên công cụ{]} & {[}Mô tả phạm vi hỗ trợ; nhóm đã đọc, hiệu chỉnh và đối chiếu mọi số liệu với kết quả thực nghiệm gốc.{]} \\
-    {[}Hỗ trợ lập trình{]}  & {[}tên công cụ{]} & {[}Mô tả phạm vi hỗ trợ; nhóm đã kiểm thử và xác nhận tính đúng đắn của mã nguồn.{]} \\
-    {[}Trực quan hoá dữ liệu{]} & {[}tên công cụ{]} & {[}Mô tả phạm vi hỗ trợ; nhóm đã kiểm tra tính nhất quán giữa biểu đồ và dữ liệu gốc.{]} \\
+    Xây dựng hệ thống AMLB Studio và hạ tầng thực nghiệm &
+    Claude Code &
+    Hỗ trợ viết mã cho lớp giao diện, lớp lưu trữ, quy trình nạp dữ liệu và các
+    mô-đun phân tích. Toàn bộ mã nguồn được nhóm rà soát, chạy kiểm thử tự động
+    (thư mục \texttt{tests/}) và xác nhận hành vi trước khi hợp nhất. Các đóng góp
+    này được ghi nhận minh bạch bằng trường \texttt{Co-Authored-By} trong lịch sử
+    Git của kho mã nguồn. \\
+    Soạn thảo và biên tập báo cáo &
+    Claude Code &
+    Hỗ trợ tổ chức bố cục theo chuẩn luận văn, diễn đạt và biên tập văn phong khoa
+    học. Mọi số liệu trong Chương~\ref{ch:thucnghiem} đều do nhóm đối chiếu với tệp
+    kết quả thực nghiệm gốc; các nhận định và kết luận là của nhóm. \\
+    Phân tích và trực quan hoá kết quả &
+    {[}tên công cụ nếu có{]} &
+    {[}Nêu phạm vi hỗ trợ khi xây dựng sổ tay phân tích và sinh biểu đồ; nhóm đã
+    kiểm tra tính nhất quán giữa từng biểu đồ và dữ liệu gốc. Ghi ``không sử
+    dụng'' nếu phần này do nhóm tự thực hiện hoàn toàn.{]} \\
     \bottomrule
   \end{tabularx}
 \end{table}
+
+Nhóm khẳng định đã hiểu và kiểm chứng toàn bộ nội dung nộp kèm. Các công cụ nêu
+trên đóng vai trò hỗ trợ soạn thảo và lập trình; việc thiết kế thực nghiệm, lựa
+chọn phương pháp đánh giá, diễn giải kết quả và rút ra kết luận là phần đóng góp
+trí tuệ của nhóm.
