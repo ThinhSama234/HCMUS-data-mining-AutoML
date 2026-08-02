@@ -330,17 +330,30 @@ thông tin từ đặc trưng chứ không chỉ học phân phối nhãn. Tuy n
 chứ không cho biết phần giá trị gia tăng của AutoML so với một lựa chọn thủ công
 hợp lý --- vai trò vốn dành cho phương pháp cơ sở thứ hai.
 
-\paragraph{Ghi nhận về phương pháp cơ sở chưa hoàn tất.} Rừng ngẫu nhiên với siêu
-tham số mặc định không cho kết quả nào sử dụng được: toàn bộ các lần chạy đều dừng
-ở lỗi khi khớp mô hình, với thông báo cho thấy dữ liệu đầu vào chưa được mã hoá
-phù hợp cho bộ ước lượng của \texttt{scikit-learn}. Đây là hạn chế của lớp bao
-phương pháp cơ sở trong hạ tầng thực nghiệm chứ không phải đặc điểm của thuật
-toán: khác với các thư viện AutoML vốn tự xử lý biến hạng mục và giá trị khuyết,
-lớp bao này chuyển thẳng dữ liệu thô cho mô hình. Tương tự, bộ dự đoán hằng chưa
-hoàn tất trên nhóm phân loại đa lớp và trên các bộ dữ liệu còn lại. Theo nguyên
-tắc ghi nhận đầy đủ đã nêu ở Mục~\ref{sec:giaothuc}, các trường hợp này được báo
-cáo thay vì lược bỏ; việc bổ sung chúng là một trong những hướng hoàn thiện nêu ở
-Chương~\ref{ch:ketluan}.
+\paragraph{Ghi nhận về tuyến phương pháp cơ sở chưa hoàn tất.} Bảng
+\ref{tab:baseline} chỉ đối chiếu được một phương pháp cơ sở trên ba bộ dữ liệu,
+thay vì hai phương pháp trên toàn bộ mười hai bộ như thiết kế ban đầu. Trong tổng
+số 120 lần chạy đã lên lịch cho hai phương pháp cơ sở, chỉ 15 lần hoàn tất. Nguyên
+nhân đến từ hai phía.
+
+Thứ nhất là ràng buộc tài nguyên. Toàn bộ thực nghiệm được thực hiện trên máy cá
+nhân của các thành viên và nền tảng đám mây miễn phí; quỹ thời gian tính toán huy
+động được đã dành gần hết cho bốn thư viện AutoML chính, nên tuyến phương pháp cơ
+sở chưa được chạy trọn vẹn.
+
+Thứ hai, riêng rừng ngẫu nhiên còn vướng một khiếm khuyết kỹ thuật: mọi lần chạy
+đều dừng ở lỗi khi khớp mô hình, với thông báo cho thấy dữ liệu đầu vào chưa được
+mã hoá phù hợp cho bộ ước lượng của \texttt{scikit-learn}. Đây là hạn chế của lớp
+bao phương pháp cơ sở chứ không phải đặc điểm của thuật toán: khác với các thư
+viện AutoML vốn tự xử lý biến hạng mục và giá trị khuyết, lớp bao này chuyển thẳng
+dữ liệu thô cho mô hình.
+
+Theo nguyên tắc ghi nhận đầy đủ đã nêu ở Mục~\ref{sec:giaothuc}, các trường hợp
+này được báo cáo thay vì lược bỏ. Cần nói rõ giới hạn mà điều đó đặt ra cho kết
+luận: bộ dự đoán hằng chỉ xác nhận các thư viện AutoML thực sự học được từ dữ
+liệu, còn câu hỏi quan trọng hơn về mặt thực tiễn --- AutoML hơn một lựa chọn thủ
+công hợp lý bao nhiêu --- vẫn còn để ngỏ. Hướng hoàn thiện được trình bày ở
+Mục~\ref{sec:huongphattrien}.
 
 \section{Hiệu năng chuẩn hoá theo dạng tác vụ}
 \label{sec:scaled}

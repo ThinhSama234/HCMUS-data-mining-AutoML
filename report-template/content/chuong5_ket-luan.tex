@@ -79,6 +79,15 @@ hiện huấn luyện trong một tiến trình máy ảo Java riêng biệt. V�
 không xếp hạng các thư viện theo tiêu chí bộ nhớ, và các con số của H2O ở
 Mục~\ref{sec:bonho} chỉ nên được hiểu là chi phí phía máy khách.
 
+\textbf{Về tuyến phương pháp cơ sở.} Đây là giới hạn đáng kể nhất của nghiên cứu.
+Trong tổng số 120 lần chạy đã lên lịch cho hai phương pháp cơ sở, chỉ 15 lần hoàn
+tất; phần còn lại hoặc dừng giữa chừng, hoặc chưa được thực thi do quỹ thời gian
+tính toán mà nhóm huy động được đã dùng gần hết cho bốn thư viện AutoML chính.
+Riêng rừng ngẫu nhiên còn vướng một khiếm khuyết ở lớp bao phương pháp cơ sở như
+đã nêu ở Mục~\ref{sec:baseline}. Hệ quả là đối chiếu ở Bảng~\ref{tab:baseline}
+mới thực hiện được với một phương pháp cơ sở trên ba bộ dữ liệu, thay vì hai
+phương pháp trên toàn bộ mười hai bộ như thiết kế ban đầu.
+
 \textbf{Về quy mô ngân sách.} Thực nghiệm giới hạn ở hai mức ngân sách $60$ và
 $300$ giây. Các nghiên cứu quy mô lớn thường sử dụng ngân sách hàng giờ, nơi trật
 tự giữa các thư viện có thể thay đổi --- đặc biệt với những thư viện còn nhiều dư
@@ -105,12 +114,14 @@ bản hay chuỗi thời gian.
 \label{sec:huongphattrien}
 
 \subsection{Hoàn tất tuyến phương pháp cơ sở}
-Như đã ghi nhận ở Mục~\ref{sec:baseline}, bộ dự đoán hằng mới hoàn tất trên ba bộ
-dữ liệu và rừng ngẫu nhiên chưa cho kết quả nào do lớp bao phương pháp cơ sở
-chuyển thẳng dữ liệu thô cho bộ ước lượng mà không mã hoá biến hạng mục. Khắc phục
-điểm này không đòi hỏi thay đổi giao thức: chỉ cần bổ sung một bước tiền xử lý tối
-thiểu và đồng nhất --- mã hoá one-hot cho biến hạng mục và điền giá trị khuyết
-bằng trung vị --- vào đúng lớp bao đó, rồi chạy lại trên toàn bộ 12 bộ dữ liệu.
+Như đã ghi nhận ở Mục~\ref{sec:baseline}, tuyến phương pháp cơ sở chưa chạy trọn
+vẹn do quỹ thời gian tính toán của nhóm đã dành phần lớn cho bốn thư viện AutoML
+chính, và riêng rừng ngẫu nhiên còn vướng lỗi mã hoá dữ liệu đầu vào. Khắc phục
+không đòi hỏi thay đổi giao thức mà chỉ cần hai việc: bổ sung một bước tiền xử lý
+tối thiểu và đồng nhất --- mã hoá one-hot cho biến hạng mục, điền giá trị khuyết
+bằng trung vị --- vào lớp bao phương pháp cơ sở, rồi chạy lại trên toàn bộ 12 bộ
+dữ liệu. Chi phí tính toán cho bước này thấp hơn nhiều so với một lượt chạy AutoML,
+bởi cả hai phương pháp cơ sở đều không thực hiện tìm kiếm siêu tham số.
 
 Giá trị của việc này vượt xa một dòng số liệu bổ sung. Rừng ngẫu nhiên với cấu
 hình mặc định là ngưỡng so sánh có ý nghĩa thực tiễn nhất trong toàn bộ nghiên
