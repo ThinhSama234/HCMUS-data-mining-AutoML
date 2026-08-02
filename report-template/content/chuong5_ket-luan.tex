@@ -79,14 +79,13 @@ hiện huấn luyện trong một tiến trình máy ảo Java riêng biệt. V�
 không xếp hạng các thư viện theo tiêu chí bộ nhớ, và các con số của H2O ở
 Mục~\ref{sec:bonho} chỉ nên được hiểu là chi phí phía máy khách.
 
-\textbf{Về tuyến phương pháp cơ sở.} Đây là giới hạn đáng kể nhất của nghiên cứu.
-Trong tổng số 120 lần chạy đã lên lịch cho hai phương pháp cơ sở, chỉ 15 lần hoàn
-tất; phần còn lại hoặc dừng giữa chừng, hoặc chưa được thực thi do quỹ thời gian
-tính toán mà nhóm huy động được đã dùng gần hết cho bốn thư viện AutoML chính.
-Riêng rừng ngẫu nhiên còn vướng một khiếm khuyết ở lớp bao phương pháp cơ sở như
-đã nêu ở Mục~\ref{sec:baseline}. Hệ quả là đối chiếu ở Bảng~\ref{tab:baseline}
-mới thực hiện được với một phương pháp cơ sở trên ba bộ dữ liệu, thay vì hai
-phương pháp trên toàn bộ mười hai bộ như thiết kế ban đầu.
+\textbf{Về tuyến phương pháp cơ sở.} Việc đối chiếu với các phương pháp cơ sở chưa
+được triển khai ở quy mô như thiết kế ban đầu, do giới hạn về tài nguyên tính toán
+mà nhóm huy động được trong khuôn khổ đồ án. Kết quả thu được đủ để khẳng định các
+thư viện AutoML thực sự khai thác được thông tin từ đặc trưng, song chưa đủ để
+lượng hoá phần giá trị gia tăng của chúng so với một lựa chọn thủ công hợp lý ---
+vốn là câu hỏi mang tính thực tiễn cao hơn. Phạm vi đã thực hiện được trình bày
+chi tiết ở Mục~\ref{sec:baseline}.
 
 \textbf{Về quy mô ngân sách.} Thực nghiệm giới hạn ở hai mức ngân sách $60$ và
 $300$ giây. Các nghiên cứu quy mô lớn thường sử dụng ngân sách hàng giờ, nơi trật
